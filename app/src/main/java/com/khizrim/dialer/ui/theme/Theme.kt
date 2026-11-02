@@ -2,68 +2,96 @@ package com.khizrim.dialer.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Shapes
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
+import com.khizrim.dialer.R
 
-val CallGreen = Color(0xFF22C55E)
-val DeclineRed = Color(0xFFEF4444)
-val SpamOrange = Color(0xFFF97316)
-
-private val LightColors = lightColorScheme(
-    primary = Color(0xFF3D5AFE),
-    onPrimary = Color.White,
-    primaryContainer = Color(0xFFE0E5FF),
-    onPrimaryContainer = Color(0xFF0B1A6B),
-    secondary = Color(0xFF5B6478),
-    secondaryContainer = Color(0xFFE6E9F2),
-    onSecondaryContainer = Color(0xFF1B2232),
-    background = Color(0xFFF7F8FC),
-    surface = Color(0xFFF7F8FC),
-    surfaceContainer = Color(0xFFEEF0F7),
-    surfaceContainerHigh = Color(0xFFE8EBF3),
-    surfaceContainerLow = Color(0xFFF2F4FA),
-    onSurface = Color(0xFF151A24),
-    onSurfaceVariant = Color(0xFF5B6478),
-    outlineVariant = Color(0xFFD5D9E4),
-    error = DeclineRed,
+/** Палитра «Озеро». Значения совпадают с HTML-прототипом. */
+@Immutable
+data class OzColors(
+    val bg: Color,
+    val sheet: Color,
+    val soft: Color,
+    val fg: Color,
+    val fg2: Color,
+    val fg3: Color,
+    val line: Color,
+    val accent: Color,
+    val accentFill: Color,
+    val danger: Color,
+    val dangerFill: Color,
+    val warn: Color,
+    val press: Color,
+    val scrim: Color,
+    val toastAct: Color,
+    val isDark: Boolean,
 )
 
-private val DarkColors = darkColorScheme(
-    primary = Color(0xFF9AA8FF),
-    onPrimary = Color(0xFF0B1A6B),
-    primaryContainer = Color(0xFF2A3A9E),
-    onPrimaryContainer = Color(0xFFE0E5FF),
-    secondary = Color(0xFFB9C0D2),
-    secondaryContainer = Color(0xFF2A3142),
-    onSecondaryContainer = Color(0xFFE2E6F0),
-    background = Color(0xFF101418),
-    surface = Color(0xFF101418),
-    surfaceContainer = Color(0xFF1A1F27),
-    surfaceContainerHigh = Color(0xFF232933),
-    surfaceContainerLow = Color(0xFF151A21),
-    onSurface = Color(0xFFE6E8EE),
-    onSurfaceVariant = Color(0xFF9AA2B4),
-    outlineVariant = Color(0xFF2E3542),
-    error = Color(0xFFFF8A8A),
+val LightOz = OzColors(
+    bg = Color(0xFFFFFFFF), sheet = Color(0xFFFFFFFF), soft = Color(0xFFF2F5FA),
+    fg = Color(0xFF142036), fg2 = Color(0xFF3D4A63), fg3 = Color(0xFF5B6680), line = Color(0xFFE3E9F1),
+    accent = Color(0xFF1766D4), accentFill = Color(0xFF1A6FE0),
+    danger = Color(0xFFC2453F), dangerFill = Color(0xFFC2453F), warn = Color(0xFFA8551B),
+    press = Color(0x12142036), scrim = Color(0x52142036), toastAct = Color(0xFF6AB2FF), isDark = false,
 )
 
-private val AppShapes = Shapes(
-    small = RoundedCornerShape(10.dp),
-    medium = RoundedCornerShape(16.dp),
-    large = RoundedCornerShape(24.dp),
-    extraLarge = RoundedCornerShape(32.dp),
+val DarkOz = OzColors(
+    bg = Color(0xFF141923), sheet = Color(0xFF1F2532), soft = Color(0xFF1F2532),
+    fg = Color(0xFFE5E9F1), fg2 = Color(0xFFB9C2D3), fg3 = Color(0xFF8792A7), line = Color(0xFF2A3140),
+    accent = Color(0xFF6AB2FF), accentFill = Color(0xFF1A6FE0),
+    danger = Color(0xFFF08A84), dangerFill = Color(0xFFC2453F), warn = Color(0xFFF0A46B),
+    press = Color(0x14FFFFFF), scrim = Color(0x8C000000), toastAct = Color(0xFF1766D4), isDark = true,
 )
+
+val LocalOz = staticCompositionLocalOf { LightOz }
+
+/** Inter для интерфейса, Literata для имён людей. */
+val Inter = FontFamily(
+    Font(R.font.inter_regular, FontWeight.Normal),
+    Font(R.font.inter_medium, FontWeight.Medium),
+    Font(R.font.inter_semibold, FontWeight.SemiBold),
+)
+val Literata = FontFamily(
+    Font(R.font.literata_regular, FontWeight.Normal),
+    Font(R.font.literata_medium, FontWeight.Medium),
+)
+
+object OzType {
+    private const val CV11 = "cv11, tnum"
+    val body = TextStyle(fontFamily = Inter, fontSize = 16.sp, lineHeight = 24.sp, fontFeatureSettings = CV11)
+    val small = TextStyle(fontFamily = Inter, fontSize = 14.sp, lineHeight = 20.sp, fontFeatureSettings = CV11)
+    val tiny = TextStyle(fontFamily = Inter, fontSize = 11.sp, lineHeight = 14.sp, letterSpacing = 1.sp)
+    val list = TextStyle(fontFamily = Inter, fontSize = 17.sp, lineHeight = 24.sp, fontFeatureSettings = CV11)
+    val digit = TextStyle(fontFamily = Inter, fontSize = 32.sp, lineHeight = 36.sp, fontFeatureSettings = CV11)
+    val title = TextStyle(fontFamily = Inter, fontSize = 20.sp, lineHeight = 28.sp, fontWeight = FontWeight.SemiBold)
+    val strong = body.copy(fontWeight = FontWeight.SemiBold)
+
+    private val name = TextStyle(fontFamily = Literata, fontWeight = FontWeight.Medium)
+    val nameHome = name.copy(fontSize = 28.sp, lineHeight = 34.sp)
+    val nameSearch = name.copy(fontSize = 24.sp, lineHeight = 30.sp)
+    val namePerson = name.copy(fontSize = 36.sp, lineHeight = 41.sp, letterSpacing = (-0.3).sp)
+    val nameCall = name.copy(fontSize = 42.sp, lineHeight = 46.sp, letterSpacing = (-0.4).sp)
+}
 
 @Composable
-fun DialerTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Composable () -> Unit) {
-    MaterialTheme(
-        colorScheme = if (darkTheme) DarkColors else LightColors,
-        shapes = AppShapes,
-        content = content,
-    )
+fun DialerTheme(dark: Boolean = isSystemInDarkTheme(), content: @Composable () -> Unit) {
+    val oz = if (dark) DarkOz else LightOz
+    val scheme = if (dark) {
+        darkColorScheme(background = oz.bg, surface = oz.sheet, onBackground = oz.fg, onSurface = oz.fg, primary = oz.accentFill)
+    } else {
+        lightColorScheme(background = oz.bg, surface = oz.sheet, onBackground = oz.fg, onSurface = oz.fg, primary = oz.accentFill)
+    }
+    CompositionLocalProvider(LocalOz provides oz) {
+        MaterialTheme(colorScheme = scheme, content = content)
+    }
 }
