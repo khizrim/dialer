@@ -116,7 +116,7 @@ fun HomeScreen(vm: DialerViewModel) {
             BottomBar {
                 val t = vm.toast
                 Box(Modifier.weight(1f).padding(end = 16.dp)) {
-                    AnimatedVisibility(
+                    androidx.compose.animation.AnimatedVisibility(
                         visible = t?.undo == true,
                         enter = fadeIn(Motion.enter(Motion.MOVE)),
                         exit = fadeOut(Motion.exit(Motion.FADE)),
