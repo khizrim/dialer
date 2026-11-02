@@ -12,5 +12,5 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
-rootProject.name = "Dialer"
+rootProject.name = "OzeroPhone"
 include(":app")
