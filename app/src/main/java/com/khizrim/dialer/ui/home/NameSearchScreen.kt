@@ -160,6 +160,6 @@ private fun HitRow(vm: DialerViewModel, h: TextHit) {
             else Text(name, style = OzType.nameSearch, color = oz.fg, maxLines = 1, overflow = TextOverflow.Ellipsis)
             if (where != null) Text(where, style = OzType.small, color = oz.fg3, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
-        OzIcon(method?.icon ?: R.drawable.ic_oz_help, oz.fg3)
+        if (method != com.khizrim.dialer.model.Method.PHONE) OzIcon(method?.icon ?: R.drawable.ic_oz_help, oz.fg3)
     }
 }

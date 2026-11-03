@@ -95,7 +95,7 @@ fun HomeScreen(vm: DialerViewModel) {
                     .padding(horizontal = 12.dp),
                 verticalArrangement = Arrangement.Bottom,
             ) {
-                if (vm.home.isEmpty()) {
+                if (vm.homeStack.isEmpty() && vm.favorites.isEmpty()) {
                     item(key = "empty") {
                         Column(Modifier.padding(start = 12.dp, end = 12.dp, bottom = 24.dp).animateItem()) {
                             Text(stringResource(R.string.home_empty_title), style = OzType.nameHome, color = oz.fg)
@@ -106,7 +106,7 @@ fun HomeScreen(vm: DialerViewModel) {
                         }
                     }
                 }
-                items(vm.home, key = { it.key }) { e ->
+                items(vm.homeStack, key = { it.key }) { e ->
                     val p = e.person
                     val method = p?.let { vm.defaultOf(it) } ?: if (p == null) Method.PHONE else null
                     val note = e.missedNote
@@ -147,7 +147,8 @@ fun HomeScreen(vm: DialerViewModel) {
                                 Text(note, style = OzType.small, color = oz.danger, modifier = Modifier.padding(top = 2.dp))
                             }
                         }
-                        OzIcon(method?.icon ?: R.drawable.ic_oz_help, oz.fg3, modifier = Modifier.padding(start = 16.dp))
+                        // значок только когда тап делает не обычный звонок: одинаковая трубка у всех ничего не сообщает
+                        if (method != Method.PHONE) OzIcon(method?.icon ?: R.drawable.ic_oz_help, oz.fg3, modifier = Modifier.padding(start = 16.dp))
                     }
                 }
             }
@@ -218,7 +219,7 @@ fun HomeScreen(vm: DialerViewModel) {
                     }
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    GhostIconButton(R.drawable.ic_oz_sliders, stringResource(R.string.settings), vm::openSettings, tint = oz.fg3)
+                    GhostIconButton(R.drawable.ic_oz_settings, stringResource(R.string.settings), vm::openSettings, tint = oz.fg2)
                     androidx.compose.foundation.layout.Spacer(Modifier.width(12.dp))
                     KeypadFab { vm.openKeypad() }
                 }

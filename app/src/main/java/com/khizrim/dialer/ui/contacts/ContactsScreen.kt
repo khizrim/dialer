@@ -2,6 +2,7 @@ package com.khizrim.dialer.ui.contacts
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -140,13 +141,12 @@ fun ContactsScreen(vm: DialerViewModel) {
                             TextAction(stringResource(R.string.recents), oz.fg3, { vm.openRecents() }, style = OzType.small)
                             TextAction(stringResource(R.string.unknown_numbers), oz.fg3, vm::openUnknown, style = OzType.small)
                             TextAction(stringResource(R.string.blocked_numbers), oz.fg3, vm::openBlocked, style = OzType.small)
-                            TextAction(stringResource(R.string.settings), oz.fg3, vm::openSettings, style = OzType.small)
                         }
                     }
                 }
             }
             // алфавитный указатель у правого края: только буквы, которые есть
-            if (letters.size > 1) {
+            if (letters.size > 1 && people.size >= 30) {
                 Column(
                     Modifier.align(Alignment.CenterEnd).fillMaxHeight().width(28.dp).padding(vertical = 16.dp),
                     verticalArrangement = Arrangement.SpaceEvenly,
@@ -170,8 +170,6 @@ fun ContactsScreen(vm: DialerViewModel) {
             // назад — системным жестом, своя стрелка его только дублировала
             Box(Modifier)
             Row(verticalAlignment = Alignment.CenterVertically) {
-                GhostIconButton(R.drawable.ic_oz_sliders, stringResource(R.string.settings), vm::openSettings, tint = oz.fg2)
-                androidx.compose.foundation.layout.Spacer(Modifier.width(16.dp))
                 KeypadFab { vm.openKeypad() }
             }
         }
@@ -206,11 +204,7 @@ fun BlockedScreen(vm: DialerViewModel) {
                 }
             }
         }
-        BottomBar {
-            // назад — системным жестом, своя стрелка его только дублировала
-            Box(Modifier)
-            Box(Modifier)
-        }
+        Spacer(Modifier.height(16.dp))
     }
 }
 
@@ -275,10 +269,6 @@ fun UnknownScreen(vm: DialerViewModel) {
                 }
             }
         }
-        BottomBar {
-            // назад — системным жестом, своя стрелка его только дублировала
-            Box(Modifier)
-            Box(Modifier)
-        }
+        Spacer(Modifier.height(16.dp))
     }
 }

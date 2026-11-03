@@ -63,7 +63,7 @@ fun PersonScreen(vm: DialerViewModel, id: Long) {
     val p = vm.person(id) ?: return
     val method = vm.defaultOf(p)
     val fav = p.starred
-    val history = remember(p, vm.ready) { vm.history(p) }
+    val history = remember(p, vm.ready) { vm.history(p).take(5) }
 
     Column(Modifier.fillMaxSize()) {
         Column(
@@ -83,7 +83,17 @@ fun PersonScreen(vm: DialerViewModel, id: Long) {
             }
             // фото только если оно есть, без кружков с буквами
             p.photo?.let { ContactPhoto(it, Modifier.padding(bottom = 16.dp)) }
-            Text(p.shownName, style = if (p.nameIsNumber) OzType.list.copy(fontSize = OzType.nameHome.fontSize) else OzType.namePerson, color = oz.fg, modifier = Modifier.padding(bottom = 24.dp).semantics { heading() })
+            Text(p.shownName, style = if (p.nameIsNumber) OzType.list.copy(fontSize = OzType.nameHome.fontSize) else OzType.namePerson, color = oz.fg, modifier = Modifier.padding(bottom = 8.dp).semantics { heading() })
+            // номера под именем: тип и номер серым, чтобы было видно, куда звоним
+            if (!p.nameIsNumber || p.phones.size > 1) {
+                p.phones.take(3).forEach { ph ->
+                    Text(
+                        ph.label.replaceFirstChar { it.uppercase() } + "  " + com.khizrim.dialer.data.PhoneFormat.pretty(ph.number),
+                        style = OzType.body, color = oz.fg3, maxLines = 1,
+                    )
+                }
+            }
+            Spacer(Modifier.height(24.dp))
             Row(
                 Modifier
                     .fillMaxWidth()
@@ -100,23 +110,14 @@ fun PersonScreen(vm: DialerViewModel, id: Long) {
             Column(Modifier.padding(top = 12.dp).offset(x = (-12).dp)) {
                 TextAction(stringResource(R.string.other_way), oz.accent, { vm.openSheet(p, SheetMode.OTHER) })
                 TextAction(stringResource(R.string.change_default), oz.fg3, { vm.openSheet(p, SheetMode.DEFAULT) })
+                TextAction(stringResource(R.string.edit_contact), oz.fg3, { vm.editContact(p) })
+                TextAction(
+                    stringResource(if (fav) R.string.remove_favorite else R.string.add_favorite),
+                    if (fav) oz.accent else oz.fg3, { vm.toggleFavorite(p) },
+                )
             }
         }
-        Row(
-            Modifier.fillMaxWidth().padding(12.dp, 16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            // назад — системным жестом, своя стрелка его только дублировала
-            Box(Modifier)
-            Row {
-            GhostIconButton(R.drawable.ic_oz_edit, stringResource(R.string.edit_contact), { vm.editContact(p) })
-            GhostIconButton(
-                if (fav) R.drawable.ic_oz_star_on else R.drawable.ic_oz_star,
-                if (fav) stringResource(R.string.remove_favorite) else stringResource(R.string.add_favorite),
-                { vm.toggleFavorite(p) },
-            )
-            }
-        }
+        Spacer(Modifier.height(16.dp))
     }
 }
 

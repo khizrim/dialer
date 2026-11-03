@@ -50,6 +50,19 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    /** Цифры с аппаратной клавиатуры (DeX, TalkBack) попадают в набор, когда он открыт. */
+    override fun onKeyDown(keyCode: Int, event: android.view.KeyEvent): Boolean {
+        if (vm.keypadOpen) {
+            val ch = event.unicodeChar.toChar()
+            when {
+                ch in '0'..'9' || ch == '*' || ch == '#' || ch == '+' -> { vm.type(ch); return true }
+                keyCode == android.view.KeyEvent.KEYCODE_DEL -> { vm.backspace(); return true }
+                keyCode == android.view.KeyEvent.KEYCODE_ENTER -> { vm.callTyped(); return true }
+            }
+        }
+        return super.onKeyDown(keyCode, event)
+    }
+
     companion object {
         const val ACTION_ADD_CONTACT = "com.khizrim.dialer.ADD_CONTACT"
         const val EXTRA_NUMBER = "number"

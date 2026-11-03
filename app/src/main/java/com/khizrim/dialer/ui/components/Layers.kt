@@ -211,6 +211,10 @@ fun BoxScope.PersonMenu(vm: DialerViewModel) {
         if (p != null) {
             SheetRow(stringResource(R.string.open_card), oz.fg, { vm.openPerson(p.id) }, R.drawable.ic_oz_user)
             SheetRow(stringResource(R.string.other_way), oz.fg, { vm.openSheet(p, SheetMode.OTHER) }, R.drawable.ic_oz_swap)
+            SheetRow(
+                stringResource(if (p.starred) R.string.remove_favorite else R.string.add_favorite), oz.fg,
+                { vm.closeMenu(); vm.toggleFavorite(p) }, if (p.starred) R.drawable.ic_oz_star_on else R.drawable.ic_oz_star,
+            )
         } else {
             val number = e.number.orEmpty()
             SheetRow(stringResource(R.string.add_to_contacts), oz.fg, { vm.addToContacts(number) }, R.drawable.ic_oz_user_plus)

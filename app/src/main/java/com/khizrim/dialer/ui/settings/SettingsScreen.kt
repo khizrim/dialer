@@ -7,7 +7,10 @@ import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -103,11 +106,7 @@ fun SettingsScreen(vm: DialerViewModel) {
             ValueRow(stringResource(R.string.set_permissions), null) { open(appDetails) }
             ValueRow(stringResource(R.string.set_version), versionName(context), onClick = null)
         }
-        BottomBar {
-            // назад — системным жестом, своя стрелка его только дублировала
-            Box(Modifier)
-            Box(Modifier)
-        }
+        Spacer(Modifier.height(16.dp))
     }
 }
 
@@ -170,7 +169,7 @@ private fun SwitchRow(title: String, on: Boolean, onToggle: () -> Unit) {
         Box(
             Modifier
                 .size(44.dp, 26.dp)
-                .let { if (on) it.background(oz.accentFill, CircleShape) else it.well(CircleShape) }
+                .let { if (on) it.background(oz.accentFill, CircleShape) else it.border(1.5.dp, oz.fg3, CircleShape) }
                 .padding(3.dp),
             contentAlignment = if (on) Alignment.CenterEnd else Alignment.CenterStart,
         ) {
