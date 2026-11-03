@@ -57,9 +57,32 @@ fun NameSearchScreen(vm: DialerViewModel) {
     val q = vm.textQuery
     val digits = q.filter { it.isDigit() }
     val numeric = digits.length >= 3 && q.none { it.isLetter() }
+    // пустой запрос — все контакты: избранные ближе к полю, дальше по алфавиту, без имени в конце
+    val all = remember(vm.people) {
+        val collator = java.text.Collator.getInstance(java.util.Locale("ru"))
+        vm.people.sortedWith { a, b ->
+            when {
+                a.starred != b.starred -> if (a.starred) -1 else 1
+                a.nameIsNumber != b.nameIsNumber -> if (a.nameIsNumber) 1 else -1
+                else -> collator.compare(a.name, b.name)
+            }
+        }
+    }
+    // начали листать — прячем клавиатуру, чтобы видеть список целиком
+    val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+    val keyboard = androidx.compose.ui.platform.LocalSoftwareKeyboardController.current
+    val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
+    LaunchedEffect(listState.isScrollInProgress) {
+        if (listState.isScrollInProgress) { keyboard?.hide(); focusManager.clearFocus() }
+    }
 
     Column(Modifier.fillMaxSize().imePadding()) {
-        LazyColumn(Modifier.weight(1f).fillMaxWidth().padding(horizontal = 12.dp), reverseLayout = true) {
+        LazyColumn(Modifier.weight(1f).fillMaxWidth().padding(horizontal = 12.dp), state = listState, reverseLayout = true) {
+            if (q.isBlank()) {
+                items(all, key = { "a" + it.id }) { p ->
+                    HitRow(vm, com.khizrim.dialer.data.TextHit(p, null, MatchField.NAME, null, MatchVia.DIRECT, 0))
+                }
+            }
             if (numeric) {
                 item(key = "call") {
                     Row(
@@ -133,9 +156,10 @@ private fun HitRow(vm: DialerViewModel, h: TextHit) {
         horizontalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Column(Modifier.weight(1f)) {
-            Text(name, style = OzType.nameSearch, color = oz.fg, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            if (p.nameIsNumber) Text(p.shownName, style = OzType.list, color = oz.fg, maxLines = 1)
+            else Text(name, style = OzType.nameSearch, color = oz.fg, maxLines = 1, overflow = TextOverflow.Ellipsis)
             if (where != null) Text(where, style = OzType.small, color = oz.fg3, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
-        OzIcon(method?.icon ?: R.drawable.ic_oz_help, oz.fg3)
+        if (method != com.khizrim.dialer.model.Method.PHONE) OzIcon(method?.icon ?: R.drawable.ic_oz_help, oz.fg3)
     }
 }

@@ -275,7 +275,7 @@
     <string name="edit_discard">Выйти</string>
     <string name="call_to">Позвонить на %1$s</string>
     <string name="search_by_name">Искать по имени</string>
-    <string name="search_hint">Потяните стопку вверх, чтобы искать по имени</string>
+    <string name="search_hint">Потяните стопку вверх, чтобы найти контакт</string>
     <string name="search_nothing">Никого не нашлось</string>
     <string name="found_company">совпало в компании: %1$s</string>
     <string name="found_title">совпало в должности: %1$s</string>

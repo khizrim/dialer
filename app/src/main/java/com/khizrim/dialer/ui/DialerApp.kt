@@ -64,7 +64,8 @@ fun DialerApp(vm: DialerViewModel = viewModel()) {
                     targetState = Route(vm.screen, vm.personId),
                     transitionSpec = {
                         // спокойная смена экранов: перекрёстное растворение без паузы и без подпрыгивания
-                        fadeIn(Motion.enter(Motion.FADE)) togetherWith fadeOut(Motion.exit(Motion.PRESS))
+                        // «через фон»: старый уходит за 90 мс, новый проявляется после — без двойной экспозиции
+                        fadeIn(androidx.compose.animation.core.tween(210, 90, Motion.EnterEasing)) togetherWith fadeOut(androidx.compose.animation.core.tween(90, 0, Motion.ExitEasing))
                     },
                     label = "screen",
                 ) { r ->
@@ -111,7 +112,7 @@ fun DialerApp(vm: DialerViewModel = viewModel()) {
                         .align(androidx.compose.ui.Alignment.BottomCenter)
                         .fillMaxWidth()
                         .safeDrawingPadding()
-                        .padding(start = 12.dp, end = 12.dp, bottom = if (vm.keypadOpen) 380.dp else 96.dp),
+                        .padding(start = 12.dp, end = 12.dp, bottom = floatBottom(vm)),
                 ) {
                     androidx.compose.material3.Text(
                         androidx.compose.ui.res.stringResource(com.khizrim.dialer.R.string.back_to_call, live.name ?: com.khizrim.dialer.data.PhoneFormat.pretty(live.number)),
@@ -132,7 +133,14 @@ fun DialerApp(vm: DialerViewModel = viewModel()) {
             MethodSheet(vm)
             SyncHelpSheet(vm)
             ConfirmLayer(vm)
-            FloatToast(vm.toast, bottom = if (vm.keypadOpen) 380.dp else 96.dp)
+            FloatToast(vm.toast, bottom = floatBottom(vm))
         }
     }
+}
+
+/** Где висят тост и плашка звонка: над клавиатурой, над рядом избранных и подсказкой или над нижней панелью. */
+private fun floatBottom(vm: DialerViewModel): androidx.compose.ui.unit.Dp = when {
+    vm.keypadOpen -> 380.dp
+    vm.screen == Screen.HOME && (vm.favorites.isNotEmpty() || vm.showSearchHint) -> 156.dp
+    else -> 96.dp
 }

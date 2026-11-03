@@ -173,6 +173,8 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Избранные для тихого ряда над нижней панелью главной. */
     val favorites: List<Person> get() = people.filter { it.starred }.sortedByDescending { scores[it.key] ?: 0.0 }
+    /** Стопка главной без тех, кто уже стоит в ряду избранных. */
+    val homeStack: List<HomeEntry> get() = home.filter { it.person?.starred != true }
 
     private fun rebuildHome() {
         class Acc(var last: Long = 0L, var lastMissed: Long = 0L, var lastOther: Long = 0L, var number: String? = null)
@@ -491,6 +493,7 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
             val ok = withContext(Dispatchers.IO) { ContactsSource.setStarred(ctx, p, next) }
             if (ok) {
                 people = people.map { if (it.id == p.id) it.copy(starred = next) else it }
+                rebuildHome()
                 byId = people.associateBy { it.id }
                 say(str(if (next) R.string.added_favorite else R.string.removed_favorite))
             } else {

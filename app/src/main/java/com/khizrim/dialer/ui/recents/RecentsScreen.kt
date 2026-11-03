@@ -94,11 +94,11 @@ fun RecentsScreen(vm: DialerViewModel) {
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Column(Modifier.weight(1f)) {
-                                Text(title, style = OzType.list, color = if (r.missed) oz.danger else oz.fg, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                Text(title, style = OzType.list, color = oz.fg, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                 // SIM в конце второй строки, только когда их две
                                 val simIdx = if (vm.sims.size > 1) vm.sims.indexOfFirst { it.first == r.account } else -1
                                 val second = if (simIdx >= 0) r.text(res) + "  " + stringResource(R.string.sim_n, simIdx + 1) else r.text(res)
-                                Text(second, style = OzType.small, color = oz.fg3)
+                                Text(second, style = OzType.small, color = if (r.missed) oz.danger else oz.fg3)
                             }
                             Text(time.format(Date(r.date)), style = OzType.small, color = oz.fg3)
                         }
@@ -106,27 +106,29 @@ fun RecentsScreen(vm: DialerViewModel) {
                 }
             }
             item(key = "title") {
-                Text(
-                    stringResource(R.string.journal), style = OzType.namePerson, color = oz.fg,
-                    modifier = Modifier.padding(start = 12.dp, top = 24.dp, bottom = 8.dp).semantics { heading() },
-                )
+                // «Очистить» — тихой ссылкой у заголовка, подальше от большого пальца и кнопки набора
+                Row(Modifier.fillMaxWidth().padding(top = 24.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        stringResource(R.string.journal), style = OzType.namePerson, color = oz.fg,
+                        modifier = Modifier.weight(1f).padding(start = 12.dp).semantics { heading() },
+                    )
+                    if (lines.isNotEmpty()) TextAction(stringResource(R.string.clear_log), oz.fg3, {
+                        if (vm.canClearLog) vm.askClearLog() else askWrite.launch(android.Manifest.permission.WRITE_CALL_LOG)
+                    })
+                }
             }
         }
         BottomBar {
-            // назад — системным жестом, своя стрелка его только дублировала
-            Box(Modifier)
             // фильтр двумя словами: активное fg и 500, неактивное fg3, без заливки
             Row(Modifier.weight(1f)) {
+                // активное слово подчёркнуто тонкой линией — видно и без цвета
+                val underline = androidx.compose.ui.text.style.TextDecoration.Underline
                 TextAction(stringResource(R.string.filter_all), if (missedOnly) oz.fg3 else oz.fg, { vm.showMissedOnly(false) },
-                    style = OzType.body.copy(fontWeight = if (missedOnly) FontWeight.Normal else FontWeight.Medium))
+                    style = OzType.body.copy(fontWeight = if (missedOnly) FontWeight.Normal else FontWeight.Medium, textDecoration = if (missedOnly) null else underline))
                 TextAction(stringResource(R.string.filter_missed), if (missedOnly) oz.fg else oz.fg3, { vm.showMissedOnly(true) },
-                    style = OzType.body.copy(fontWeight = if (missedOnly) FontWeight.Medium else FontWeight.Normal))
+                    style = OzType.body.copy(fontWeight = if (missedOnly) FontWeight.Medium else FontWeight.Normal, textDecoration = if (missedOnly) underline else null))
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
-                if (lines.isNotEmpty()) GhostIconButton(R.drawable.ic_oz_trash, stringResource(R.string.clear_log), {
-                    if (vm.canClearLog) vm.askClearLog() else askWrite.launch(android.Manifest.permission.WRITE_CALL_LOG)
-                }, tint = oz.fg3)
-                androidx.compose.foundation.layout.Spacer(Modifier.padding(start = 12.dp))
                 KeypadFab { vm.openKeypad() }
             }
         }

@@ -146,7 +146,9 @@ object CallNotifications {
             )
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 // системный вид входящего: крупные «Ответить» и «Отклонить», выше остальных уведомлений
-                val person = android.app.Person.Builder().setName(who).setImportant(true).build()
+                // своя иконка: фото контакта или трубка на мягком фоне — иначе система рисует кружок с буквой
+                val person = android.app.Person.Builder().setName(who).setImportant(true)
+                    .setIcon(callerIcon(context, state.number)).build()
                 b.setStyle(Notification.CallStyle.forIncomingCall(person, decline, answer))
             } else {
                 b.addAction(Notification.Action.Builder(null, context.getString(R.string.decline), decline).build())
@@ -194,6 +196,28 @@ object CallNotifications {
         }
         runCatching { nm.notify(ID_MISSED, b.build()) }
     }
+
+    /** Фото звонящего из контактов или трубка на мягком голубом круге. */
+    private fun callerIcon(context: Context, number: String): android.graphics.drawable.Icon? = runCatching {
+        val photo = if (number.isNotBlank()) runCatching {
+            val uri = android.net.Uri.withAppendedPath(android.provider.ContactsContract.PhoneLookup.CONTENT_FILTER_URI, android.net.Uri.encode(number))
+            context.contentResolver.query(uri, arrayOf(android.provider.ContactsContract.PhoneLookup.PHOTO_THUMBNAIL_URI), null, null, null)?.use { c ->
+                if (c.moveToFirst()) c.getString(0) else null
+            }?.let { s -> context.contentResolver.openInputStream(android.net.Uri.parse(s))?.use { android.graphics.BitmapFactory.decodeStream(it) } }
+        }.getOrNull() else null
+        if (photo != null) return@runCatching android.graphics.drawable.Icon.createWithBitmap(photo)
+        val size = 96
+        val bmp = android.graphics.Bitmap.createBitmap(size, size, android.graphics.Bitmap.Config.ARGB_8888)
+        val canvas = android.graphics.Canvas(bmp)
+        val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply { color = 0xFFE6F1FF.toInt() }
+        canvas.drawCircle(size / 2f, size / 2f, size / 2f, paint)
+        context.getDrawable(R.drawable.ic_oz_phone)?.mutate()?.let { d ->
+            d.setTint(0xFF1766D4.toInt())
+            d.setBounds(size / 4, size / 4, size * 3 / 4, size * 3 / 4)
+            d.draw(canvas)
+        }
+        android.graphics.drawable.Icon.createWithBitmap(bmp)
+    }.getOrNull()
 
     /** Одно тихое сводное уведомление о незнакомых без звука. */
     fun showSilenced(context: Context) {
