@@ -42,7 +42,8 @@ fun edgeOf(from: Route?, to: Route): Edge =
 class Layer(val route: Route, val edge: Edge, shown: Float) {
     val id = next++
     /** 1 — экран на месте, 0 — целиком за своим краем. */
-    val shown = Animatable(shown)
+    // порог видимости в долях экрана: по умолчанию 0.01 — это 24 px, и слой «доскакивал» в конце
+    val shown = Animatable(shown, visibilityThreshold = 0.0002f)
     var leaving = false
 
     private companion object { var next = 0L }

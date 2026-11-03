@@ -130,7 +130,9 @@ private suspend fun androidx.compose.ui.input.pointer.PointerInputScope.trackTou
             val c = ev.changes.firstOrNull { it.id == down.id } ?: break
             if (!c.pressed) break
             dx += c.position.x - c.previousPosition.x; dy += c.position.y - c.previousPosition.y
-            if (c.isConsumed || dx * dx + dy * dy > slop * slop) t.moved = true
+            // нажатие само поглощает касание (DOWN и UP), поэтому «забрал движение» — только поглощённый сдвиг
+            val shifted = c.position != c.previousPosition
+            if ((c.isConsumed && shifted) || dx * dx + dy * dy > slop * slop) t.moved = true
         } } finally { t.active = false }
     }
 }

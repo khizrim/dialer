@@ -115,7 +115,7 @@ fun DialerApp(vm: DialerViewModel = viewModel()) {
 @Composable
 private fun KeypadLayer(vm: DialerViewModel, reduced: Boolean) {
     val oz = LocalOz.current
-    val shown = remember { androidx.compose.animation.core.Animatable(if (vm.keypadOpen) 1f else 0f) }
+    val shown = remember { androidx.compose.animation.core.Animatable(if (vm.keypadOpen) 1f else 0f, visibilityThreshold = 0.0002f) }
     val scope = androidx.compose.runtime.rememberCoroutineScope()
     val velocity = remember { floatArrayOf(0f) }
     val dragging = remember { booleanArrayOf(false) }
