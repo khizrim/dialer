@@ -187,4 +187,7 @@
     <string name="silenced_summary">Без звука: незнакомых %1$d</string>
     <string name="silenced_text">Они не звонили вслух. Список в «Незнакомых номерах».</string>
     <string name="look">Посмотреть</string>
+    <string name="call_failed">Не удалось позвонить</string>
+    <string name="call_failed_text">Нет сети или оператор не пропустил звонок. Попробуйте чуть позже.</string>
+    <string name="try_again">Попробовать снова</string>
 </resources>

@@ -188,4 +188,7 @@
     <string name="silenced_summary">Silenced: %1$d unknown</string>
     <string name="silenced_text">They didn\'t ring. The list is in Unknown numbers.</string>
     <string name="look">View</string>
+    <string name="call_failed">Couldn\'t call</string>
+    <string name="call_failed_text">No network or the operator refused. Try again in a moment.</string>
+    <string name="try_again">Try again</string>
 </resources>

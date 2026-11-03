@@ -124,8 +124,15 @@ object CallManager {
         calls -= call
         if (calls.none { it !in silenced }) {
             dtmf = null
-            // держим экран «Звонок завершён» ещё 1.2 с, потом он гаснет
-            main.postDelayed({ if (calls.none { it !in silenced }) state = null }, 1200)
+            // контакт: «Звонок завершён» гаснет через 1.2 с; незнакомый — 3 с, чтобы успеть добавить;
+            // звонок не прошёл — экран ждёт решения человека
+            val s = state
+            val delay = when {
+                s?.failed == true -> -1L
+                s != null && s.name == null && s.number.isNotEmpty() && s.connectedAt > 0 -> 3000L
+                else -> 1200L
+            }
+            if (delay > 0) main.postDelayed({ if (calls.none { it !in silenced }) state = null }, delay)
         } else {
             refresh()
         }
@@ -179,6 +186,8 @@ object CallManager {
             else -> CallPhase.ACTIVE
         }
         val connectedAt = call.details?.connectTimeMillis ?: 0L
+        val failed = call.state == Call.STATE_DISCONNECTED && call.details?.disconnectCause?.code == DisconnectCause.ERROR && connectedAt <= 0L
+        if (number.isNotEmpty()) lastNumber = number
         if (phase == CallPhase.ENDED && endText == null) {
             val ctx = appContext
             endText = if (ctx == null) "" else when (call.details?.disconnectCause?.code) {
@@ -195,6 +204,7 @@ object CallManager {
             number = number,
             label = labels[number],
             suspicious = number in suspicious,
+            failed = failed,
             phase = phase,
             connectedAt = connectedAt,
             muted = audio?.isMuted == true,
@@ -276,11 +286,19 @@ object CallManager {
     }
 
     fun block(context: Context): Boolean {
-        val call = primary ?: return false
-        val ok = Blocklist.block(context, number(call))
-        decline()
+        val call = primary
+        val n = call?.let { number(it) } ?: lastNumber ?: return false
+        val ok = Blocklist.block(context, n)
+        if (call != null) decline() else dismiss()
         return ok
     }
+
+    /** Номер последнего звонка: нужен экрану после завершения. */
+    var lastNumber: String? = null
+        private set
+
+    /** Закрыть экран завершённого звонка. */
+    fun dismiss() { if (calls.none { it !in silenced }) state = null }
 
     @Suppress("DEPRECATION")
     fun toggleMute() { val s = state ?: return; service?.setMuted(!s.muted) }
@@ -305,7 +323,7 @@ object CallManager {
         refresh()
     }
 
-    fun currentNumber(): String? = primary?.let { number(it) }
+    fun currentNumber(): String? = primary?.let { number(it) } ?: lastNumber
     fun currentName(): String? = primary?.let { names[number(it)] }
 
     fun timer(seconds: Long): String = "%02d:%02d".format(seconds / 60, seconds % 60)

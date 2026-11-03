@@ -91,6 +91,8 @@ data class CallState(
     val simChoice: List<String>? = null,
     /** Определитель считает номер подозрительным: тёплый фон и подпись цветом warn. */
     val suspicious: Boolean = false,
+    /** Звонок не прошёл: ошибка сети, оператор отказал. */
+    val failed: Boolean = false,
 ) {
     /** Кроме телефона и динамика есть наушники или Bluetooth: показываем выбор. */
     val hasRouteChoice: Boolean get() = routes and (ROUTE_BLUETOOTH or ROUTE_WIRED) != 0

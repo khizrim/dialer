@@ -85,6 +85,9 @@ interface CallActions {
     fun merge()
     fun addCall()
     fun message()
+    fun addContact()
+    fun callAgain()
+    fun dismiss()
 }
 
 /** Входящий, исходящий и идущий звонок. Без подсказки про канал. */
@@ -106,7 +109,7 @@ fun CallScreen(c: CallState, actions: CallActions, locked: Boolean = false) {
         CallPhase.DIALING -> if (c.simChoice != null) stringResource(R.string.choose_sim) else stringResource(R.string.calling)
         CallPhase.ACTIVE -> if (c.onHold) stringResource(R.string.on_hold) else
             stringResource(R.string.net_phone) + "  " + CallManager.timer(((now - c.connectedAt).coerceAtLeast(0)) / 1000)
-        CallPhase.ENDED -> c.endText
+        CallPhase.ENDED -> if (c.failed) stringResource(R.string.call_failed_text) else c.endText
     }
     val inCall = c.phase == CallPhase.ACTIVE || c.phase == CallPhase.DIALING
 
@@ -146,7 +149,7 @@ fun CallScreen(c: CallState, actions: CallActions, locked: Boolean = false) {
                 when (phase) {
                     0 -> Ringing(actions, known, secondLine = c.other != null, locked = locked, onBlock = { confirmBlock = true })
                     1 -> Active(c, actions, onRoutes = { routePicker = true })
-                    else -> Spacer(Modifier.fillMaxWidth().height(144.dp))
+                    else -> Ended(c, actions, onBlock = { confirmBlock = true })
                 }
             }
         }
@@ -393,6 +396,33 @@ private fun RoutePicker(c: CallState, onPick: (Int) -> Unit, onCancel: () -> Uni
                     Text(routeLabel(c, r), style = OzType.list, color = if (on) oz.accent else oz.fg, modifier = Modifier.weight(1f))
                     if (on) OzIcon(R.drawable.ic_oz_check, oz.accent, 20.dp)
                 }
+            }
+        }
+    }
+}
+
+/** Конец звонка: с незнакомым — «Добавить в контакты», с ошибкой — «Попробовать снова». */
+@Composable
+private fun Ended(c: CallState, actions: CallActions, onBlock: () -> Unit) {
+    val oz = LocalOz.current
+    val unknown = c.name == null && c.number.isNotEmpty()
+    Column(Modifier.fillMaxWidth().padding(bottom = 32.dp).heightIn(min = 144.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Bottom) {
+        if (c.failed) {
+            Text(stringResource(R.string.call_failed), style = OzType.title, color = oz.fg, modifier = Modifier.padding(bottom = 20.dp))
+            Box(
+                Modifier.fillMaxWidth().height(56.dp).raisedFill(oz.accentFill, OzShape.main)
+                    .press(actions::callAgain, shape = OzShape.main, pressColor = Color.White.copy(alpha = .12f)),
+                contentAlignment = Alignment.Center,
+            ) { Text(stringResource(R.string.try_again), style = OzType.strong, color = Color.White) }
+            TextAction(stringResource(R.string.cancel), oz.fg2, actions::dismiss, modifier = Modifier.padding(top = 8.dp))
+        } else if (unknown && c.connectedAt > 0) {
+            Box(
+                Modifier.fillMaxWidth().height(56.dp).well(OzShape.main).press(actions::addContact, shape = OzShape.main),
+                contentAlignment = Alignment.Center,
+            ) { Text(stringResource(R.string.add_to_contacts), style = OzType.strong, color = oz.accent) }
+            Row(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.SpaceAround) {
+                TextAction(stringResource(R.string.call_back), oz.fg2, actions::callAgain, style = OzType.small)
+                TextAction(stringResource(R.string.block), oz.fg2, onBlock, style = OzType.small)
             }
         }
     }
