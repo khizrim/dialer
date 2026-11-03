@@ -249,4 +249,15 @@
     <string name="ob_restricted_note">No ⋮ menu? Tap “Try again” once more and check again: the option appears only after Android has refused once. On Xiaomi it may be under “Other permissions”.</string>
     <string name="ob_restricted_open">Open App info</string>
     <string name="sim_remember">Remember for this number</string>
+    <string name="save">Save</string>
+    <string name="edit_title">Edit contact</string>
+    <string name="edit_new_title">New contact</string>
+    <string name="edit_name">Name</string>
+    <string name="edit_number">Number</string>
+    <string name="edit_type_change">Number type: %1$s. Tap to change</string>
+    <string name="edit_remove_number">Remove number</string>
+    <string name="edit_add_number">Add number</string>
+    <string name="edit_more">Photo, email and the rest in Contacts</string>
+    <string name="edit_saved">Contact saved</string>
+    <string name="edit_failed">Couldn’t save the contact</string>
 </resources>

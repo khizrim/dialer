@@ -254,4 +254,15 @@
     <string name="ob_restricted_note">Нет меню ⋮? Нажмите «Попробовать снова» ещё раз и загляните снова: пункт появляется только после первого отказа. На Xiaomi он может быть в «Других разрешениях».</string>
     <string name="ob_restricted_open">Открыть «О приложении»</string>
     <string name="sim_remember">Запомнить для этого номера</string>
+    <string name="save">Сохранить</string>
+    <string name="edit_title">Изменить контакт</string>
+    <string name="edit_new_title">Новый контакт</string>
+    <string name="edit_name">Имя</string>
+    <string name="edit_number">Номер</string>
+    <string name="edit_type_change">Тип номера: %1$s. Нажмите, чтобы сменить</string>
+    <string name="edit_remove_number">Убрать номер</string>
+    <string name="edit_add_number">Добавить номер</string>
+    <string name="edit_more">Фото, почта и остальное в Контактах</string>
+    <string name="edit_saved">Контакт сохранён</string>
+    <string name="edit_failed">Не получилось сохранить контакт</string>
 </resources>

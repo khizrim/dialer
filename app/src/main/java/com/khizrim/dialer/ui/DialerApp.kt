@@ -79,6 +79,7 @@ fun DialerApp(vm: DialerViewModel = viewModel()) {
                         Screen.UNKNOWN -> com.khizrim.dialer.ui.contacts.UnknownScreen(vm)
                         Screen.RECENTS -> com.khizrim.dialer.ui.recents.RecentsScreen(vm)
                         Screen.SETTINGS -> com.khizrim.dialer.ui.settings.SettingsScreen(vm)
+                        Screen.EDIT -> com.khizrim.dialer.ui.person.EditContactScreen(vm)
                     }
                 }
 

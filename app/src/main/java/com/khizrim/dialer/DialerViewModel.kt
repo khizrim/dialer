@@ -35,7 +35,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.Locale
 
-enum class Screen { HOME, CONTACTS, PERSON, BLOCKED, UNKNOWN, RECENTS, SETTINGS }
+enum class Screen { HOME, CONTACTS, PERSON, BLOCKED, UNKNOWN, RECENTS, SETTINGS, EDIT }
 enum class SheetMode { OTHER, DEFAULT }
 enum class MenuContext { HOME, SEARCH }
 
@@ -287,6 +287,7 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
 
     fun back(): Boolean = when {
         confirm != null -> { confirm = null; true }
+        screen == Screen.EDIT -> { cancelEdit(); true }
         syncHelp != null -> { syncHelp = null; true }
         sheet != null -> { sheet = null; true }
         menu != null -> { menu = null; true }
@@ -354,7 +355,7 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
         Launcher.call(ctx, number)?.let { say(it) }
     }
 
-    fun addTypedToContacts() { Launcher.addContact(ctx, keypad)?.let { say(it) } }
+    fun addTypedToContacts() { addToContacts(keypad) }
 
     // ---------- действия ----------
     @Suppress("UNUSED_EXPRESSION")
@@ -450,8 +451,48 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
 
     fun smsTo(number: String) { Launcher.sms(ctx, number)?.let { say(it) } }
 
-    fun editContact(p: Person) { Launcher.editContact(ctx, p)?.let { say(it) } }
-    fun addToContacts(number: String) { menu = null; Launcher.addContact(ctx, number)?.let { say(it) } }
+    // ---------- свой редактор контакта: имя и номера ----------
+    var editDraft by mutableStateOf<com.khizrim.dialer.data.EditDraft?>(null); private set
+    private var editBefore: com.khizrim.dialer.data.EditDraft? = null
+    private var editReturn = Screen.HOME
+    private var editPerson: Person? = null
+
+    fun editContact(p: Person) {
+        menu = null; sheet = null
+        editPerson = p
+        viewModelScope.launch {
+            val d = withContext(Dispatchers.IO) { com.khizrim.dialer.data.ContactEditor.load(ctx, p.id, p.name) }
+            editBefore = d; editDraft = d; editReturn = screen; screen = Screen.EDIT
+        }
+    }
+
+    fun addToContacts(number: String) {
+        menu = null; sheet = null; closeKeypad()
+        editPerson = null
+        val d = com.khizrim.dialer.data.ContactEditor.blank(number)
+        editBefore = null; editDraft = d; editReturn = if (screen == Screen.EDIT) Screen.HOME else screen; screen = Screen.EDIT
+    }
+
+    fun updateDraft(d: com.khizrim.dialer.data.EditDraft) { editDraft = d }
+
+    fun cancelEdit() { editDraft = null; screen = editReturn }
+
+    fun saveEdit() {
+        val d = editDraft ?: return
+        if (d.name.isBlank() && d.phones.all { it.number.isBlank() }) { cancelEdit(); return }
+        val before = editBefore
+        viewModelScope.launch {
+            val ok = withContext(Dispatchers.IO) { com.khizrim.dialer.data.ContactEditor.save(ctx, before, d) }
+            if (!ok) { say(str(R.string.edit_failed)); return@launch }
+            editDraft = null
+            screen = editReturn
+            say(str(R.string.edit_saved))
+            reload()
+        }
+    }
+
+    /** Фото, почта и всё остальное — в системных Контактах. */
+    fun editInSystem() { editPerson?.let { Launcher.editContact(ctx, it)?.let { e -> say(e) } } }
 
     // ---------- быстрая уборка ----------
     fun removeFromHome(key: String) {

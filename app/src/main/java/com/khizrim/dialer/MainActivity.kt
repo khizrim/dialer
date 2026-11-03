@@ -39,6 +39,7 @@ class MainActivity : ComponentActivity() {
         val tel = intent?.data?.takeIf { it.scheme == "tel" }?.schemeSpecificPart
         when {
             intent?.getBooleanExtra(CallNotifications.EXTRA_OPEN_UNKNOWN, false) == true -> vm.openUnknown()
+            intent?.action == ACTION_ADD_CONTACT -> vm.addToContacts(intent.getStringExtra(EXTRA_NUMBER).orEmpty())
             intent?.action == CallNotifications.ACTION_OPEN_MISSED -> vm.openMissed(intent.getStringExtra(CallNotifications.EXTRA_MISSED_NUMBER))
             // «Перезвонить» из уведомления о пропущенном
             intent?.action == CallNotifications.ACTION_CALL_BACK && tel != null -> vm.callNumber(tel)
@@ -47,5 +48,10 @@ class MainActivity : ComponentActivity() {
             // «Пропущенные» из системного уведомления: на главную, там они наверху
             intent?.action == Intent.ACTION_VIEW -> vm.goHome()
         }
+    }
+
+    companion object {
+        const val ACTION_ADD_CONTACT = "com.khizrim.dialer.ADD_CONTACT"
+        const val EXTRA_NUMBER = "number"
     }
 }
