@@ -1,0 +1,65 @@
+name: Motion recordings
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [claude/project-thread-ys9w3z]
+
+permissions:
+  contents: write
+
+concurrency: { group: motion, cancel-in-progress: true }
+
+jobs:
+  record:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 17 }
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Free disk
+        run: sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL /usr/local/share/boost; df -h /
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules && sudo udevadm trigger --name-match=kvm
+      - name: Build debug APK
+        run: ./gradlew assembleDebug --no-daemon
+      - name: Record transitions
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disk-size: 3000M
+          cores: 4
+          ram-size: 4096M
+          disable-animations: false
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          script: bash tools/motion/run.sh
+      - name: Frame strips
+        if: always()
+        run: |
+          [ -d motion ] || exit 0
+          sudo apt-get -qq install -y ffmpeg >/dev/null
+          pip install -q pillow numpy
+          python3 tools/motion/sheets.py motion | tee motion/summary.txt
+          rm -rf motion/_f
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: motion, path: motion }
+      - name: Publish to motion-shots branch
+        if: always()
+        run: |
+          [ -d motion ] || exit 0
+          S=${GITHUB_SHA::7}
+          mkdir -p /tmp/pub && mv motion /tmp/pub/$S
+          git config user.name ci; git config user.email ci@users.noreply.github.com
+          if git fetch -q origin motion-shots; then git checkout -q -f -B motion-shots FETCH_HEAD; else git checkout -q --orphan motion-shots; git rm -rq --cached . || true; fi
+          find . -mindepth 1 -maxdepth 1 ! -name .git ! -name '[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]' -exec rm -rf {} +
+          find /tmp/pub/$S -name '*.mp4' -size +8M -delete
+          mv /tmp/pub/$S ./$S
+          git add -A; git commit -qm "motion $S"; git push -q origin motion-shots
