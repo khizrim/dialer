@@ -70,7 +70,8 @@ private val KEYS: List<Pair<Char, String>>
 fun SearchResults(vm: DialerViewModel, modifier: Modifier = Modifier) {
     val oz = LocalOz.current
     val reduced = LocalReducedMotion.current
-    val results = vm.searchResults()
+    // лучшее совпадение ближе к клавиатуре, под большим пальцем
+    val results = vm.hits.asReversed()
     val showAdd = results.isEmpty() && PhoneFormat.digits(vm.keypad).length >= 3
     LazyColumn(modifier.padding(horizontal = 12.dp), verticalArrangement = Arrangement.Bottom) {
         items(results, key = { it.person.id }) { hit ->
@@ -212,6 +213,7 @@ private fun Key(d: Char, letters: String, vm: DialerViewModel, modifier: Modifie
     val alpha by animateFloatAsState(if (pressed) 0.45f else 1f, Motion.enter(Motion.PRESS), label = "key")
     val dialZero = stringResource(R.string.dial_zero)
     val dialDigit = stringResource(R.string.dial_digit, d.toString())
+    val view = androidx.compose.ui.platform.LocalView.current
     Column(
         modifier
             .height(66.dp)
@@ -220,7 +222,10 @@ private fun Key(d: Char, letters: String, vm: DialerViewModel, modifier: Modifie
                 indication = null,
                 role = Role.Button,
                 onLongClick = if (d == '0') ({ vm.type('+') }) else null,
-                onClick = { vm.type(d) },
+                onClick = {
+                    view.performHapticFeedback(android.view.HapticFeedbackConstants.KEYBOARD_TAP)
+                    vm.type(d)
+                },
             )
             .semantics { contentDescription = if (d == '0') dialZero else dialDigit }
             .graphicsLayer { this.alpha = alpha },

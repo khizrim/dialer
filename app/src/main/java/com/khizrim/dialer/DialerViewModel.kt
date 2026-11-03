@@ -18,7 +18,9 @@ import com.khizrim.dialer.data.Declension
 import com.khizrim.dialer.data.Interaction
 import com.khizrim.dialer.data.Numbers
 import com.khizrim.dialer.data.PhoneFormat
+import com.khizrim.dialer.data.PeopleSearch
 import com.khizrim.dialer.data.Prefs
+import com.khizrim.dialer.data.SearchHit
 import com.khizrim.dialer.data.T9
 import com.khizrim.dialer.model.HistoryEntry
 import com.khizrim.dialer.model.HomeEntry
@@ -42,14 +44,13 @@ data class MenuState(val entry: HomeEntry, val context: MenuContext)
 data class ConfirmState(val title: String, val description: String, val verb: String, val run: () -> Unit)
 data class ToastState(val text: String, val undo: Boolean = false, val id: Long = System.nanoTime())
 
-/** Совпадение в поиске: какие символы имени и номера подсветить. */
-data class SearchHit(val person: Person, val phone: String, val nameRange: IntRange?, val phoneRange: IntRange?, val rank: Int)
 
 private class Loaded(
     val people: List<Person>,
     val calls: List<CallRecord>,
     val interactions: List<Interaction>,
     val blocked: List<String>,
+    val search: PeopleSearch = PeopleSearch.EMPTY,
 )
 
 /** Состояние приложения поверх настоящих контактов, журнала звонков и системного чёрного списка. */
@@ -93,6 +94,9 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
 
     var keypadOpen by mutableStateOf(false); private set
     var keypad by mutableStateOf(""); private set
+    private var search: PeopleSearch = PeopleSearch.EMPTY
+    /** Найденные люди над клавиатурой; до набора — те, с кем общаетесь чаще. */
+    var hits by mutableStateOf<List<SearchHit>>(emptyList()); private set
 
     var tidy by mutableStateOf(false); private set
     var leaving by mutableStateOf<String?>(null); private set
@@ -121,7 +125,7 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
                     calls = if (hasCallLog) CallLogSource.load(ctx) else emptyList(),
                     interactions = prefs.interactions(),
                     blocked = if (isDefaultDialer) Blocklist.list(ctx) else emptyList(),
-                )
+                ).let { l -> Loaded(l.people, l.calls, l.interactions, l.blocked, buildSearch(l)) }
             }
             people = loaded.people
             byId = loaded.people.associateBy { it.id }
@@ -130,6 +134,8 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
             interactions = loaded.interactions
             blocked = loaded.blocked
             unknownCalls = loaded.calls.filter { byNumber[Numbers.key(it.number)] == null }.take(100)
+            search = loaded.search
+            refreshHits()
             rebuildHome()
             ready = true
         }
@@ -161,7 +167,11 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
             if (person == null && silenceUnknown) return@mapNotNull null
             val missed = if (a.lastMissed > a.lastOther) Dates.missed(res, a.lastMissed) else null
             HomeEntry(key, person, if (person == null) a.number else null, a.last, missed)
-        }.sortedBy { it.lastAt }.takeLast(HOME_SIZE)
+        }.sortedBy { it.lastAt }.takeLast(HOME_SIZE).ifEmpty {
+            // истории ещё нет: показываем избранных, чтобы главная не была пустой
+            if (acc.isNotEmpty()) emptyList()
+            else people.filter { it.starred && prefs.hiddenAt(it.key) == 0L }.take(HOME_SIZE).map { HomeEntry(it.key, it, null, 0L, null) }
+        }
         // обновляем список на месте, чтобы строки переезжали, а не мигали
         if (entries.map { it.key } != home.map { it.key } || entries != home.toList()) {
             home.clear()
@@ -223,44 +233,31 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     // ---------- клавиатура = поиск ----------
-    fun openKeypad(prefill: String = "") { keypad = prefill.filter { it.isDigit() || it in "+*#" }.take(18); keypadOpen = true }
+    fun openKeypad(prefill: String = "") { keypad = prefill.filter { it.isDigit() || it in "+*#" }.take(18); keypadOpen = true; refreshHits() }
     fun closeKeypad() { keypadOpen = false; keypad = "" }
-    fun type(ch: Char) { if (keypad.length < 18) keypad += ch }
-    fun backspace() { keypad = keypad.dropLast(1) }
-    fun clearKeypad() { keypad = "" }
+    fun type(ch: Char) { if (keypad.length < 18) { keypad += ch; refreshHits() } }
+    fun backspace() { keypad = keypad.dropLast(1); refreshHits() }
+    fun clearKeypad() { keypad = ""; refreshHits() }
 
-    fun searchResults(): List<SearchHit> {
-        val kpd = PhoneFormat.digits(keypad)
-        if (kpd.isEmpty()) return emptyList()
-        val alt = if (kpd.startsWith("8")) "7" + kpd.drop(1) else null
-        return people.mapNotNull { p ->
-            var nameRange: IntRange? = null
-            var rank = 5
-            var pos = 0
-            for ((w, word) in p.name.split(" ").withIndex()) {
-                if (kpd.length <= word.length && T9.encode(word.take(kpd.length)) == kpd) {
-                    nameRange = pos until pos + kpd.length
-                    rank = w
-                    break
-                }
-                pos += word.length + 1
-            }
-            var phone = p.phones.firstOrNull()?.number?.let { PhoneFormat.pretty(it) } ?: ""
-            var phoneRange: IntRange? = null
-            for (ph in p.phones) {
-                val shown = PhoneFormat.pretty(ph.number)
-                val pd = PhoneFormat.digits(shown)
-                var pi = pd.indexOf(kpd)
-                var plen = kpd.length
-                if (pi < 0 && alt != null) { pi = pd.indexOf(alt); plen = alt.length }
-                if (pi >= 0) {
-                    phone = shown
-                    phoneRange = PhoneFormat.digitPos(shown, pi)..PhoneFormat.digitPos(shown, pi + plen - 1)
-                    break
-                }
-            }
-            if (nameRange != null || phoneRange != null) SearchHit(p, phone, nameRange, phoneRange, rank) else null
-        }.sortedWith(compareBy<SearchHit> { it.rank }.thenBy { it.person.name }).take(4)
+    private fun refreshHits() {
+        hits = if (PhoneFormat.digits(keypad).isEmpty()) search.suggestions() else search.find(keypad)
+    }
+
+    /** Насколько часто и недавно вы общались: звонки и действия за 90 дней, избранные выше. */
+    private fun buildSearch(l: Loaded): PeopleSearch {
+        val now = System.currentTimeMillis()
+        val window = 90L * 24 * 3600 * 1000
+        val byNum = buildMap { l.people.forEach { p -> p.phones.forEach { put(Numbers.key(it.number), p.key) } } }
+        val score = HashMap<String, Double>()
+        fun add(key: String?, at: Long) {
+            if (key == null) return
+            val age = now - at
+            if (age < 0 || age > window) return
+            score[key] = (score[key] ?: 0.0) + 1.0 - age.toDouble() / window * 0.7
+        }
+        l.calls.forEach { add(byNum[Numbers.key(it.number)], it.date) }
+        l.interactions.forEach { add(it.key, it.at) }
+        return PeopleSearch.build(l.people, { p -> (score[p.key] ?: 0.0) + if (p.starred) 3.0 else 0.0 })
     }
 
     fun callTyped() {
