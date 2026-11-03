@@ -43,6 +43,9 @@ data class Person(
     val channels: List<Channel>,
     val photo: String?,
     val starred: Boolean,
+    val nickname: String? = null,
+    val company: String? = null,
+    val title: String? = null,
 ) {
     val methods: List<Method> get() = channels.map { it.method }
     val mainNumber: String? get() = phones.firstOrNull()?.number

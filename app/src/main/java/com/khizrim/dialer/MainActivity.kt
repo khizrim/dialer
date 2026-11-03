@@ -17,7 +17,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         CallNotifications.createChannels(this)
-        if (savedInstanceState == null) handle(intent)
+        if (savedInstanceState == null) { vm.countLaunch(); handle(intent) }
         setContent {
             DialerTheme { DialerApp(vm) }
         }

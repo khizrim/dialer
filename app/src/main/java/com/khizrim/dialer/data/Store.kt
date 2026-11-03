@@ -105,6 +105,14 @@ class Prefs(context: Context) {
         get() = sp.getBoolean("roleSkipped", false)
         set(v) { sp.edit().putBoolean("roleSkipped", v).apply() }
 
+    var searchHintShows: Int
+        get() = sp.getInt("searchHint", 0)
+        set(v) { sp.edit().putInt("searchHint", v).apply() }
+
+    var searchUsed: Boolean
+        get() = sp.getBoolean("searchUsed", false)
+        set(v) { sp.edit().putBoolean("searchUsed", v).apply() }
+
     var xiaomiHintSeen: Boolean
         get() = sp.getBoolean("xiaomiHint", false)
         set(v) { sp.edit().putBoolean("xiaomiHint", v).apply() }

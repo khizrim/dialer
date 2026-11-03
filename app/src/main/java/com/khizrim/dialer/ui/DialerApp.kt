@@ -80,6 +80,7 @@ fun DialerApp(vm: DialerViewModel = viewModel()) {
                         Screen.RECENTS -> com.khizrim.dialer.ui.recents.RecentsScreen(vm)
                         Screen.SETTINGS -> com.khizrim.dialer.ui.settings.SettingsScreen(vm)
                         Screen.EDIT -> com.khizrim.dialer.ui.person.EditContactScreen(vm)
+                        Screen.SEARCH -> com.khizrim.dialer.ui.home.NameSearchScreen(vm)
                     }
                 }
 

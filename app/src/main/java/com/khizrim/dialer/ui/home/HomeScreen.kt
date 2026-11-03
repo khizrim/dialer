@@ -22,6 +22,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.runtime.remember
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
@@ -53,10 +56,34 @@ import com.khizrim.dialer.model.Method
 fun HomeScreen(vm: DialerViewModel) {
     val oz = LocalOz.current
     val reduced = LocalReducedMotion.current
+    // стопку тянут вверх (снизу) — поиск по имени, вниз от верха — журнал
+    val density = LocalDensity.current
+    val threshold = with(density) { 72.dp.toPx() }
+    val pull = remember { androidx.compose.runtime.mutableFloatStateOf(0f) }
+    val gestures = remember(vm) {
+        object : androidx.compose.ui.input.nestedscroll.NestedScrollConnection {
+            override fun onPostScroll(consumed: androidx.compose.ui.geometry.Offset, available: androidx.compose.ui.geometry.Offset, source: androidx.compose.ui.input.nestedscroll.NestedScrollSource): androidx.compose.ui.geometry.Offset {
+                if (source == androidx.compose.ui.input.nestedscroll.NestedScrollSource.UserInput) {
+                    pull.floatValue += available.y
+                    when {
+                        pull.floatValue < -threshold -> { pull.floatValue = 0f; vm.openTextSearch() }
+                        pull.floatValue > threshold -> { pull.floatValue = 0f; vm.openRecents(fromHome = true) }
+                    }
+                }
+                return available
+            }
+            override suspend fun onPreFling(available: androidx.compose.ui.unit.Velocity): androidx.compose.ui.unit.Velocity { pull.floatValue = 0f; return androidx.compose.ui.unit.Velocity.Zero }
+        }
+    }
+    val searchLabel = stringResource(R.string.search_by_name)
     Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
             LazyColumn(
-                modifier = Modifier.weight(1f).fillMaxWidth().padding(horizontal = 12.dp),
+                modifier = Modifier.weight(1f).fillMaxWidth()
+                    .nestedScroll(gestures)
+                    .graphicsLayer { translationY = (pull.floatValue * .4f).coerceIn(-threshold, threshold) }
+                    .semantics { customActions = listOf(androidx.compose.ui.semantics.CustomAccessibilityAction(searchLabel) { vm.openTextSearch(); true }) }
+                    .padding(horizontal = 12.dp),
                 verticalArrangement = Arrangement.Bottom,
             ) {
                 if (vm.home.isEmpty()) {
@@ -116,6 +143,15 @@ fun HomeScreen(vm: DialerViewModel) {
                 }
             }
             vm.callAlert?.let { CallAlertRow(vm, it) }
+            if (vm.showSearchHint && vm.home.isNotEmpty()) {
+                Row(
+                    Modifier.fillMaxWidth().press(vm::openTextSearch, shape = com.khizrim.dialer.ui.theme.OzShape.text).padding(horizontal = 24.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    OzIcon(R.drawable.ic_oz_search, oz.fg3, 16.dp)
+                    Text(stringResource(R.string.search_hint), style = OzType.small, color = oz.fg3, modifier = Modifier.padding(start = 8.dp))
+                }
+            }
             if (vm.tidy) {
                 TextAction(
                     stringResource(R.string.home_clear), oz.fg3, vm::askClearHome, style = OzType.small,

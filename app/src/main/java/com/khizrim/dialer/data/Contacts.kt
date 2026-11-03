@@ -32,13 +32,16 @@ object ContactsSource {
         val phones = LinkedHashMap<String, Phone>()
         val channels = LinkedHashMap<Method, Channel>()
         var primaryNumber: String? = null
+        var nickname: String? = null
+        var company: String? = null
+        var title: String? = null
     }
 
     fun load(context: Context): List<Person> {
-        val types = listOf(CommonDataKinds.Phone.CONTENT_ITEM_TYPE) + messengerTypes.keys
+        val types = listOf(CommonDataKinds.Phone.CONTENT_ITEM_TYPE, CommonDataKinds.Nickname.CONTENT_ITEM_TYPE, CommonDataKinds.Organization.CONTENT_ITEM_TYPE) + messengerTypes.keys
         val projection = arrayOf(
             Data._ID, Data.CONTACT_ID, Data.LOOKUP_KEY, Data.DISPLAY_NAME_PRIMARY, Data.PHOTO_THUMBNAIL_URI,
-            Data.STARRED, Data.MIMETYPE, Data.DATA1, Data.IS_SUPER_PRIMARY,
+            Data.STARRED, Data.MIMETYPE, Data.DATA1, Data.DATA4, Data.IS_SUPER_PRIMARY,
             CommonDataKinds.Phone.TYPE, CommonDataKinds.Phone.LABEL,
         )
         val selection = Data.MIMETYPE + " IN (" + types.joinToString(",") { "?" } + ")"
@@ -53,6 +56,7 @@ object ContactsSource {
             val iMime = c.getColumnIndexOrThrow(Data.MIMETYPE)
             val iData = c.getColumnIndexOrThrow(Data.DATA1)
             val iPrimary = c.getColumnIndexOrThrow(Data.IS_SUPER_PRIMARY)
+            val iData4 = c.getColumnIndexOrThrow(Data.DATA4)
             val iType = c.getColumnIndexOrThrow(CommonDataKinds.Phone.TYPE)
             val iLabel = c.getColumnIndexOrThrow(CommonDataKinds.Phone.LABEL)
             while (c.moveToNext()) {
@@ -70,6 +74,12 @@ object ContactsSource {
                         b.phones[norm] = Phone(number, label.lowercase())
                     }
                     if (c.getInt(iPrimary) == 1) b.primaryNumber = norm
+                } else if (mime == CommonDataKinds.Nickname.CONTENT_ITEM_TYPE) {
+                    if (b.nickname == null) b.nickname = c.getString(iData)?.takeIf { it.isNotBlank() }
+                } else if (mime == CommonDataKinds.Organization.CONTENT_ITEM_TYPE) {
+                    // DATA1 — компания, DATA4 — должность
+                    if (b.company == null) b.company = c.getString(iData)?.takeIf { it.isNotBlank() }
+                    if (b.title == null) b.title = c.getString(iData4)?.takeIf { it.isNotBlank() }
                 } else {
                     val method = messengerTypes[mime] ?: continue
                     if (method !in b.channels) b.channels[method] = Channel(method, c.getLong(iId), mime)
@@ -83,7 +93,7 @@ object ContactsSource {
                 addAll(b.channels.values.sortedBy { it.method.ordinal })
                 if (phones.isNotEmpty()) { add(Channel(Method.PHONE)); add(Channel(Method.SMS)) }
             }
-            Person(b.id, b.lookup, b.name, phones, channels, b.photo, b.starred)
+            Person(b.id, b.lookup, b.name, phones, channels, b.photo, b.starred, b.nickname, b.company, b.title)
         }
     }
 

@@ -273,4 +273,13 @@
     <string name="edit_discard_title">Выйти без сохранения?</string>
     <string name="edit_discard_text">Изменения в контакте пропадут.</string>
     <string name="edit_discard">Выйти</string>
+    <string name="call_to">Позвонить на %1$s</string>
+    <string name="search_by_name">Искать по имени</string>
+    <string name="search_hint">Потяните стопку вверх, чтобы искать по имени</string>
+    <string name="search_nothing">Никого не нашлось</string>
+    <string name="found_company">совпало в компании: %1$s</string>
+    <string name="found_title">совпало в должности: %1$s</string>
+    <string name="found_nickname">прозвище: %1$s</string>
+    <string name="found_layout">набрано в английской раскладке</string>
+    <string name="found_translit">транслит</string>
 </resources>

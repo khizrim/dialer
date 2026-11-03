@@ -35,7 +35,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.Locale
 
-enum class Screen { HOME, CONTACTS, PERSON, BLOCKED, UNKNOWN, RECENTS, SETTINGS, EDIT }
+enum class Screen { HOME, CONTACTS, PERSON, BLOCKED, UNKNOWN, RECENTS, SETTINGS, EDIT, SEARCH }
 enum class SheetMode { OTHER, DEFAULT }
 enum class MenuContext { HOME, SEARCH }
 
@@ -288,6 +288,7 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     fun back(): Boolean = when {
         confirm != null -> { confirm = null; true }
         screen == Screen.EDIT -> { leaveEdit(); true }
+        screen == Screen.SEARCH -> { closeTextSearch(); true }
         syncHelp != null -> { syncHelp = null; true }
         sheet != null -> { sheet = null; true }
         menu != null -> { menu = null; true }
@@ -341,8 +342,31 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
         }
         l.calls.forEach { add(byNum[Numbers.key(it.number)], it.date) }
         l.interactions.forEach { add(it.key, it.at) }
-        return PeopleSearch.build(l.people, { p -> (score[p.key] ?: 0.0) + if (p.starred) 3.0 else 0.0 })
+        scores = l.people.associate { p -> p.key to (score[p.key] ?: 0.0) + if (p.starred) 3.0 else 0.0 }
+        return PeopleSearch.build(l.people, { p -> scores[p.key] ?: 0.0 })
     }
+
+    // ---------- поиск по имени (стопку потянули вверх) ----------
+    @Volatile private var scores: Map<String, Double> = emptyMap()
+    var textQuery by mutableStateOf(""); private set
+    var textHits by mutableStateOf<List<com.khizrim.dialer.data.TextHit>>(emptyList()); private set
+    private var searchFrom = Screen.HOME
+    /** Подсказка «Потяните стопку вверх» — первые 5 запусков, пока поиском не воспользовались. */
+    val showSearchHint: Boolean get() = prefs.searchHintShows <= 5 && !prefs.searchUsed
+    fun countLaunch() { prefs.searchHintShows = prefs.searchHintShows + 1 }
+
+    fun openTextSearch() {
+        closeKeypad(); menu = null
+        if (!prefs.searchUsed) prefs.searchUsed = true
+        searchFrom = if (screen == Screen.SEARCH) Screen.HOME else screen
+        textQuery = ""; textHits = emptyList(); screen = Screen.SEARCH
+    }
+    fun closeTextSearch() { textQuery = ""; screen = searchFrom }
+    fun typeText(q: String) {
+        textQuery = q
+        textHits = if (q.isBlank()) emptyList() else com.khizrim.dialer.data.TextSearch.find(people, q, { scores[it.key] ?: 0.0 })
+    }
+    fun tapHit(p: Person) { closeTextSearch(); perform(p, defaultOf(p)) }
 
     fun callTyped() {
         if (PhoneFormat.digits(keypad).isEmpty()) {

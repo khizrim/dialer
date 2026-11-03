@@ -268,4 +268,13 @@
     <string name="edit_discard_title">Leave without saving?</string>
     <string name="edit_discard_text">Your changes to this contact will be lost.</string>
     <string name="edit_discard">Leave</string>
+    <string name="call_to">Call %1$s</string>
+    <string name="search_by_name">Search by name</string>
+    <string name="search_hint">Pull the list up to search by name</string>
+    <string name="search_nothing">No one found</string>
+    <string name="found_company">company: %1$s</string>
+    <string name="found_title">job title: %1$s</string>
+    <string name="found_nickname">nickname: %1$s</string>
+    <string name="found_layout">typed in the other keyboard layout</string>
+    <string name="found_translit">transliteration</string>
 </resources>
