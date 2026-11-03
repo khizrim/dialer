@@ -24,4 +24,6 @@
     <string name="paste_number">Вставить %1$s</string>
     <string name="create_named">Создать контакт «%1$s»</string>
     <string name="create_with_number">Создать контакт с этим номером</string>
+    <string name="sim_ask">SIM: спросить</string>
+    <string name="sim_switch">Сменить SIM</string>
 </resources>

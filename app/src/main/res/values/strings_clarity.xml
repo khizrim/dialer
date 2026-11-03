@@ -20,4 +20,6 @@
     <string name="paste_number">Paste %1$s</string>
     <string name="create_named">Create contact “%1$s”</string>
     <string name="create_with_number">Create contact with this number</string>
+    <string name="sim_ask">SIM: ask</string>
+    <string name="sim_switch">Switch SIM</string>
 </resources>

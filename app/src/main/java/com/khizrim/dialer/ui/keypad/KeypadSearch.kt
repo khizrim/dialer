@@ -227,8 +227,9 @@ fun KeypadPanel(vm: DialerViewModel, drag: PanelDrag? = null) {
                 }
             }
         }
+        val twoSims = vm.sims.size > 1
         Row(
-            Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, top = 12.dp, bottom = 16.dp),
+            Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, top = 12.dp, bottom = if (twoSims) 0.dp else 16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
@@ -245,6 +246,18 @@ fun KeypadPanel(vm: DialerViewModel, drag: PanelDrag? = null) {
                         tint = oz.fg2, size = 56.dp, onLongClick = vm::clearKeypad,
                     )
                 }
+            }
+        }
+        // две SIM: под кнопкой вызова тихо названа та, с которой уйдёт звонок; нажатие переключает
+        if (twoSims) {
+            val sim = vm.simLabel(vm.keypadSimId) ?: stringResource(R.string.sim_ask)
+            Box(Modifier.fillMaxWidth().padding(bottom = 8.dp), contentAlignment = Alignment.Center) {
+                Text(
+                    sim, style = OzType.small, color = oz.fg3, maxLines = 1,
+                    modifier = Modifier
+                        .press({ vm.cycleKeypadSim() }, shape = com.khizrim.dialer.ui.theme.OzShape.text, label = stringResource(R.string.sim_switch))
+                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                )
             }
         }
     }

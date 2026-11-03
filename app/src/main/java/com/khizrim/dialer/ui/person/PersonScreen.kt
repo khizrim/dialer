@@ -140,6 +140,16 @@ fun PersonScreen(vm: DialerViewModel, id: Long) {
                     contentAlignment = Alignment.Center,
                 ) { OzIcon(R.drawable.ic_oz_chevron_down, Color.White, 20.dp) }
             }
+            // две SIM и для человека запомнена не основная: тихая подпись под кнопкой, нажатие переключает или забывает
+            val simNumber = vm.numberFor(p)
+            vm.personSim(simNumber)?.let { id ->
+                Text(
+                    vm.simLabel(id).orEmpty(), style = OzType.small, color = oz.fg3, maxLines = 1,
+                    modifier = Modifier.padding(top = 4.dp).offset(x = (-12).dp)
+                        .press({ simNumber?.let(vm::cyclePersonSim) }, shape = OzShape.text, label = stringResource(R.string.sim_switch))
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                )
+            }
             // остальные способы — строкой: значок и подпись, нажатие связывает сразу
             val others = p.methods.filter { it != method }
             if (others.isNotEmpty()) {

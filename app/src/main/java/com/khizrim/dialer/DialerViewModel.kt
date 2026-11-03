@@ -316,6 +316,44 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     fun chooseSimForCalls(id: String?) { prefs.simForCalls = id; simForCalls = id }
     /** Номер основной SIM в списке: выбранная для звонков, иначе первая. Подписываем только звонки не с неё. */
     val mainSimIndex: Int get() = sims.indexOfFirst { it.first == simForCalls }.coerceAtLeast(0)
+
+    // ---------- SIM у кнопки вызова и в карточке ----------
+    /** Подпись SIM по id: «SIM 2 · Билайн». null — такой SIM нет. */
+    fun simLabel(id: String?): String? = sims.firstOrNull { it.first == id }?.second
+    private var simVersion by mutableStateOf(0)
+    /** SIM, выбранная на клавиатуре для этого звонка. null вместе с keypadSimSet — «система спросит». */
+    private var keypadSim by mutableStateOf<String?>(null)
+    private var keypadSimSet by mutableStateOf(false)
+    /** Через какую SIM уйдёт звонок с клавиатуры: выбранная здесь, запомненная для номера, основная. null — спросит система. */
+    val keypadSimId: String? get() {
+        simVersion
+        if (keypadSimSet) return keypadSim
+        val typed = PhoneFormat.digits(keypad)
+        val saved = typed.takeIf { it.length >= 5 }?.let { prefs.simFor(it) }?.takeIf { id -> sims.any { it.first == id } }
+        return saved ?: simForCalls?.takeIf { id -> sims.any { it.first == id } }
+    }
+    /** Нажатие на подпись SIM у кнопки вызова: следующая SIM (и «спросить», если основная не выбрана). */
+    fun cycleKeypadSim() {
+        val options: List<String?> = sims.map { it.first } + (if (simForCalls == null) listOf(null) else emptyList())
+        if (options.size < 2) return
+        val i = options.indexOf(keypadSimId)
+        keypadSim = options[(i + 1).mod(options.size)]; keypadSimSet = true
+    }
+    /** SIM, запомненная для номера, если она не основная. Только её и подписываем в карточке. */
+    fun personSim(number: String?): String? {
+        simVersion
+        if (sims.size < 2 || number == null) return null
+        val id = prefs.simFor(number)?.takeIf { s -> sims.any { it.first == s } } ?: return null
+        return id.takeIf { it != (simForCalls ?: sims.first().first) }
+    }
+    /** Нажатие на подпись SIM в карточке: следующая SIM; дошли до основной — забываем выбор. */
+    fun cyclePersonSim(number: String) {
+        val main = simForCalls ?: sims.firstOrNull()?.first ?: return
+        val cur = prefs.simFor(number) ?: main
+        val next = sims.map { it.first }.let { ids -> ids[(ids.indexOf(cur) + 1).mod(ids.size)] }
+        prefs.setSimFor(number, next.takeIf { it != main })
+        simVersion++
+    }
     val hasMissed: Boolean get() = recentCalls.any { it.first.missed }
 
     /** Полный журнал: каждая строка — звонок, с именем, если номер есть в контактах. */
@@ -461,7 +499,7 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun callVoicemail() { closeKeypad(); Launcher.voicemail(ctx)?.let { say(it) } }
-    fun closeKeypad() { keypadOpen = false; keypad = "" }
+    fun closeKeypad() { keypadOpen = false; keypad = ""; keypadSimSet = false; keypadSim = null }
     fun type(ch: Char) { if (keypad.length < 32) { keypad += ch; refreshHits() } }
     fun backspace() { keypad = keypad.dropLast(1); refreshHits() }
     fun clearKeypad() { keypad = ""; refreshHits() }
@@ -513,8 +551,10 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
         // пустое поле: кнопка ничего не подставляет — последний номер виден в поле, его нажимают
         if (PhoneFormat.digits(keypad).isEmpty()) return
         val number = keypad
+        // SIM выбрали на клавиатуре — звоним с неё, «спросить» — пусть спросит система
+        val chosen = keypadSimSet; val sim = keypadSim
         closeKeypad()
-        Launcher.call(ctx, number)?.let { say(it) }
+        Launcher.call(ctx, number, sim = sim, ask = chosen && sim == null, pinned = chosen)?.let { say(it) }
     }
 
     fun addTypedToContacts() { addToContacts(keypad) }
