@@ -139,4 +139,15 @@
     <string name="ob_perm_button">Разрешить доступ</string>
     <string name="not_now">Не сейчас</string>
     <string name="open_settings">Открыть настройки приложения</string>
+    <string name="choose_sim">С какой SIM позвонить</string>
+    <string name="sim_n">SIM %1$d</string>
+    <string name="end_and_answer">Завершить текущий и ответить</string>
+    <string name="answer_hold">Удержать и ответить</string>
+    <string name="hold">Удержать</string>
+    <string name="resume">Вернуть</string>
+    <string name="swap">Переключить</string>
+    <string name="line_on_hold">%1$s на удержании</string>
+    <string name="route_bluetooth">Bluetooth</string>
+    <string name="route_wired">Наушники</string>
+    <string name="route_earpiece">Телефон</string>
 </resources>

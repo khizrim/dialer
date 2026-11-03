@@ -140,4 +140,15 @@
     <string name="ob_perm_button">Allow access</string>
     <string name="not_now">Not now</string>
     <string name="open_settings">Open app settings</string>
+    <string name="choose_sim">Choose a SIM</string>
+    <string name="sim_n">SIM %1$d</string>
+    <string name="end_and_answer">End current and answer</string>
+    <string name="answer_hold">Hold and answer</string>
+    <string name="hold">Hold</string>
+    <string name="resume">Resume</string>
+    <string name="swap">Swap</string>
+    <string name="line_on_hold">%1$s on hold</string>
+    <string name="route_bluetooth">Bluetooth</string>
+    <string name="route_wired">Headphones</string>
+    <string name="route_earpiece">Phone</string>
 </resources>

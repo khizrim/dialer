@@ -47,6 +47,11 @@ class CallActivity : ComponentActivity() {
             override fun toggleSpeaker() = CallManager.toggleSpeaker()
             override fun toggleDtmf() = CallManager.toggleDtmf()
             override fun tone(d: Char) = CallManager.tone(d)
+            override fun endAndAnswer() = CallManager.endAndAnswer()
+            override fun toggleHold() = CallManager.toggleHold()
+            override fun swap() = CallManager.swap()
+            override fun chooseSim(index: Int) = CallManager.chooseSim(index)
+            override fun setRoute(route: Int) = CallManager.setRoute(route)
         }
 
         setContent {

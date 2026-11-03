@@ -7,6 +7,10 @@ import android.telecom.Call
 import android.telecom.CallAudioState
 import android.telecom.DisconnectCause
 import android.telecom.VideoProfile
+import android.telecom.PhoneAccountHandle
+import android.telecom.TelecomManager
+import android.os.Build
+import com.khizrim.dialer.model.OtherLine
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -39,14 +43,25 @@ object CallManager {
         override fun onDetailsChanged(call: Call, details: Call.Details) = refresh()
     }
 
+    private val visible: List<Call> get() = calls.filter { it !in silenced }
+
+    /** Главный звонок на экране: входящий, затем идущий, затем набираемый, затем на удержании. */
     private val primary: Call?
         get() {
-            val visible = calls.filter { it !in silenced }
-            return visible.firstOrNull { it.state == Call.STATE_RINGING }
-                ?: visible.firstOrNull { it.state == Call.STATE_ACTIVE }
-                ?: visible.firstOrNull { it.state != Call.STATE_DISCONNECTED }
-                ?: visible.firstOrNull()
+            val v = visible
+            return v.firstOrNull { it.state == Call.STATE_RINGING }
+                ?: v.firstOrNull { it.state == Call.STATE_ACTIVE }
+                ?: v.firstOrNull { it.state in DIALING_STATES }
+                ?: v.firstOrNull { it.state == Call.STATE_HOLDING }
+                ?: v.firstOrNull { it.state != Call.STATE_DISCONNECTED }
+                ?: v.firstOrNull()
         }
+
+    /** Вторая живая линия, если есть. */
+    private fun secondary(primary: Call): Call? =
+        visible.firstOrNull { it != primary && it.state != Call.STATE_DISCONNECTED && it.state != Call.STATE_DISCONNECTING }
+
+    private val DIALING_STATES = setOf(Call.STATE_DIALING, Call.STATE_CONNECTING, Call.STATE_NEW, Call.STATE_SELECT_PHONE_ACCOUNT, Call.STATE_PULLING_CALL)
 
     internal fun attach(service: OzInCallService) {
         this.service = service
@@ -61,6 +76,11 @@ object CallManager {
         calls += call
         call.registerCallback(callback)
         endText = null
+        lookupName(call)
+        refresh()
+    }
+
+    private fun lookupName(call: Call) {
         val number = number(call)
         if (number.isNotEmpty() && !names.containsKey(number)) {
             names[number] = null
@@ -70,7 +90,6 @@ object CallManager {
                 main.post { names[number] = name; refresh() }
             }
         }
-        refresh()
     }
 
     /** Звонки с незнакомых номеров, которые пользователь попросил не показывать. */
@@ -99,6 +118,28 @@ object CallManager {
     internal fun audioChanged() = refresh()
 
     private fun number(call: Call): String = call.details?.handle?.schemeSpecificPart.orEmpty()
+
+    private fun title(call: Call): String {
+        val n = number(call)
+        return names[n] ?: n.takeIf { it.isNotEmpty() }?.let { com.khizrim.dialer.data.PhoneFormat.pretty(it) }
+            ?: appContext?.getString(R.string.hidden_number).orEmpty()
+    }
+
+    /** SIM-карты, из которых система просит выбрать для исходящего. */
+    private fun simAccounts(call: Call): List<PhoneAccountHandle> {
+        if (call.state != Call.STATE_SELECT_PHONE_ACCOUNT) return emptyList()
+        val extras = call.details?.intentExtras ?: call.details?.extras ?: return emptyList()
+        @Suppress("DEPRECATION")
+        val list = call.details?.extras?.getParcelableArrayList<PhoneAccountHandle>(Call.AVAILABLE_PHONE_ACCOUNTS)
+            ?: extras.getParcelableArrayList<PhoneAccountHandle>(Call.AVAILABLE_PHONE_ACCOUNTS)
+        return list.orEmpty()
+    }
+
+    private fun simLabel(handle: PhoneAccountHandle, index: Int): String {
+        val ctx = appContext ?: return "SIM ${index + 1}"
+        val label = runCatching { ctx.getSystemService(TelecomManager::class.java)?.getPhoneAccount(handle)?.label?.toString() }.getOrNull()
+        return label?.takeIf { it.isNotBlank() } ?: ctx.getString(R.string.sim_n, index + 1)
+    }
 
     private fun refresh() {
         val call = primary ?: return
@@ -133,20 +174,57 @@ object CallManager {
             dtmf = dtmf,
             endText = endText.orEmpty(),
             onHold = call.state == Call.STATE_HOLDING,
+            canHold = call.details?.can(Call.Details.CAPABILITY_HOLD) == true || call.details?.can(Call.Details.CAPABILITY_SUPPORT_HOLD) == true,
+            other = secondary(call)?.let { o ->
+                OtherLine(title(o), ringing = o.state == Call.STATE_RINGING, onHold = o.state == Call.STATE_HOLDING)
+            },
+            route = audio?.route ?: 0,
+            routes = audio?.supportedRouteMask ?: 0,
+            bluetoothName = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) audio?.activeBluetoothDevice?.let { btName(it) } else null,
+            simChoice = simAccounts(call).takeIf { it.size > 1 }?.mapIndexed { i, h -> simLabel(h, i) },
         )
         // тихий незнакомый звонок: без уведомления и без экрана
         if (call !in silenced) service?.let { CallNotifications.update(it, state, call) }
     }
 
     // ---------- действия ----------
-    fun answer() { calls.firstOrNull { it.state == Call.STATE_RINGING }?.answer(VideoProfile.STATE_AUDIO_ONLY) }
+    /** Ответить. Если уже идёт разговор, система сама поставит его на удержание. */
+    fun answer() { visible.firstOrNull { it.state == Call.STATE_RINGING }?.answer(VideoProfile.STATE_AUDIO_ONLY) }
+
+    /** Завершить текущий и ответить на второй. */
+    fun endAndAnswer() {
+        val ringing = visible.firstOrNull { it.state == Call.STATE_RINGING } ?: return
+        visible.filter { it != ringing && it.state != Call.STATE_DISCONNECTED }.forEach { it.disconnect() }
+        main.postDelayed({ ringing.answer(VideoProfile.STATE_AUDIO_ONLY) }, 300)
+    }
 
     fun decline() {
-        val ringing = calls.firstOrNull { it.state == Call.STATE_RINGING }
+        val ringing = visible.firstOrNull { it.state == Call.STATE_RINGING }
         if (ringing != null) ringing.reject(false, null) else primary?.disconnect()
     }
 
     fun hangup() { primary?.disconnect() }
+
+    fun toggleHold() {
+        val call = primary ?: return
+        if (call.state == Call.STATE_HOLDING) call.unhold() else call.hold()
+    }
+
+    /** Поменять линии местами: вернуть удержанный, текущий система удержит сама. */
+    fun swap() {
+        val call = primary ?: return
+        val other = secondary(call) ?: return
+        if (other.state == Call.STATE_HOLDING) other.unhold() else if (call.state == Call.STATE_HOLDING) call.unhold()
+    }
+
+    fun chooseSim(index: Int) {
+        val call = visible.firstOrNull { it.state == Call.STATE_SELECT_PHONE_ACCOUNT } ?: return
+        val handle = simAccounts(call).getOrNull(index) ?: return
+        call.phoneAccountSelected(handle, false)
+    }
+
+    @Suppress("DEPRECATION")
+    fun setRoute(route: Int) { service?.setAudioRoute(route) }
 
     /** Отклонить и отправить SMS. Текст отправляет сама система. */
     fun rejectWithMessage(text: String) {
@@ -166,8 +244,12 @@ object CallManager {
     @Suppress("DEPRECATION")
     fun toggleSpeaker() {
         val s = state ?: return
-        service?.setAudioRoute(if (s.speaker) CallAudioState.ROUTE_WIRED_OR_EARPIECE else CallAudioState.ROUTE_SPEAKER)
+        val back = if (s.routes and CallAudioState.ROUTE_BLUETOOTH != 0) CallAudioState.ROUTE_BLUETOOTH else CallAudioState.ROUTE_WIRED_OR_EARPIECE
+        service?.setAudioRoute(if (s.speaker) back else CallAudioState.ROUTE_SPEAKER)
     }
+
+    @android.annotation.SuppressLint("MissingPermission")
+    private fun btName(device: android.bluetooth.BluetoothDevice): String? = runCatching { device.name }.getOrNull()
 
     fun toggleDtmf() { dtmf = if (dtmf == null) "" else null; refresh() }
 
