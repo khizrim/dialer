@@ -1,18 +1,43 @@
 package com.khizrim.dialer
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
+import com.khizrim.dialer.telecom.CallNotifications
 import com.khizrim.dialer.ui.DialerApp
 import com.khizrim.dialer.ui.theme.DialerTheme
 
 class MainActivity : ComponentActivity() {
+    private val vm: DialerViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+        CallNotifications.createChannels(this)
+        if (savedInstanceState == null) handle(intent)
         setContent {
-            DialerTheme { DialerApp() }
+            DialerTheme { DialerApp(vm) }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        vm.reload()
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handle(intent)
+    }
+
+    /** tel:-ссылки и «Набрать номер» из других приложений открывают клавиатуру с номером. */
+    private fun handle(intent: Intent?) {
+        if (intent?.action == Intent.ACTION_DIAL || intent?.action == Intent.ACTION_VIEW) {
+            val number = intent.data?.takeIf { it.scheme == "tel" }?.schemeSpecificPart
+            vm.openKeypad(number.orEmpty())
         }
     }
 }

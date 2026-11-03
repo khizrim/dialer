@@ -47,7 +47,6 @@ import com.khizrim.dialer.MenuContext
 import com.khizrim.dialer.R
 import com.khizrim.dialer.SheetMode
 import com.khizrim.dialer.ToastState
-import com.khizrim.dialer.model.CallKind
 import com.khizrim.dialer.model.Method
 import com.khizrim.dialer.ui.theme.LocalOz
 import com.khizrim.dialer.ui.theme.LocalReducedMotion
@@ -102,14 +101,15 @@ fun BoxScope.MethodSheet(vm: DialerViewModel) {
     val s = rememberLast(vm.sheet)
     val p = s?.let { vm.person(it.personId) }
     val setMode = s?.mode == SheetMode.DEFAULT
-    val title = if (setMode) "Что делать по нажатию на имя" else "Как связаться с ${p?.instrumental ?: ""}"
+    val title = if (setMode) "Что делать по нажатию на имя" else "Как связаться"
     SheetLayer(vm.sheet != null, title, vm::closeSheet) {
         if (p == null) return@SheetLayer
         val current = vm.defaultOf(p)
-        Text(title, style = OzType.strong, color = oz.fg, modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 4.dp, bottom = 8.dp))
+        Text(p.name, style = OzType.nameSearch, color = oz.fg, modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 4.dp))
+        Text(title, style = OzType.small, color = oz.fg3, modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 2.dp, bottom = 8.dp))
         p.methods.forEachIndexed { i, m ->
             if (i > 0) HorizontalDivider(thickness = 1.dp, color = oz.line)
-            MethodRow(m, if (m == Method.PHONE) "${m.title} ${p.phone}" else m.title, m == current) { vm.pickInSheet(m) }
+            MethodRow(m, if (m == Method.PHONE) "${m.title} ${com.khizrim.dialer.data.PhoneFormat.pretty(p.mainNumber.orEmpty())}" else m.title, m == current) { vm.pickInSheet(m) }
         }
         HorizontalDivider(Modifier.padding(top = 4.dp), thickness = 1.dp, color = oz.line)
         SheetRow(if (setMode) "Спрашивать каждый раз" else "Сделать способом по умолчанию", oz.fg3, vm::sheetFooter)
@@ -156,14 +156,27 @@ private fun SheetRow(text: String, color: Color, onClick: () -> Unit, icon: Int?
 fun BoxScope.PersonMenu(vm: DialerViewModel) {
     val oz = LocalOz.current
     val m = rememberLast(vm.menu)
-    val p = m?.let { vm.person(it.personId) }
-    SheetLayer(vm.menu != null, p?.name ?: "", vm::closeMenu) {
-        if (p == null) return@SheetLayer
-        Text(p.name, style = OzType.nameSearch, color = oz.fg, modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 4.dp, bottom = 8.dp))
-        SheetRow("Открыть карточку", oz.fg, { vm.openPerson(p.id) }, R.drawable.ic_oz_user)
-        SheetRow("Другой способ", oz.fg, { vm.openSheet(p, SheetMode.OTHER) }, R.drawable.ic_oz_swap)
+    val e = m?.entry
+    val p = e?.person
+    SheetLayer(vm.menu != null, e?.title ?: "", vm::closeMenu) {
+        if (e == null) return@SheetLayer
+        Text(
+            e.title,
+            style = if (p != null) OzType.nameSearch else OzType.nameSearch.copy(fontFamily = com.khizrim.dialer.ui.theme.Inter, fontWeight = FontWeight.Normal),
+            color = oz.fg,
+            modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 4.dp, bottom = 8.dp),
+        )
+        if (p != null) {
+            SheetRow("Открыть карточку", oz.fg, { vm.openPerson(p.id) }, R.drawable.ic_oz_user)
+            SheetRow("Другой способ", oz.fg, { vm.openSheet(p, SheetMode.OTHER) }, R.drawable.ic_oz_swap)
+        } else {
+            val number = e.number.orEmpty()
+            SheetRow("Добавить в контакты", oz.fg, { vm.addToContacts(number) }, R.drawable.ic_oz_user_plus)
+            SheetRow("Написать SMS", oz.fg, { vm.closeMenu(); vm.smsTo(number) }, R.drawable.ic_oz_sms)
+            SheetRow("Заблокировать", oz.fg, { vm.askBlock(number) }, R.drawable.ic_oz_ban)
+        }
         if (m?.context == MenuContext.HOME) {
-            SheetRow("Убрать с главной", oz.fg, { vm.removeFromHome(p.id) }, R.drawable.ic_oz_hide)
+            SheetRow("Убрать с главной", oz.fg, { vm.removeFromHome(e.key) }, R.drawable.ic_oz_hide)
         }
     }
 }
@@ -234,34 +247,3 @@ fun BoxScope.FloatToast(toast: ToastState?, bottom: androidx.compose.ui.unit.Dp)
     }
 }
 
-@Composable
-fun BoxScope.DemoMenu(vm: DialerViewModel) {
-    val oz = LocalOz.current
-    if (vm.demoOpen) {
-        Box(Modifier.fillMaxSize().clickable(remember { MutableInteractionSource() }, null, onClick = vm::toggleDemo))
-    }
-    AnimatedVisibility(
-        vm.demoOpen,
-        modifier = Modifier.align(Alignment.TopEnd).statusBarsPadding().padding(top = 56.dp, end = 16.dp),
-        enter = fadeIn(Motion.enter(Motion.MOVE)), exit = fadeOut(Motion.exit(Motion.FADE)),
-    ) {
-        Column(
-            Modifier
-                .width(260.dp)
-                .background(oz.sheet, RoundedCornerShape(16.dp))
-                .border(1.dp, oz.line, RoundedCornerShape(16.dp))
-                .padding(vertical = 8.dp),
-        ) {
-            listOf(
-                CallKind.INCOMING to "Звонок от Мамы",
-                CallKind.UNKNOWN to "Звонок с неизвестного номера",
-                CallKind.SPAM to "Звонок, похожий на спам",
-            ).forEach { (k, t) ->
-                Text(
-                    t, style = OzType.body, color = oz.fg,
-                    modifier = Modifier.fillMaxWidth().press({ vm.demoIncoming(k) }, shape = RoundedCornerShape(0.dp)).padding(16.dp, 12.dp),
-                )
-            }
-        }
-    }
-}

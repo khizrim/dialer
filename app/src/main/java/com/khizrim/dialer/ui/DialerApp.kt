@@ -25,14 +25,13 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.khizrim.dialer.DialerViewModel
 import com.khizrim.dialer.Screen
-import com.khizrim.dialer.ui.call.CallScreen
 import com.khizrim.dialer.ui.components.ConfirmLayer
-import com.khizrim.dialer.ui.components.DemoMenu
 import com.khizrim.dialer.ui.components.FloatToast
 import com.khizrim.dialer.ui.components.MethodSheet
 import com.khizrim.dialer.ui.components.PersonMenu
-import com.khizrim.dialer.ui.components.rememberLast
+import com.khizrim.dialer.ui.contacts.BlockedScreen
 import com.khizrim.dialer.ui.contacts.ContactsScreen
+import com.khizrim.dialer.ui.onboarding.Onboarding
 import com.khizrim.dialer.ui.home.HomeScreen
 import com.khizrim.dialer.ui.keypad.KeypadPanel
 import com.khizrim.dialer.ui.keypad.SearchResults
@@ -42,7 +41,7 @@ import com.khizrim.dialer.ui.theme.LocalReducedMotion
 import com.khizrim.dialer.ui.theme.Motion
 import com.khizrim.dialer.ui.theme.rememberReducedMotion
 
-private data class Route(val screen: Screen, val personId: Int?)
+private data class Route(val screen: Screen, val personId: Long?)
 
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
@@ -53,6 +52,8 @@ fun DialerApp(vm: DialerViewModel = viewModel()) {
     BackHandler(enabled = vm.canGoBack) { vm.back() }
 
     CompositionLocalProvider(LocalReducedMotion provides reduced) {
+        if (!vm.ready) { Box(Modifier.fillMaxSize().background(oz.bg)); return@CompositionLocalProvider }
+        if (vm.needsOnboarding) { Onboarding(vm); return@CompositionLocalProvider }
         Box(Modifier.fillMaxSize().background(oz.bg)) {
             Box(Modifier.fillMaxSize().safeDrawingPadding()) {
                 // экраны: старый гаснет за 150 мс, новый проявляется с подъёмом 8 px за 200 мс
@@ -70,6 +71,7 @@ fun DialerApp(vm: DialerViewModel = viewModel()) {
                         Screen.HOME -> HomeScreen(vm)
                         Screen.CONTACTS -> ContactsScreen(vm)
                         Screen.PERSON -> r.personId?.let { PersonScreen(vm, it) }
+                        Screen.BLOCKED -> BlockedScreen(vm)
                     }
                 }
 
@@ -94,19 +96,6 @@ fun DialerApp(vm: DialerViewModel = viewModel()) {
                 }
             }
 
-            // звонок поверх всего: проявляется за 200 мс, гаснет за 150 мс
-            val call = rememberLast(vm.call)
-            AnimatedVisibility(
-                vm.call != null,
-                enter = fadeIn(Motion.enter(Motion.MOVE)),
-                exit = fadeOut(Motion.exit(Motion.FADE)),
-            ) {
-                call?.let {
-                    Box(Modifier.fillMaxSize().background(oz.bg).safeDrawingPadding()) { CallScreen(vm, it) }
-                }
-            }
-
-            DemoMenu(vm)
             PersonMenu(vm)
             MethodSheet(vm)
             ConfirmLayer(vm)

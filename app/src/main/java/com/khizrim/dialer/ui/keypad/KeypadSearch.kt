@@ -40,7 +40,6 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.khizrim.dialer.DialerViewModel
-import com.khizrim.dialer.MenuContext
 import com.khizrim.dialer.R
 import com.khizrim.dialer.data.PhoneFormat
 import com.khizrim.dialer.ui.components.GhostIconButton
@@ -78,15 +77,15 @@ fun SearchResults(vm: DialerViewModel, modifier: Modifier = Modifier) {
                     .fillMaxWidth()
                     .press(
                         onClick = { vm.perform(p, method) },
-                        onLongClick = { vm.openMenu(p, MenuContext.SEARCH) },
-                        label = "${p.name}, ${p.phone}: ${method?.title ?: "Выбрать способ"}",
+                        onLongClick = { vm.openMenu(p) },
+                        label = "${p.name}, ${hit.phone}: ${method?.title ?: "Выбрать способ"}",
                     )
                     .padding(horizontal = 12.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(Modifier.weight(1f)) {
                     Text(highlight(p.name, hit.nameRange, oz.accent), style = OzType.nameSearch, color = oz.fg, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text(highlight(p.phone, hit.phoneRange, oz.accent), style = OzType.small, color = oz.fg3)
+                    Text(highlight(hit.phone, hit.phoneRange, oz.accent), style = OzType.small, color = oz.fg3)
                 }
                 OzIcon(method?.icon ?: R.drawable.ic_oz_help, oz.fg3, modifier = Modifier.padding(start = 16.dp))
             }
@@ -97,7 +96,7 @@ fun SearchResults(vm: DialerViewModel, modifier: Modifier = Modifier) {
                     Modifier
                         .animateItem()
                         .fillMaxWidth()
-                        .press(onClick = { vm.say("Добавление контакта появится в MVP") })
+                        .press(onClick = { vm.addTypedToContacts() })
                         .padding(horizontal = 12.dp, vertical = 14.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp),

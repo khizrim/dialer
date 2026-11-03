@@ -43,6 +43,8 @@ import com.khizrim.dialer.ui.theme.LocalOz
 import com.khizrim.dialer.ui.theme.LocalReducedMotion
 import com.khizrim.dialer.ui.theme.Motion
 import com.khizrim.dialer.ui.theme.OzType
+import com.khizrim.dialer.ui.theme.Inter
+import com.khizrim.dialer.model.Method
 
 /** Главная: стопка имён, ближайший человек внизу. Тап связывает, долгое нажатие открывает меню. */
 @Composable
@@ -66,11 +68,11 @@ fun HomeScreen(vm: DialerViewModel) {
                         }
                     }
                 }
-                items(vm.home, key = { it }) { id ->
-                    val p = vm.person(id)
-                    val method = vm.defaultOf(p)
-                    val note = vm.missedNote(p)
-                    val isLeaving = vm.leaving == id
+                items(vm.home, key = { it.key }) { e ->
+                    val p = e.person
+                    val method = p?.let { vm.defaultOf(it) } ?: if (p == null) Method.PHONE else null
+                    val note = e.missedNote
+                    val isLeaving = vm.leaving == e.key
                     val shift = with(LocalDensity.current) { (-24).dp.toPx() }
                     val progress by animateFloatAsState(
                         targetValue = if (isLeaving) 1f else 0f,
@@ -90,15 +92,19 @@ fun HomeScreen(vm: DialerViewModel) {
                             .fillMaxWidth()
                             .heightIn(min = 64.dp)
                             .press(
-                                onClick = { vm.perform(p, method) },
-                                onLongClick = { vm.openMenu(p, MenuContext.HOME) },
-                                label = p.name + ": " + (method?.title ?: "Выбрать способ") + (note?.let { ", $it" } ?: ""),
+                                onClick = { vm.tap(e) },
+                                onLongClick = { vm.openMenu(e, MenuContext.HOME) },
+                                label = e.title + ": " + (method?.title ?: "Выбрать способ") + (note?.let { ", $it" } ?: ""),
                             )
                             .padding(horizontal = 12.dp, vertical = 10.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Column(Modifier.weight(1f)) {
-                            Text(p.name, style = OzType.nameHome, color = oz.fg, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text(
+                                e.title,
+                                style = if (p != null) OzType.nameHome else OzType.nameHome.copy(fontFamily = Inter, fontWeight = FontWeight.Normal),
+                                color = oz.fg, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                            )
                             if (note != null) {
                                 Text(note, style = OzType.small, color = oz.danger, modifier = Modifier.padding(top = 2.dp))
                             }
@@ -138,12 +144,8 @@ fun HomeScreen(vm: DialerViewModel) {
                         TextAction("Все контакты", oz.fg2, vm::openContacts, modifier = Modifier.heightIn(min = 48.dp))
                     }
                 }
-                KeypadFab(vm::openKeypad)
+                KeypadFab { vm.openKeypad() }
             }
-        }
-        // демо входящих звонков
-        Box(Modifier.align(Alignment.TopEnd).padding(top = 8.dp, end = 16.dp)) {
-            GhostIconButton(R.drawable.ic_oz_incoming, "Показать демо входящего звонка", vm::toggleDemo, tint = oz.fg3, size = 44.dp, iconSize = 22.dp)
         }
     }
 }

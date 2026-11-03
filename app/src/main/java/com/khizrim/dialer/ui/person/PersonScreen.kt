@@ -17,6 +17,20 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import android.graphics.BitmapFactory
+import android.net.Uri
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -37,13 +51,12 @@ import com.khizrim.dialer.ui.theme.OzType
 
 /** Человек: редкая хронология сверху, имя, главная кнопка со способом по умолчанию. */
 @Composable
-fun PersonScreen(vm: DialerViewModel, id: Int) {
+fun PersonScreen(vm: DialerViewModel, id: Long) {
     val oz = LocalOz.current
-    val p = vm.person(id)
+    val p = vm.person(id) ?: return
     val method = vm.defaultOf(p)
-    val fav = vm.isFavorite(p)
-    // свежий пропущенный уже показан, когда человек на главной; после связи он уходит из хронологии
-    val history = if (p.missedNote != null && !vm.hasMissed(p)) p.history.drop(1) else p.history
+    val fav = p.starred
+    val history = remember(p, vm.ready) { vm.history(p) }
 
     Column(Modifier.fillMaxSize()) {
         Column(
@@ -63,6 +76,8 @@ fun PersonScreen(vm: DialerViewModel, id: Int) {
                     }
                 }
             }
+            // фото только если оно есть, без кружков с буквами
+            p.photo?.let { ContactPhoto(it, Modifier.padding(bottom = 16.dp)) }
             Text(p.name, style = OzType.namePerson, color = oz.fg, modifier = Modifier.padding(bottom = 24.dp).semantics { heading() })
             Row(
                 Modifier
@@ -87,12 +102,30 @@ fun PersonScreen(vm: DialerViewModel, id: Int) {
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             GhostIconButton(R.drawable.ic_oz_back, "Назад", vm::leavePerson)
+            Row {
+            GhostIconButton(R.drawable.ic_oz_edit, "Изменить контакт", { vm.editContact(p) })
             GhostIconButton(
                 if (fav) R.drawable.ic_oz_star_on else R.drawable.ic_oz_star,
                 if (fav) "Убрать из избранного" else "Добавить в избранное",
                 { vm.toggleFavorite(p) },
             )
+            }
         }
     }
 }
 
+
+@Composable
+private fun ContactPhoto(uri: String, modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    val bitmap by produceState<ImageBitmap?>(null, uri) {
+        value = withContext(Dispatchers.IO) {
+            runCatching {
+                context.contentResolver.openInputStream(Uri.parse(uri))?.use { BitmapFactory.decodeStream(it)?.asImageBitmap() }
+            }.getOrNull()
+        }
+    }
+    bitmap?.let {
+        Image(it, contentDescription = null, contentScale = ContentScale.Crop, modifier = modifier.size(72.dp).clip(CircleShape))
+    }
+}

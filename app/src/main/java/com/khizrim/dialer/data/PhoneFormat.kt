@@ -55,6 +55,18 @@ object PhoneFormat {
         return raw
     }
 
+    /** Регион для маски: США или Россия (по умолчанию). */
+    val defaultRegion: String
+        get() = if (java.util.Locale.getDefault().country == "US") "US" else "RU"
+
+    /** Сохранённый номер в аккуратном виде: +7 (916) 123-45-67. */
+    fun pretty(number: String, region: String = defaultRegion): String {
+        val raw = number.filter { it.isDigit() || it == '+' }
+        if (raw.isEmpty()) return number
+        val f = formatTyping(raw, region)
+        return if (f == raw && raw.length > 4) number else f
+    }
+
     fun digits(s: String): String = s.filter { it.isDigit() }
 
     /** Позиция n-й цифры внутри отформатированного номера. */
