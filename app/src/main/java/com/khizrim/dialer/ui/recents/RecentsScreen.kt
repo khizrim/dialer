@@ -113,20 +113,18 @@ fun RecentsScreen(vm: DialerViewModel) {
             }
         }
         BottomBar {
-            // назад — системным жестом, своя стрелка его только дублировала
-            Box(Modifier)
             // фильтр двумя словами: активное fg и 500, неактивное fg3, без заливки
             Row(Modifier.weight(1f)) {
                 TextAction(stringResource(R.string.filter_all), if (missedOnly) oz.fg3 else oz.fg, { vm.showMissedOnly(false) },
                     style = OzType.body.copy(fontWeight = if (missedOnly) FontWeight.Normal else FontWeight.Medium))
                 TextAction(stringResource(R.string.filter_missed), if (missedOnly) oz.fg else oz.fg3, { vm.showMissedOnly(true) },
                     style = OzType.body.copy(fontWeight = if (missedOnly) FontWeight.Medium else FontWeight.Normal))
-            }
-            Row(verticalAlignment = Alignment.CenterVertically) {
+                // корзина рядом с фильтром, подальше от кнопки клавиатуры
                 if (lines.isNotEmpty()) GhostIconButton(R.drawable.ic_oz_trash, stringResource(R.string.clear_log), {
                     if (vm.canClearLog) vm.askClearLog() else askWrite.launch(android.Manifest.permission.WRITE_CALL_LOG)
                 }, tint = oz.fg3)
-                androidx.compose.foundation.layout.Spacer(Modifier.padding(start = 12.dp))
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 KeypadFab { vm.openKeypad() }
             }
         }

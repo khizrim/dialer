@@ -58,7 +58,10 @@ fun ContactsScreen(vm: DialerViewModel) {
     val people = vm.people
     val rows = remember(people) {
         val collator = Collator.getInstance(Locale("ru"))
-        val sorted = people.sortedWith { a, b -> collator.compare(a.name, b.name) }
+        // контакты без имени (имя — номер) уходят в конец, а не секцией «#» сверху
+        val sorted = people.sortedWith { a, b ->
+            if (a.nameIsNumber != b.nameIsNumber) (if (a.nameIsNumber) 1 else -1) else collator.compare(a.name, b.name)
+        }
         buildList<ListRow> {
             // избранные сверху отдельной группой
             val favs = sorted.filter { it.starred }
@@ -123,7 +126,7 @@ fun ContactsScreen(vm: DialerViewModel) {
                                         .padding(horizontal = 12.dp),
                                     contentAlignment = Alignment.CenterStart,
                                 ) {
-                                    Text(p.name, style = OzType.list, color = oz.fg, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    Text(p.shownName, style = OzType.list, color = oz.fg, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                 }
                                 GhostIconButton(
                                     method?.icon ?: R.drawable.ic_oz_help,

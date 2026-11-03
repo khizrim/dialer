@@ -83,7 +83,7 @@ fun PersonScreen(vm: DialerViewModel, id: Long) {
             }
             // фото только если оно есть, без кружков с буквами
             p.photo?.let { ContactPhoto(it, Modifier.padding(bottom = 16.dp)) }
-            Text(p.name, style = OzType.namePerson, color = oz.fg, modifier = Modifier.padding(bottom = 24.dp).semantics { heading() })
+            Text(p.shownName, style = if (p.nameIsNumber) OzType.list.copy(fontSize = OzType.nameHome.fontSize) else OzType.namePerson, color = oz.fg, modifier = Modifier.padding(bottom = 24.dp).semantics { heading() })
             Row(
                 Modifier
                     .fillMaxWidth()

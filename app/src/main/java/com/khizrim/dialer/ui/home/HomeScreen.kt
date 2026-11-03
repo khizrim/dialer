@@ -22,10 +22,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.remember
 import androidx.compose.ui.semantics.customActions
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
@@ -57,23 +59,30 @@ import com.khizrim.dialer.model.Method
 fun HomeScreen(vm: DialerViewModel) {
     val oz = LocalOz.current
     val reduced = LocalReducedMotion.current
-    // стопку тянут вверх (снизу) — поиск по имени, вниз от верха — журнал
+    // стопку тянут вверх — контакты с поиском, вниз — журнал. Жест ловим раньше строк (Initial):
+    // после порога сдвига поглощаем касание, и нажатие на строку отменяется — свайп не звонит.
     val density = LocalDensity.current
     val threshold = with(density) { 72.dp.toPx() }
-    val pull = remember { androidx.compose.runtime.mutableFloatStateOf(0f) }
-    val gestures = remember(vm) {
-        object : androidx.compose.ui.input.nestedscroll.NestedScrollConnection {
-            override fun onPostScroll(consumed: androidx.compose.ui.geometry.Offset, available: androidx.compose.ui.geometry.Offset, source: androidx.compose.ui.input.nestedscroll.NestedScrollSource): androidx.compose.ui.geometry.Offset {
-                if (source == androidx.compose.ui.input.nestedscroll.NestedScrollSource.UserInput) {
-                    pull.floatValue += available.y
-                    when {
-                        pull.floatValue < -threshold -> { pull.floatValue = 0f; vm.openTextSearch() }
-                        pull.floatValue > threshold -> { pull.floatValue = 0f; vm.openRecents(fromHome = true) }
+    val gestures = Modifier.pointerInput(vm) {
+        val slop = viewConfiguration.touchSlop
+        awaitEachGesture {
+            val down = awaitFirstDown(requireUnconsumed = false, pass = androidx.compose.ui.input.pointer.PointerEventPass.Initial)
+            var dy = 0f
+            var dragging = false
+            while (true) {
+                val ev = awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Initial)
+                val ch = ev.changes.firstOrNull { it.id == down.id } ?: break
+                if (!ch.pressed) {
+                    if (dragging) {
+                        ch.consume()
+                        if (dy < -threshold) vm.openTextSearch() else if (dy > threshold) vm.openRecents(fromHome = true)
                     }
+                    break
                 }
-                return available
+                dy += ch.position.y - ch.previousPosition.y
+                if (!dragging && kotlin.math.abs(dy) > slop) dragging = true
+                if (dragging) ch.consume()
             }
-            override suspend fun onPreFling(available: androidx.compose.ui.unit.Velocity): androidx.compose.ui.unit.Velocity { pull.floatValue = 0f; return androidx.compose.ui.unit.Velocity.Zero }
         }
     }
     val searchLabel = stringResource(R.string.search_by_name)
@@ -81,7 +90,7 @@ fun HomeScreen(vm: DialerViewModel) {
         Column(Modifier.fillMaxSize()) {
             LazyColumn(
                 modifier = Modifier.weight(1f).fillMaxWidth()
-                    .nestedScroll(gestures)
+                    .then(gestures)
                     .semantics { customActions = listOf(androidx.compose.ui.semantics.CustomAccessibilityAction(searchLabel) { vm.openTextSearch(); true }) }
                     .padding(horizontal = 12.dp),
                 verticalArrangement = Arrangement.Bottom,
@@ -131,7 +140,7 @@ fun HomeScreen(vm: DialerViewModel) {
                         Column(Modifier.weight(1f)) {
                             Text(
                                 e.title,
-                                style = if (p != null) OzType.nameHome else OzType.nameHome.copy(fontFamily = Inter, fontWeight = FontWeight.Normal),
+                                style = if (p != null && !p.nameIsNumber) OzType.nameHome else OzType.nameHome.copy(fontFamily = Inter, fontWeight = FontWeight.Normal),
                                 color = oz.fg, maxLines = 1, overflow = TextOverflow.Ellipsis,
                             )
                             if (note != null) {
@@ -204,7 +213,7 @@ fun HomeScreen(vm: DialerViewModel) {
                     if (t?.undo != true) {
                         Row {
                             TextAction(stringResource(R.string.journal), oz.fg2, { vm.openRecents(fromHome = true) }, modifier = Modifier.heightIn(min = 48.dp))
-                            TextAction(stringResource(R.string.contacts), oz.fg2, vm::openContacts, modifier = Modifier.heightIn(min = 48.dp))
+                            TextAction(stringResource(R.string.contacts), oz.fg2, vm::openTextSearch, modifier = Modifier.heightIn(min = 48.dp))
                         }
                     }
                 }

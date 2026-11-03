@@ -49,6 +49,9 @@ data class Person(
 ) {
     val methods: List<Method> get() = channels.map { it.method }
     val mainNumber: String? get() = phones.firstOrNull()?.number
+    /** Контакт без имени: вместо имени записан номер. Показываем его как номер, шрифтом Inter. */
+    val nameIsNumber: Boolean get() = name.none { it.isLetter() }
+    val shownName: String get() = if (nameIsNumber) com.khizrim.dialer.data.PhoneFormat.pretty(name) else name
     val key: String get() = "c:$lookupKey"
 }
 
@@ -62,7 +65,7 @@ data class HomeEntry(
     val lastAt: Long,
     val missedNote: String?,
 ) {
-    val title: String get() = person?.name ?: com.khizrim.dialer.data.PhoneFormat.pretty(number.orEmpty())
+    val title: String get() = person?.shownName ?: com.khizrim.dialer.data.PhoneFormat.pretty(number.orEmpty())
 }
 
 enum class CallPhase { RINGING, DIALING, ACTIVE, ENDED }

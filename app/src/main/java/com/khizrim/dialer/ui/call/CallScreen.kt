@@ -141,7 +141,7 @@ fun CallScreen(c: CallState, actions: CallActions, locked: Boolean = false) {
             AnimatedContent(
                 targetState = when (c.phase) { CallPhase.RINGING -> 0; CallPhase.ENDED -> 2; else -> 1 },
                 transitionSpec = {
-                    fadeIn(Motion.enter(Motion.FADE)) togetherWith fadeOut(Motion.exit(Motion.PRESS))
+                    fadeIn(androidx.compose.animation.core.tween(210, 90, Motion.EnterEasing)) togetherWith fadeOut(androidx.compose.animation.core.tween(90, 0, Motion.ExitEasing))
                 },
                 label = "call-phase",
             ) { phase ->
