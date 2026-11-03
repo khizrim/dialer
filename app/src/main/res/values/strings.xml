@@ -291,4 +291,5 @@
     <string name="clear_log_text">The calls disappear from the phone’s call log. Contacts stay.</string>
     <string name="log_cleared">Call log cleared</string>
     <string name="log_clear_failed">Couldn’t clear the call log</string>
+    <string name="swipe_hide">Hide</string>
 </resources>

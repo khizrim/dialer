@@ -41,6 +41,8 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.composed
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.text.drawText
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
@@ -251,13 +253,17 @@ fun CallStrip(modifier: Modifier = Modifier) {
  * Строку смахивают влево: она идёт за пальцем и гаснет; дальше 96 dp — уходит совсем и вызывает onSwiped,
  * иначе пружинит обратно. Вправо не двигается: этот жест сознательно пустой.
  */
-fun Modifier.swipeAway(enabled: Boolean = true, onRight: (() -> Unit)? = null, onSwiped: () -> Unit): Modifier = if (!enabled && onRight == null) this else composed {
+fun Modifier.swipeAway(enabled: Boolean = true, hint: String? = null, onRight: (() -> Unit)? = null, onSwiped: () -> Unit): Modifier = if (!enabled && onRight == null) this else composed {
     // порог в пикселях: по умолчанию 0.01 px, и пружина «доезжает» лишние полсекунды
     val offset = remember { androidx.compose.animation.core.Animatable(0f, visibilityThreshold = 0.5f) }
     val scope = androidx.compose.runtime.rememberCoroutineScope()
     val density = androidx.compose.ui.platform.LocalDensity.current
     val threshold = with(density) { 96.dp.toPx() }
     val reduced = com.khizrim.dialer.ui.theme.LocalReducedMotion.current
+    // серое слово из-под строки («Удалить», «Скрыть»): видно только пока её тянут влево, после жеста гаснет
+    val hintAlpha = remember { androidx.compose.animation.core.Animatable(0f) }
+    val measurer = androidx.compose.ui.text.rememberTextMeasurer()
+    val hintStyle = com.khizrim.dialer.ui.theme.OzType.small.copy(color = com.khizrim.dialer.ui.theme.LocalOz.current.fg3)
     val tracker = remember { androidx.compose.ui.input.pointer.util.VelocityTracker() }
     val w = remember { floatArrayOf(1f) }
     this
@@ -267,6 +273,7 @@ fun Modifier.swipeAway(enabled: Boolean = true, onRight: (() -> Unit)? = null, o
                 onDragStart = { tracker.resetTracking() },
                 onDragEnd = {
                     val v = tracker.calculateVelocity().x
+                    scope.launch { hintAlpha.animateTo(0f, com.khizrim.dialer.ui.theme.Motion.exit(com.khizrim.dialer.ui.theme.Motion.FADE)) }
                     android.util.Log.d("OzMotion", "swipeAway end offset=${offset.value} v=$v")
                     scope.launch {
                         val settle = com.khizrim.dialer.ui.theme.Motion.settle<Float>()
@@ -288,13 +295,27 @@ fun Modifier.swipeAway(enabled: Boolean = true, onRight: (() -> Unit)? = null, o
                         } else offset.animateTo(0f, settle, v)
                     }
                 },
-                onDragCancel = { scope.launch { offset.animateTo(0f, com.khizrim.dialer.ui.theme.Motion.settle()) } },
+                onDragCancel = {
+                    scope.launch { hintAlpha.animateTo(0f, com.khizrim.dialer.ui.theme.Motion.exit(com.khizrim.dialer.ui.theme.Motion.FADE)) }
+                    scope.launch { offset.animateTo(0f, com.khizrim.dialer.ui.theme.Motion.settle()) }
+                },
             ) { change, amount ->
                 change.consume()
                 tracker.addPosition(change.uptimeMillis, change.position)
                 val max = if (onRight != null) threshold * 1.4f else 0f
                 val min = if (enabled) Float.NEGATIVE_INFINITY else 0f
-                scope.launch { offset.snapTo((offset.value + amount).coerceIn(min, max)) }
+                val next = (offset.value + amount).coerceIn(min, max)
+                scope.launch { offset.snapTo(next) }
+                if (hint != null) scope.launch { hintAlpha.snapTo(((-next) / threshold).coerceIn(0f, 1f)) }
+            }
+        }
+        .drawBehind {
+            // под строкой, не сдвигается вместе с ней: проявляется справа, пока строка уезжает влево
+            val a = hintAlpha.value
+            if (hint != null && a > 0f) {
+                val layout = measurer.measure(hint, hintStyle)
+                drawText(layout, alpha = a, topLeft = androidx.compose.ui.geometry.Offset(
+                    size.width - layout.size.width - 12.dp.toPx(), (size.height - layout.size.height) / 2f))
             }
         }
         .graphicsLayer {

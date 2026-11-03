@@ -296,4 +296,5 @@
     <string name="clear_log_text">Звонки исчезнут из журнала телефона. Контакты останутся.</string>
     <string name="log_cleared">Журнал очищен</string>
     <string name="log_clear_failed">Не получилось очистить журнал</string>
+    <string name="swipe_hide">Скрыть</string>
 </resources>

@@ -100,9 +100,9 @@ fun RecentsScreen(vm: DialerViewModel) {
                                 .animateItem(fadeInSpec = Motion.enter(Motion.MOVE), placementSpec = Motion.move(Motion.MOVE), fadeOutSpec = Motion.exit(Motion.PRESS))
                                 .fillMaxWidth()
                                 .heightIn(min = 56.dp)
-                                // смахнуть влево — удалить звонок с «Вернуть» (нужно разрешение на запись журнала)
-                                // вправо — перезвонить, влево — удалить с «Вернуть»
-                                .swipeAway(vm.canClearLog, onRight = { vm.callBack(r, l.person) }) { vm.swipeDeleteRecord(r) }
+                                // смахнуть влево — удалить звонок с «Вернуть» (нужно разрешение на запись журнала).
+                                // Вправо — ничего: звонок случайным свайпом опаснее, а перезванивает и так тап по строке
+                                .swipeAway(vm.canClearLog, hint = stringResource(R.string.delete)) { vm.swipeDeleteRecord(r) }
                                 .press({ vm.callBack(r, l.person) }, onLongClick = { vm.openRecentMenu(r, l.person) }, shape = RoundedCornerShape(16.dp), label = label)
                                 .padding(horizontal = 12.dp, vertical = 12.dp),
                             verticalAlignment = Alignment.CenterVertically,

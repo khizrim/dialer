@@ -150,7 +150,7 @@ fun HomeScreen(vm: DialerViewModel) {
                                 fadeOutSpec = Motion.exit(Motion.FADE),
                             )
                             // смахнуть влево — убрать с главной, с «Вернуть»
-                            .then(if (vm.leaving == null) Modifier.swipeAway { vm.removeFromHome(e.key, now = true) } else Modifier)
+                            .then(if (vm.leaving == null) Modifier.swipeAway(hint = stringResource(R.string.swipe_hide)) { vm.removeFromHome(e.key, now = true) } else Modifier)
                             .graphicsLayer {
                                 alpha = 1f - progress
                                 translationX = if (reduced) 0f else shift * progress
