@@ -89,3 +89,34 @@ object SpamPolicy {
         CallerFacts.Suspicion.UNALLOCATED -> explicitChoice && dbAgeDays != null && dbAgeDays in 0..FRESH_DAYS
     }
 }
+
+/**
+ * Номер, который сейчас точно нельзя глушить: человек сам звонил на него недавно
+ * (курьер, врач перезванивает) или с него звонят повторно через пару минут (значит, важно).
+ */
+object RecentContact {
+    const val OUTGOING_DAYS = 7
+    const val REPEAT_MINUTES = 3
+    /** CallLog.Calls.OUTGOING_TYPE. */
+    const val OUTGOING_TYPE = 2
+
+    data class Entry(val number: String, val type: Int, val date: Long)
+
+    fun exempt(number: String?, log: List<Entry>, now: Long = System.currentTimeMillis()): Boolean {
+        val key = key(number) ?: return false
+        val outgoingSince = now - OUTGOING_DAYS * 86_400_000L
+        val repeatSince = now - REPEAT_MINUTES * 60_000L
+        return log.any { e ->
+            key(e.number) == key && (
+                (e.type == OUTGOING_TYPE && e.date >= outgoingSince) ||
+                    (e.type != OUTGOING_TYPE && e.date >= repeatSince)
+                )
+        }
+    }
+
+    /** Последние 10 цифр: «8 916…», «+7 916…» и «916…» — один номер. Короткие не сравниваем. */
+    private fun key(number: String?): String? {
+        val d = number.orEmpty().filter { it.isDigit() }
+        return if (d.length < 7) null else d.takeLast(10)
+    }
+}

@@ -36,6 +36,8 @@ class OzScreeningService : CallScreeningService() {
         val response = CallResponse.Builder()
         val number = details.handle?.schemeSpecificPart.orEmpty()
         if (number.isNotBlank() && ContactsSource.nameFor(this, number) != null) return response.build()
+        // сами звонили недавно или звонят повторно: пусть звонит
+        if (CallerId.isRecentContact(this, number)) return response.build()
 
         val verificationFailed = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R &&
             details.callerNumberVerificationStatus == Connection.VERIFICATION_STATUS_FAILED

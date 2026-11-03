@@ -134,3 +134,25 @@ class SpamPolicyTest {
         assertFalse(SpamPolicy.acts(null, explicitChoice = true, dbAgeDays = 1))
     }
 }
+
+class RecentContactTest {
+    private val now = 1_800_000_000_000L
+    private val min = 60_000L
+    private val day = 86_400_000L
+    private fun e(n: String, type: Int, ago: Long) = RecentContact.Entry(n, type, now - ago)
+
+    @Test fun outgoingWithinWeekIsExempt() {
+        assertTrue(RecentContact.exempt("+7 916 123-45-67", listOf(e("89161234567", 2, 6 * day)), now))
+        assertFalse(RecentContact.exempt("+7 916 123-45-67", listOf(e("89161234567", 2, 8 * day)), now))
+    }
+
+    @Test fun repeatWithinThreeMinutesIsExempt() {
+        assertTrue(RecentContact.exempt("89161234567", listOf(e("+79161234567", 3, 2 * min)), now))
+        assertFalse(RecentContact.exempt("89161234567", listOf(e("+79161234567", 3, 10 * min)), now))
+    }
+
+    @Test fun otherNumbersAndHiddenAreNot() {
+        assertFalse(RecentContact.exempt("89161234567", listOf(e("89031234567", 2, min)), now))
+        assertFalse(RecentContact.exempt("", listOf(e("", 2, min)), now))
+    }
+}

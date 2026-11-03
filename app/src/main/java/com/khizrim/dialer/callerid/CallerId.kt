@@ -83,10 +83,17 @@ object CallerId {
     fun shouldSilence(context: Context, number: String?): Boolean {
         val n = number.orEmpty()
         if (n.isNotBlank() && ContactsSource.nameFor(context, n) != null) return false
+        if (isRecentContact(context, n)) return false
         if (Prefs(context).silenceUnknownActive(context)) return true
         val prefs = CallerIdPrefs(context)
         return prefs.action == SpamAction.SILENCE && actsOn(context, facts(context, n), prefs)
     }
+
+    /** Сами звонили на этот номер за неделю или с него звонят повторно за 3 минуты (см. [RecentContact]). */
+    fun isRecentContact(context: Context, number: String?): Boolean = runCatching {
+        val log = com.khizrim.dialer.data.CallLogSource.load(context, 200).map { RecentContact.Entry(it.number, it.type, it.date) }
+        RecentContact.exempt(number, log)
+    }.getOrDefault(false)
 
     /** Глушить или сбрасывать этот подозрительный звонок, а не только подписать (см. [SpamPolicy]). */
     fun actsOn(context: Context, facts: CallerFacts, prefs: CallerIdPrefs = CallerIdPrefs(context)): Boolean =
