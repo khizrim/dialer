@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="cid_join">%1$s · %2$s</string>
+    <string name="cid_hidden">Hidden number</string>
+    <string name="cid_toll_free">Toll-free line</string>
+    <string name="cid_landline">Landline</string>
+    <string name="cid_virtual">Virtual number</string>
+    <string name="cid_foreign">International number</string>
+    <string name="cid_spam">Likely spam</string>
+    <string name="cid_spoofed">Likely spoofed number</string>
+    <string name="cid_search_web">Search the web</string>
+
+    <string name="spam_action_title">Suspicious calls</string>
+    <string name="spam_action_silence">Silence</string>
+    <string name="spam_action_reject">Decline</string>
+    <string name="spam_action_label">Label only</string>
+    <string name="spam_action_silence_text">They don\'t ring and stay in your log marked «Likely spam».</string>
+    <string name="spam_action_reject_text">They\'re declined right away and stay in your log.</string>
+    <string name="spam_action_label_text">They ring as usual, with a label.</string>
+    <string name="spam_about">Suspicious means a spoofed number or a one-ring call from abroad. Carrier and region are looked up on your phone in the Russian numbering registry from %1$s. Numbers never leave your phone.</string>
+    <string name="spam_about_nodate">Suspicious means a spoofed number or a one-ring call from abroad. Carrier and region are looked up on your phone. Numbers never leave your phone.</string>
+</resources>

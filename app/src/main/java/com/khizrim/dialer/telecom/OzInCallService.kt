@@ -14,7 +14,9 @@ import android.telecom.Call
 import android.telecom.CallAudioState
 import android.telecom.InCallService
 import android.telecom.TelecomManager
-import com.khizrim.dialer.data.ContactsSource
+import com.khizrim.dialer.callerid.CallerId
+import com.khizrim.dialer.callerid.CallerIdPrefs
+import com.khizrim.dialer.callerid.SpamAction
 import com.khizrim.dialer.data.Prefs
 import com.khizrim.dialer.MainActivity
 import com.khizrim.dialer.R
@@ -26,6 +28,7 @@ class OzInCallService : InCallService() {
     override fun onCreate() {
         super.onCreate()
         CallManager.attach(this)
+        CallerId.warmUp(this)
     }
 
     override fun onDestroy() {
@@ -38,14 +41,15 @@ class OzInCallService : InCallService() {
     private val main = android.os.Handler(android.os.Looper.getMainLooper())
 
     override fun onCallAdded(call: Call) {
-        if (call.state == Call.STATE_RINGING && Prefs(this).silenceUnknownActive(this)) {
-            // поиск в контактах не на главном потоке: большая книга не задержит входящий
+        val mayBeSilenced = Prefs(this).silenceUnknownActive(this) || CallerIdPrefs(this).action == SpamAction.SILENCE
+        if (call.state == Call.STATE_RINGING && mayBeSilenced) {
+            // поиск в контактах и в базе номеров не на главном потоке: большая книга не задержит входящий
             val number = call.details?.handle?.schemeSpecificPart.orEmpty()
             io.execute {
-                val unknown = number.isBlank() || ContactsSource.nameFor(this, number) == null
+                val silent = runCatching { CallerId.shouldSilence(this, number) }.getOrDefault(false)
                 main.post {
                     if (call.state == Call.STATE_DISCONNECTED) return@post
-                    if (unknown) addSilenced(call) else addVisible(call)
+                    if (silent) addSilenced(call) else addVisible(call)
                 }
             }
             return
