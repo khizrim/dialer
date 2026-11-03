@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -105,7 +106,7 @@ fun CallScreen(c: CallState, actions: CallActions, locked: Boolean = false) {
     val known = c.name != null
     val title = c.name ?: c.number.takeIf { it.isNotEmpty() }?.let { PhoneFormat.pretty(it) } ?: stringResource(R.string.hidden_number)
     val subBase = when (c.phase) {
-        CallPhase.RINGING -> if (known) (c.label ?: stringResource(R.string.mobile)).replaceFirstChar { it.uppercase() } else c.label ?: stringResource(R.string.not_in_contacts)
+        CallPhase.RINGING -> if (known) (c.label ?: "").replaceFirstChar { it.uppercase() } else c.label ?: stringResource(R.string.not_in_contacts)
         CallPhase.DIALING -> if (c.simChoice != null) stringResource(R.string.choose_sim) else stringResource(R.string.calling)
         CallPhase.ACTIVE -> if (c.onHold) stringResource(R.string.on_hold) else
             stringResource(R.string.net_phone) + "  " + CallManager.timer(((now - c.connectedAt).coerceAtLeast(0)) / 1000)
@@ -198,7 +199,8 @@ private fun Ringing(actions: CallActions, known: Boolean, secondLine: Boolean, l
 private fun LabeledRound(icon: Int, label: String, fill: Color, onClick: () -> Unit, onLongClick: (() -> Unit)? = null) {
     val oz = LocalOz.current
     Column(
-        Modifier.press(onClick, onLongClick, shape = RoundedCornerShape(16.dp), pressColor = Color.Transparent),
+        // поле нажатия шире круга: подпись и тень не обрезаются по его краю
+        Modifier.widthIn(min = 104.dp).press(onClick, onLongClick, shape = RoundedCornerShape(16.dp), pressColor = Color.Transparent).padding(8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {

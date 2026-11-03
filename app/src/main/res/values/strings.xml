@@ -166,6 +166,9 @@
     <string name="add_call">Add</string>
     <string name="write">Message</string>
     <string name="back_to_call">Call with %1$s · Return</string>
+    <string name="incoming_strip">Incoming: %1$s · Answer</string>
+    <string name="delete_from_log">Delete from call log</string>
+    <string name="log_delete_failed">Couldn’t delete the call</string>
     <string name="settings">Settings</string>
     <string name="set_calls">Calls</string>
     <string name="set_sim">SIM for calls</string>

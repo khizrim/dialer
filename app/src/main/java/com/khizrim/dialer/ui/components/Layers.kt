@@ -222,6 +222,10 @@ fun BoxScope.PersonMenu(vm: DialerViewModel) {
             SheetRow(stringResource(R.string.cid_search_web), oz.fg, { vm.searchWeb(number) }, R.drawable.ic_oz_search)
             SheetRow(stringResource(R.string.block), oz.fg, { vm.askBlock(number) }, R.drawable.ic_oz_ban)
         }
+        val rec = m?.record
+        if (rec != null && vm.canClearLog) {
+            SheetRow(stringResource(R.string.delete_from_log), oz.fg, { vm.deleteRecord(rec) }, R.drawable.ic_oz_trash)
+        }
         if (m?.context == MenuContext.HOME) {
             SheetRow(stringResource(R.string.remove_from_home), oz.fg, { vm.removeFromHome(e.key) }, R.drawable.ic_oz_hide)
         }

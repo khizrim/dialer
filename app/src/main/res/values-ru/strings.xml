@@ -165,6 +165,9 @@
     <string name="add_call">Добавить</string>
     <string name="write">Написать</string>
     <string name="back_to_call">Звонок: %1$s · Вернуться</string>
+    <string name="incoming_strip">Входящий: %1$s · Ответить</string>
+    <string name="delete_from_log">Удалить из журнала</string>
+    <string name="log_delete_failed">Не получилось удалить звонок</string>
     <string name="settings">Настройки</string>
     <string name="set_calls">Звонки</string>
     <string name="set_sim">SIM для звонков</string>

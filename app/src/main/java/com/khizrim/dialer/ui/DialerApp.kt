@@ -65,9 +65,12 @@ fun DialerApp(vm: DialerViewModel = viewModel()) {
                     transitionSpec = {
                         // спокойная смена экранов: перекрёстное растворение без паузы и без подпрыгивания
                         // «через фон»: старый уходит за 90 мс, новый проявляется после — без двойной экспозиции
-                        fadeIn(androidx.compose.animation.core.tween(210, 90, Motion.EnterEasing)) togetherWith fadeOut(androidx.compose.animation.core.tween(90, 0, Motion.ExitEasing))
+                        (fadeIn(androidx.compose.animation.core.tween(210, 90, Motion.EnterEasing)) togetherWith fadeOut(androidx.compose.animation.core.tween(90, 0, Motion.ExitEasing)))
+                            .using(androidx.compose.animation.SizeTransform(clip = false) { _, _ -> androidx.compose.animation.core.snap() })
                     },
                     label = "screen",
+                    // якорь у низа: списки прижаты к большому пальцу, при смене экрана ничего не прыгает
+                    contentAlignment = androidx.compose.ui.Alignment.BottomCenter,
                 ) { r ->
                     when (r.screen) {
                         Screen.HOME -> HomeScreen(vm)
@@ -90,7 +93,7 @@ fun DialerApp(vm: DialerViewModel = viewModel()) {
                             Modifier
                                 .weight(1f)
                                 .fillMaxWidth()
-                                .animateEnterExit(enter = fadeIn(Motion.enter(Motion.MOVE)), exit = fadeOut(Motion.exit(Motion.FADE)))
+                                .animateEnterExit(enter = fadeIn(Motion.enter(Motion.MOVE)), exit = fadeOut(Motion.exit(Motion.MOVE)))
                                 .background(oz.bg),
                         )
                         Box(
@@ -114,8 +117,11 @@ fun DialerApp(vm: DialerViewModel = viewModel()) {
                         .safeDrawingPadding()
                         .padding(start = 12.dp, end = 12.dp, bottom = floatBottom(vm)),
                 ) {
+                    val who = live.name ?: com.khizrim.dialer.data.PhoneFormat.pretty(live.number)
                     androidx.compose.material3.Text(
-                        androidx.compose.ui.res.stringResource(com.khizrim.dialer.R.string.back_to_call, live.name ?: com.khizrim.dialer.data.PhoneFormat.pretty(live.number)),
+                        // неотвеченный входящий — не «вернуться», а «входящий»: тап открывает экран ответа
+                        if (live.phase == com.khizrim.dialer.model.CallPhase.RINGING) androidx.compose.ui.res.stringResource(com.khizrim.dialer.R.string.incoming_strip, who)
+                        else androidx.compose.ui.res.stringResource(com.khizrim.dialer.R.string.back_to_call, who),
                         style = com.khizrim.dialer.ui.theme.OzType.small,
                         color = oz.accent,
                         maxLines = 1,
@@ -133,7 +139,8 @@ fun DialerApp(vm: DialerViewModel = viewModel()) {
             MethodSheet(vm)
             SyncHelpSheet(vm)
             ConfirmLayer(vm)
-            FloatToast(vm.toast, bottom = floatBottom(vm))
+            // тост встаёт над плашкой звонка, а не на неё
+            FloatToast(vm.toast, bottom = floatBottom(vm) + if (live != null && live.phase != com.khizrim.dialer.model.CallPhase.ENDED) 60.dp else 0.dp)
         }
     }
 }

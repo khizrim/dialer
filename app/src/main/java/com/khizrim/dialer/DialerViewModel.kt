@@ -40,7 +40,7 @@ enum class SheetMode { OTHER, DEFAULT }
 enum class MenuContext { HOME, SEARCH }
 
 data class SheetState(val mode: SheetMode, val personId: Long)
-data class MenuState(val entry: HomeEntry, val context: MenuContext)
+data class MenuState(val entry: HomeEntry, val context: MenuContext, val record: CallRecord? = null)
 data class ConfirmState(val title: String, val description: String, val verb: String, val run: () -> Unit)
 data class ToastState(val text: String, val undo: Boolean = false, val id: Long = System.nanoTime())
 
@@ -137,7 +137,7 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     /** Перечитываем всё при каждом возвращении в приложение. */
     fun reload() {
         isDefaultDialer = Launcher.isDefaultDialer(ctx)
-        sims = Launcher.sims(ctx)
+        viewModelScope.launch { sims = withContext(Dispatchers.IO) { Launcher.sims(ctx) } }
         hasContacts = granted(Manifest.permission.READ_CONTACTS)
         hasCallLog = granted(Manifest.permission.READ_CALL_LOG)
         callAlert = com.khizrim.dialer.telecom.CallReadiness.check(ctx, isDefaultDialer, prefs.xiaomiHintSeen, prefs.silenceUnknown)
@@ -266,7 +266,8 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     fun callNumber(number: String) { closeKeypad(); Launcher.call(ctx, number)?.let { say(it) } }
     private var settingsFrom = Screen.HOME
     fun openSettings() {
-        closeKeypad(); sims = Launcher.sims(ctx); simForCalls = prefs.simForCalls
+        closeKeypad(); simForCalls = prefs.simForCalls
+        viewModelScope.launch { sims = withContext(Dispatchers.IO) { Launcher.sims(ctx) } }
         if (screen != Screen.SETTINGS) settingsFrom = screen
         screen = Screen.SETTINGS
     }
@@ -287,7 +288,26 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun openRecentMenu(r: CallRecord, p: Person?) {
-        menu = MenuState(if (p != null) HomeEntry(p.key, p, null, r.date, null) else HomeEntry("n:" + Numbers.key(r.number), null, r.number, r.date, null), MenuContext.SEARCH)
+        menu = MenuState(if (p != null) HomeEntry(p.key, p, null, r.date, null) else HomeEntry("n:" + Numbers.key(r.number), null, r.number, r.date, null), MenuContext.SEARCH, r)
+    }
+
+    /** Убрать одну строку журнала — быстрая уборка без «очистить всё». */
+    fun deleteRecord(r: CallRecord) {
+        menu = null
+        val before = recentCalls
+        recentCalls = recentCalls.filterNot { it.first == r }
+        viewModelScope.launch {
+            val ok = withContext(Dispatchers.IO) {
+                runCatching {
+                    ctx.contentResolver.delete(
+                        android.provider.CallLog.Calls.CONTENT_URI,
+                        android.provider.CallLog.Calls.DATE + "=? AND " + android.provider.CallLog.Calls.NUMBER + "=?",
+                        arrayOf(r.date.toString(), r.number),
+                    ) > 0
+                }.getOrDefault(false)
+            }
+            if (!ok) { recentCalls = before; say(str(R.string.log_delete_failed)) }
+        }
     }
 
     fun toggleSilenceUnknown() {
@@ -588,8 +608,10 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
         if (at < 0) return
         val entry = home[at]
         menu = null
-        leaving = key
         viewModelScope.launch {
+            // сначала уходит лист меню, потом гаснет строка, потом соседи съезжают
+            delay(Motion.MOVE.toLong())
+            leaving = key
             delay(Motion.FADE.toLong())
             home.removeAt(at)
             leaving = null
