@@ -1,5 +1,10 @@
 package com.khizrim.dialer.ui.home
 
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.border
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.foundation.layout.height
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.res.pluralStringResource
@@ -231,78 +236,82 @@ fun HomeScreen(vm: DialerViewModel) {
             // идёт звонок: плашка встроена в разметку, стопка поднимается над ней, ничего не перекрыто
             com.khizrim.dialer.ui.components.CallStrip(Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 4.dp))
             // избранные: один тихий ряд имён со значком способа, без заголовка и без заливок
-            val favs = vm.favorites
-            if (favs.isNotEmpty()) {
-                // избранные — ступенью выше подписей: Literata 20, как имена в списках, и отдельной полосой над панелью
-                androidx.compose.foundation.lazy.LazyRow(
-                    Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 4.dp),
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                ) {
-                    items(favs, key = { "f" + it.id }) { p ->
-                        val m = vm.defaultOf(p)
-                        Row(
-                            Modifier.heightIn(min = 56.dp)
-                                .press({ vm.perform(p, m) }, onLongClick = { vm.openPerson(p.id) }, shape = com.khizrim.dialer.ui.theme.OzShape.text,
-                                    label = stringResource(R.string.favorite_label, p.name, stringResource(m?.title ?: R.string.choose_method)))
-                                .padding(horizontal = 12.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            // избранные — кнопки быстрого набора: значок способа у всех, трубка тоже
-                            OzIcon(m?.icon ?: R.drawable.ic_oz_swap, oz.fg3, 18.dp, modifier = Modifier.padding(end = 8.dp))
-                            Text(vm.favLabel(p), style = OzType.nameList, color = oz.fg, maxLines = 1)
+            // «Причал»: избранные лежат на приподнятом крае над панелью — одна нижняя поверхность, лента уходит под неё
+            val docked = vm.favorites.isNotEmpty()
+            Column(if (docked) Modifier.fillMaxWidth().dock() else Modifier.fillMaxWidth()) {
+                val favs = vm.favorites
+                if (favs.isNotEmpty()) {
+                    // избранные — ступенью выше подписей: Literata 20, как имена в списках, и отдельной полосой над панелью
+                    androidx.compose.foundation.lazy.LazyRow(
+                        Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 4.dp),
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        items(favs, key = { "f" + it.id }) { p ->
+                            val m = vm.defaultOf(p)
+                            Row(
+                                Modifier.heightIn(min = 56.dp)
+                                    .press({ vm.perform(p, m) }, onLongClick = { vm.openPerson(p.id) }, shape = com.khizrim.dialer.ui.theme.OzShape.text,
+                                        label = stringResource(R.string.favorite_label, p.name, stringResource(m?.title ?: R.string.choose_method)))
+                                    .padding(horizontal = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                // избранные — кнопки быстрого набора: значок способа у всех, трубка тоже
+                                OzIcon(m?.icon ?: R.drawable.ic_oz_swap, oz.fg3, 18.dp, modifier = Modifier.padding(end = 8.dp))
+                                Text(vm.favLabel(p), style = OzType.nameList.copy(fontSize = 19.sp), color = oz.fg, maxLines = 1)
+                            }
                         }
                     }
                 }
-            }
-            // необязательные строки появляются и уходят, раздвигая место плавно: стопка над ними не прыгает
-            val alert = com.khizrim.dialer.ui.components.rememberLast(vm.callAlert)
-            QuietRow(vm.callAlert != null) { alert?.let { CallAlertRow(vm, it) } }
-            QuietRow(vm.tidy) {
-                TextAction(
-                    stringResource(R.string.home_clear), oz.fg3, vm::askClearHome, style = OzType.small,
-                    modifier = Modifier.padding(start = 12.dp, top = 4.dp),
-                )
-            }
-            BottomBar {
-                val t = vm.toast
-                Box(Modifier.weight(1f).padding(end = 16.dp)) {
-                    androidx.compose.animation.AnimatedVisibility(
-                        visible = t?.undo == true,
-                        enter = fadeIn(Motion.enter(Motion.MOVE)),
-                        exit = fadeOut(Motion.exit(Motion.FADE)),
-                    ) {
-                        Row(
-                            Modifier
-                                .fillMaxWidth()
-                                .heightIn(min = 52.dp)
-                                .lift(com.khizrim.dialer.ui.theme.OzShape.row).background(oz.fg, com.khizrim.dialer.ui.theme.OzShape.row)
-                                .padding(start = 16.dp, end = 6.dp)
-                                .semantics { liveRegion = LiveRegionMode.Polite },
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Text(t?.text ?: "", style = OzType.small, color = oz.bg, modifier = Modifier.weight(1f))
-                            TextAction(stringResource(R.string.undo), oz.toastAct, vm::undo, style = OzType.small.copy(fontWeight = FontWeight.SemiBold))
-                        }
-                    }
-                    // ссылки и тост делят одно место: ссылки гаснут быстрее, чем проявляется тост, — без наложения и без рывка
-                    androidx.compose.animation.AnimatedVisibility(
-                        visible = t?.undo != true,
-                        enter = fadeIn(Motion.enter(Motion.MOVE, delay = Motion.PRESS)),
-                        exit = fadeOut(Motion.exit(Motion.PRESS)),
-                    ) {
-                        Row {
-                            // «Пропущенные» — только когда они есть; во время фильтра на его месте «Все»
-                            if (vm.missedOnly) TextAction(stringResource(R.string.filter_all), oz.fg2, { vm.showMissedOnly(false) }, modifier = Modifier.heightIn(min = 48.dp))
-                            else if (vm.homeHasMissed) TextAction(stringResource(R.string.filter_missed), oz.danger, { vm.showMissedOnly(true) }, modifier = Modifier.heightIn(min = 48.dp))
-                            TextAction(stringResource(R.string.contacts), oz.fg2, vm::openTextSearch, modifier = Modifier.heightIn(min = 48.dp))
-                        }
-                    }
+                // необязательные строки появляются и уходят, раздвигая место плавно: стопка над ними не прыгает
+                val alert = com.khizrim.dialer.ui.components.rememberLast(vm.callAlert)
+                QuietRow(vm.callAlert != null) { alert?.let { CallAlertRow(vm, it) } }
+                QuietRow(vm.tidy) {
+                    TextAction(
+                        stringResource(R.string.home_clear), oz.fg3, vm::askClearHome, style = OzType.small,
+                        modifier = Modifier.padding(start = 12.dp, top = 4.dp),
+                    )
                 }
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    GhostIconButton(R.drawable.ic_oz_settings, stringResource(R.string.settings), vm::openSettings, tint = oz.fg2)
-                    androidx.compose.foundation.layout.Spacer(Modifier.width(12.dp))
-                    KeypadFab { vm.openKeypad() }
+                BottomBar {
+                    val t = vm.toast
+                    Box(Modifier.weight(1f).padding(end = 16.dp)) {
+                        androidx.compose.animation.AnimatedVisibility(
+                            visible = t?.undo == true,
+                            enter = fadeIn(Motion.enter(Motion.MOVE)),
+                            exit = fadeOut(Motion.exit(Motion.FADE)),
+                        ) {
+                            Row(
+                                Modifier
+                                    .fillMaxWidth()
+                                    .heightIn(min = 52.dp)
+                                    .lift(com.khizrim.dialer.ui.theme.OzShape.row).background(oz.fg, com.khizrim.dialer.ui.theme.OzShape.row)
+                                    .padding(start = 16.dp, end = 6.dp)
+                                    .semantics { liveRegion = LiveRegionMode.Polite },
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Text(t?.text ?: "", style = OzType.small, color = oz.bg, modifier = Modifier.weight(1f))
+                                TextAction(stringResource(R.string.undo), oz.toastAct, vm::undo, style = OzType.small.copy(fontWeight = FontWeight.SemiBold))
+                            }
+                        }
+                        // ссылки и тост делят одно место: ссылки гаснут быстрее, чем проявляется тост, — без наложения и без рывка
+                        androidx.compose.animation.AnimatedVisibility(
+                            visible = t?.undo != true,
+                            enter = fadeIn(Motion.enter(Motion.MOVE, delay = Motion.PRESS)),
+                            exit = fadeOut(Motion.exit(Motion.PRESS)),
+                        ) {
+                            Row {
+                                // «Пропущенные» — только когда они есть; во время фильтра на его месте «Все»
+                                if (vm.missedOnly) TextAction(stringResource(R.string.filter_all), oz.fg2, { vm.showMissedOnly(false) }, modifier = Modifier.heightIn(min = 48.dp))
+                                else if (vm.homeHasMissed) TextAction(stringResource(R.string.filter_missed), oz.danger, { vm.showMissedOnly(true) }, modifier = Modifier.heightIn(min = 48.dp))
+                                TextAction(stringResource(R.string.contacts), oz.fg2, vm::openTextSearch, modifier = Modifier.heightIn(min = 48.dp))
+                            }
+                        }
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        GhostIconButton(R.drawable.ic_oz_settings, stringResource(R.string.settings), vm::openSettings, tint = oz.fg2)
+                        androidx.compose.foundation.layout.Spacer(Modifier.width(12.dp))
+                        KeypadFab { vm.openKeypad() }
+                    }
                 }
             }
         }
@@ -348,3 +357,22 @@ private fun CallAlertRow(vm: DialerViewModel, alert: com.khizrim.dialer.telecom.
 
 /** Подпись дня в ленте. */
 private data class FeedDay(val text: String)
+
+/** Приподнятый край: фон листа, верх скруглён на 22dp, тонкая линия и мягкая тень вверх, на ленту. */
+@Composable
+private fun Modifier.dock(): Modifier {
+    val oz = LocalOz.current
+    val shape = androidx.compose.foundation.shape.RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp)
+    val shade = if (oz.isDark) Color.Black.copy(alpha = .35f) else oz.fg.copy(alpha = .07f)
+    return this
+        .drawBehind {
+            val h = 16.dp.toPx()
+            drawRect(
+                androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color.Transparent, shade), startY = -h, endY = 0f),
+                topLeft = androidx.compose.ui.geometry.Offset(0f, -h), size = androidx.compose.ui.geometry.Size(size.width, h),
+            )
+        }
+        .clip(shape)
+        .background(oz.sheet)
+        .border(1.dp, oz.line, shape)
+}

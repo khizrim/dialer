@@ -181,7 +181,7 @@
     <string name="set_language_system">Как на телефоне</string>
     <string name="set_app">Приложение</string>
     <string name="set_default_dialer">Звонилка по умолчанию</string>
-    <string name="set_permissions">Доступы</string>
+    <string name="set_permissions">Разрешения</string>
     <string name="set_version">Версия</string>
     <string name="yes">Да</string>
     <string name="no">Нет</string>

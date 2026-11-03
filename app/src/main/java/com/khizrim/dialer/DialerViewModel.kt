@@ -249,7 +249,8 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     /** Незнакомые и заблокированные открываются из настроек или из уведомления: назад — туда, откуда пришли. */
     private var listFrom = Screen.HOME
     fun openBlocked() { if (screen != Screen.BLOCKED) listFrom = originFor(screen); screen = Screen.BLOCKED }
-    fun openUnknown() { if (screen != Screen.UNKNOWN) listFrom = originFor(screen); screen = Screen.UNKNOWN }
+    /** Незнакомые без звука теперь живут в ленте: раскрываем их там. */
+    fun openUnknown() { closeKeypad(); missedOnly = false; silentOpen = true; screen = Screen.HOME }
     // из «Всех контактов» по-прежнему возвращаемся в них; со всех прочих экранов — на главную или в настройки
     private fun originFor(s: Screen) = if (s == Screen.SETTINGS || s == Screen.CONTACTS) s else Screen.HOME
 
@@ -271,8 +272,7 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     val canClearLog: Boolean get() = granted(Manifest.permission.WRITE_CALL_LOG)
 
     /** «Очистить журнал»: все звонки или только пропущенные, если включён фильтр. С подтверждением. */
-    fun askClearLog() {
-        val missed = missedOnly
+    fun askClearLog(missed: Boolean = missedOnly) {
         confirm = ConfirmState(
             str(if (missed) R.string.clear_missed_title else R.string.clear_log_title),
             str(R.string.clear_log_text),
@@ -434,7 +434,21 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     // ---------- клавиатура = поиск ----------
-    fun openKeypad(prefill: String = "") { keypad = cleanNumber(prefill); keypadOpen = true; refreshHits() }
+    fun openKeypad(prefill: String = "") { keypad = cleanNumber(prefill); keypadOpen = true; readClip(); refreshHits() }
+
+    /** Номер из буфера обмена — первой подсказкой «Вставить …». Буфер читаем только при открытии клавиатуры. */
+    var clipNumber by mutableStateOf<String?>(null); private set
+    private fun readClip() {
+        clipNumber = runCatching {
+            val cm = ctx.getSystemService(android.content.ClipboardManager::class.java)
+            val text = cm?.primaryClip?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.coerceToText(ctx)?.toString().orEmpty()
+            cleanNumber(text).takeIf { PhoneFormat.digits(it).length >= 5 && text.length <= 40 }
+        }.getOrNull()
+    }
+
+    /** Последний набранный номер: серым в пустом поле, нажатие подставляет его. */
+    val lastDialed: String? get() = calls.firstOrNull { it.type == android.provider.CallLog.Calls.OUTGOING_TYPE }?.number?.let(::cleanNumber)?.takeIf { it.isNotEmpty() }
+    fun fillLast() { lastDialed?.let { keypad = it; refreshHits() } }
 
     /** Цифры и служебные символы; запятая и точка с запятой — паузы для добавочного. */
     private fun cleanNumber(s: String): String = s.filter { it.isDigit() || it in "+*#,;" }.take(32)
@@ -443,7 +457,7 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     fun paste(text: String?) {
         val n = cleanNumber(text.orEmpty())
         if (n.isEmpty()) return
-        keypad = n; refreshHits()
+        keypad = n; clipNumber = null; refreshHits()
     }
 
     fun callVoicemail() { closeKeypad(); Launcher.voicemail(ctx)?.let { say(it) } }
@@ -496,11 +510,8 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     fun tapHit(p: Person) { closeTextSearch(); perform(p, defaultOf(p)) }
 
     fun callTyped() {
-        if (PhoneFormat.digits(keypad).isEmpty()) {
-            // пустое поле: кнопка вызова подставляет последний набранный номер, второй тап звонит
-            calls.firstOrNull { it.type == android.provider.CallLog.Calls.OUTGOING_TYPE }?.let { keypad = cleanNumber(it.number); refreshHits() }
-            return
-        }
+        // пустое поле: кнопка ничего не подставляет — последний номер виден в поле, его нажимают
+        if (PhoneFormat.digits(keypad).isEmpty()) return
         val number = keypad
         closeKeypad()
         Launcher.call(ctx, number)?.let { say(it) }

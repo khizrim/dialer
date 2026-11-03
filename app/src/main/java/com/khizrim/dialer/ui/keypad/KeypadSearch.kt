@@ -132,6 +132,20 @@ fun SearchResults(vm: DialerViewModel, modifier: Modifier = Modifier, drag: Pane
                 com.khizrim.dialer.ui.components.ReachButton(method, p.name) { vm.perform(p, method) }
             }
         }
+        // в буфере номер — первая подсказка у клавиатуры: «Вставить +7 916 …»; есть, только пока может помочь
+        val clip = vm.clipNumber
+        if (vm.keypad.isEmpty() && clip != null) {
+            item(key = "paste") {
+                Row(
+                    Modifier.fillMaxWidth().press(onClick = { vm.paste(clip) }).padding(horizontal = 12.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    OzIcon(R.drawable.ic_oz_copy, oz.fg2)
+                    Text(stringResource(R.string.paste_number, PhoneFormat.formatTyping(clip, vm.region)), style = OzType.body, color = oz.fg2, maxLines = 1)
+                }
+            }
+        }
         if (showAdd) {
             item(key = "add") {
                 Row(
@@ -275,6 +289,14 @@ private fun TypedNumber(vm: DialerViewModel) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         val style = OzType.digit.copy(fontSize = size)
+        // пустое поле: серым последний набранный номер, нажатие подставляет его
+        val last = vm.lastDialed
+        if (vm.keypad.isEmpty() && last != null) {
+            Text(
+                PhoneFormat.formatTyping(last, vm.region), style = OzType.digit.copy(fontSize = 24.sp), color = oz.fg3, maxLines = 1,
+                modifier = Modifier.press({ vm.fillLast() }, shape = com.khizrim.dialer.ui.theme.OzShape.text, label = stringResource(R.string.call_number, PhoneFormat.formatTyping(last, vm.region))).padding(horizontal = 12.dp, vertical = 4.dp),
+            )
+        }
         Text(head, style = style, color = oz.fg, maxLines = 1)
         key(vm.keypad.length) {
             val shift = with(LocalDensity.current) { 4.dp.toPx() }

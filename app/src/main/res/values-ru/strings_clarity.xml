@@ -19,4 +19,7 @@
         <item quantity="other">%1$d незнакомых без звука</item>
     </plurals>
     <string name="silenced">без звука</string>
+    <string name="not_default_dialer">Ozero Phone не звонилка по умолчанию</string>
+    <string name="fix_it">Исправить</string>
+    <string name="paste_number">Вставить %1$s</string>
 </resources>

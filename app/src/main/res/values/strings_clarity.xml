@@ -15,4 +15,7 @@
         <item quantity="other">%1$d unknown, silenced</item>
     </plurals>
     <string name="silenced">silenced</string>
+    <string name="not_default_dialer">Ozero Phone is not the default phone app</string>
+    <string name="fix_it">Fix</string>
+    <string name="paste_number">Paste %1$s</string>
 </resources>
