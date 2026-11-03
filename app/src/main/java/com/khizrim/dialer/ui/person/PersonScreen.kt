@@ -121,16 +121,17 @@ fun PersonScreen(vm: DialerViewModel, id: Long) {
 }
 
 
+// value присваивается; ложное срабатывание Lint на Kotlin 2 (ProduceStateDoesNotAssignValue)
+@android.annotation.SuppressLint("ProduceStateDoesNotAssignValue")
 @Composable
 private fun ContactPhoto(uri: String, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val bitmap by produceState<ImageBitmap?>(null, uri) {
-        val loaded = withContext(Dispatchers.IO) {
+        value = withContext(Dispatchers.IO) {
             runCatching {
                 context.contentResolver.openInputStream(Uri.parse(uri))?.use { BitmapFactory.decodeStream(it)?.asImageBitmap() }
             }.getOrNull()
         }
-        value = loaded
     }
     bitmap?.let {
         Image(it, contentDescription = null, contentScale = ContentScale.Crop, modifier = modifier.size(72.dp).clip(CircleShape))

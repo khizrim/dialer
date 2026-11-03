@@ -79,12 +79,13 @@ fun SuspiciousCallsSetting(modifier: Modifier = Modifier) {
 }
 
 /** Короткая подпись АОН для строки списка; считается в фоне. */
+// value присваивается; ложное срабатывание Lint на Kotlin 2 (ProduceStateDoesNotAssignValue)
+@android.annotation.SuppressLint("ProduceStateDoesNotAssignValue")
 @Composable
 fun rememberCallerTag(number: String): String? {
     val context = LocalContext.current
     val tag by produceState<String?>(null, number) {
-        val label = withContext(Dispatchers.IO) { runCatching { CallerId.shortLabelFor(context, number) }.getOrNull() }
-        value = label
+        value = withContext(Dispatchers.IO) { runCatching { CallerId.shortLabelFor(context, number) }.getOrNull() }
     }
     return tag
 }
@@ -123,12 +124,13 @@ fun ExternalCallerIdRow(modifier: Modifier = Modifier) {
 }
 
 /** Кто из внешних определителей что заблокировал: время звонка → название приложения. */
+// value присваивается; ложное срабатывание Lint на Kotlin 2 (ProduceStateDoesNotAssignValue)
+@android.annotation.SuppressLint("ProduceStateDoesNotAssignValue")
 @Composable
 fun rememberExternalBlocks(key: Any?): Map<Long, String> {
     val context = LocalContext.current
     val map by produceState<Map<Long, String>>(emptyMap(), key) {
-        val blocks = withContext(Dispatchers.IO) { ExternalCallerId.blockedBy(context) }
-        value = blocks
+        value = withContext(Dispatchers.IO) { ExternalCallerId.blockedBy(context) }
     }
     return map
 }
