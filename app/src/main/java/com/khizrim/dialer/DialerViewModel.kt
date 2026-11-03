@@ -515,7 +515,11 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     private var editReturn = Screen.HOME
     private var editPerson: Person? = null
 
-    fun editContact(p: Person) {
+    /** Изменение и добавление — системным редактором Контактов (решение пользователя). */
+    fun editContact(p: Person) { menu = null; sheet = null; Launcher.editContact(ctx, p)?.let { say(it) } }
+    fun addToContacts(number: String) { menu = null; sheet = null; closeKeypad(); Launcher.addContact(ctx, number)?.let { say(it) } }
+
+    private fun editContactInApp(p: Person) {
         menu = null; sheet = null
         editPerson = p
         viewModelScope.launch {
@@ -524,7 +528,7 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun addToContacts(number: String) {
+    private fun addToContactsInApp(number: String) {
         menu = null; sheet = null; closeKeypad()
         editPerson = null
         val d = com.khizrim.dialer.data.ContactEditor.blank(number)
