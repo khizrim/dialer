@@ -183,7 +183,7 @@ fun BoxScope.MethodSheet(vm: DialerViewModel) {
         }
         if (!setMode && chatOnly != null) {
             Row(Modifier.fillMaxWidth().padding(start = 24.dp, end = 12.dp, top = 8.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OzIcon(R.drawable.ic_oz_help, oz.fg3, size = 18.dp, modifier = Modifier.padding(top = 2.dp))
+                OzIcon(R.drawable.ic_oz_swap, oz.fg3, size = 18.dp, modifier = Modifier.padding(top = 2.dp))
                 Column(Modifier.weight(1f)) {
                     Text(stringResource(R.string.sync_hint, chatOnly), style = OzType.small, color = oz.fg3)
                     TextAction(stringResource(R.string.sync_how), oz.accent, { vm.openSyncHelp(chatOnly) }, style = OzType.small, modifier = Modifier.padding(start = 0.dp))
@@ -249,7 +249,6 @@ fun BoxScope.PersonMenu(vm: DialerViewModel) {
             modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 4.dp, bottom = 8.dp),
         )
         if (p != null) {
-            SheetRow(stringResource(R.string.open_card), oz.fg, { vm.openPerson(p.id) }, R.drawable.ic_oz_user)
             SheetRow(stringResource(R.string.other_way), oz.fg, { vm.openSheet(p, SheetMode.OTHER) }, R.drawable.ic_oz_swap)
             SheetRow(
                 stringResource(if (p.starred) R.string.remove_favorite else R.string.add_favorite), oz.fg,
@@ -334,11 +333,11 @@ fun BoxScope.FloatToast(toast: ToastState?, bottom: androidx.compose.ui.unit.Dp,
                 .heightIn(min = 52.dp)
                 .lift(OzShape.row).background(oz.fg, OzShape.row)
                 .semantics { liveRegion = LiveRegionMode.Polite }
-                .padding(start = 16.dp, end = if (t?.undo == true) 6.dp else 16.dp),
+                .padding(start = 16.dp, end = if (t?.undo == true || t?.action != null) 6.dp else 16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(t?.text ?: "", style = OzType.small, color = oz.bg, modifier = Modifier.weight(1f).padding(vertical = 14.dp))
-            if (t?.undo == true) TextAction(stringResource(R.string.undo), oz.toastAct, onUndo, style = OzType.small.copy(fontWeight = FontWeight.SemiBold))
+            if (t?.undo == true || t?.action != null) TextAction(t.action ?: stringResource(R.string.undo), oz.toastAct, onUndo, style = OzType.small.copy(fontWeight = FontWeight.SemiBold))
         }
     }
 }

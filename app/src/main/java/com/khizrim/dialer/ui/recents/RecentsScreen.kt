@@ -93,20 +93,26 @@ fun RecentsScreen(vm: DialerViewModel) {
                         val r = l.record
                         val title = l.person?.shownName ?: PhoneFormat.pretty(r.number)
                         val method = l.person?.let { vm.defaultOf(it) } ?: if (l.person == null) com.khizrim.dialer.model.Method.PHONE else null
-                        val label = listOf(title, r.text(res), time.format(Date(r.date)), stringResource(method?.title ?: R.string.choose_method)).joinToString(", ")
+                        val label = listOf(title, r.text(res), time.format(Date(r.date))).joinToString(", ")
                         Row(
                             Modifier
                                 // фильтр и удаление: лишние строки гаснут, оставшиеся съезжают на место, а не перескакивают
                                 .animateItem(fadeInSpec = Motion.enter(Motion.MOVE), placementSpec = Motion.move(Motion.MOVE), fadeOutSpec = Motion.exit(Motion.PRESS))
                                 .fillMaxWidth()
-                                .heightIn(min = 56.dp)
-                                // смахнуть влево — удалить звонок с «Вернуть» (нужно разрешение на запись журнала).
-                                // Вправо — ничего: звонок случайным свайпом опаснее, а перезванивает и так тап по строке
-                                .swipeAway(vm.canClearLog, hint = stringResource(R.string.delete)) { vm.swipeDeleteRecord(r) }
-                                .press({ vm.callBack(r, l.person) }, onLongClick = { vm.openRecentMenu(r, l.person) }, shape = RoundedCornerShape(16.dp), label = label)
-                                .padding(horizontal = 12.dp, vertical = 12.dp),
+                                // смахнуть влево — удалить звонок с «Вернуть» (нужно разрешение на запись журнала)
+                                .swipeAway(vm.canClearLog) { vm.swipeDeleteRecord(r) },
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
+                          // нажатие на строку — карточка (у незнакомого номера — его меню), значок справа — перезвонить
+                          Row(
+                            Modifier.weight(1f).heightIn(min = 56.dp)
+                                .press(
+                                    { if (l.person != null) vm.openPerson(l.person.id) else vm.openRecentMenu(r, null) },
+                                    onLongClick = { vm.openRecentMenu(r, l.person) }, shape = RoundedCornerShape(16.dp), label = label,
+                                )
+                                .padding(start = 12.dp, top = 12.dp, bottom = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                          ) {
                             Column(Modifier.weight(1f), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(4.dp)) {
                                 Text(title, style = if (l.person != null && !l.person.nameIsNumber) OzType.nameList else OzType.number, color = oz.fg, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                 // вторая строка только когда есть что сказать: необычный звонок или не основная SIM
@@ -119,6 +125,8 @@ fun RecentsScreen(vm: DialerViewModel) {
                                 }
                             }
                             Text(time.format(Date(r.date)), style = OzType.time, color = oz.fg3, modifier = Modifier.padding(start = 12.dp))
+                          }
+                          com.khizrim.dialer.ui.components.ReachButton(method, title) { vm.callBack(r, l.person) }
                         }
                     }
                 }

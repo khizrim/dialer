@@ -30,6 +30,7 @@ import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import kotlinx.coroutines.launch
 import androidx.compose.ui.input.pointer.pointerInput
@@ -110,18 +111,16 @@ fun SearchResults(vm: DialerViewModel, modifier: Modifier = Modifier, drag: Pane
         items(results, key = { it.person.id }) { hit ->
             val p = hit.person
             val method = vm.defaultOf(p)
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .press(
-                        onClick = { vm.perform(p, method) },
-                        onLongClick = { vm.openMenu(p) },
-                        label = "${p.name}, ${hit.phone}: ${stringResource(method?.title ?: R.string.choose_method)}",
-                    )
-                    .padding(horizontal = 12.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column(Modifier.weight(1f)) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Column(
+                    Modifier.weight(1f)
+                        .press(
+                            onClick = { vm.openPerson(p.id) },
+                            onLongClick = { vm.openMenu(p) },
+                            label = "${p.name}, ${hit.phone}",
+                        )
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                ) {
                     if (p.nameIsNumber) {
                         // имя — это номер: одна строка с номером, без дубля
                         Text(highlight(hit.phone, hit.phoneRange, oz.accent), style = OzType.list.copy(fontSize = OzType.nameSearch.fontSize), color = oz.fg, maxLines = 1)
@@ -130,7 +129,21 @@ fun SearchResults(vm: DialerViewModel, modifier: Modifier = Modifier, drag: Pane
                         Text(highlight(hit.phone, hit.phoneRange, oz.accent), style = OzType.small, color = oz.fg3)
                     }
                 }
-                OzIcon(method?.icon ?: R.drawable.ic_oz_help, oz.fg3, modifier = Modifier.padding(start = 16.dp))
+                com.khizrim.dialer.ui.components.ReachButton(method, p.name) { vm.perform(p, method) }
+            }
+        }
+        // в буфере номер — первая подсказка у клавиатуры: «Вставить +7 916 …»; есть, только пока может помочь
+        val clip = vm.clipNumber
+        if (vm.keypad.isEmpty() && clip != null) {
+            item(key = "paste") {
+                Row(
+                    Modifier.fillMaxWidth().press(onClick = { vm.paste(clip) }).padding(horizontal = 12.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    OzIcon(R.drawable.ic_oz_copy, oz.fg2)
+                    Text(stringResource(R.string.paste_number, PhoneFormat.formatTyping(clip, vm.region)), style = OzType.body, color = oz.fg2, maxLines = 1)
+                }
             }
         }
         if (showAdd) {
@@ -173,8 +186,12 @@ fun KeypadPanel(vm: DialerViewModel, drag: PanelDrag? = null) {
     val oz = LocalOz.current
     // панель тянут вниз — весь слой клавиатуры идёт за пальцем 1:1, отпустили — доезжает со скоростью пальца
     val tracker = remember { androidx.compose.ui.input.pointer.util.VelocityTracker() }
+    // слой едет за пальцем, поэтому свои координаты касания почти не меняются — считаем путь в координатах окна
+    val coords = remember { arrayOfNulls<androidx.compose.ui.layout.LayoutCoordinates>(1) }
+    fun windowOf(p: androidx.compose.ui.geometry.Offset) = coords[0]?.takeIf { it.isAttached }?.localToWindow(p) ?: p
     Column(
         Modifier.fillMaxWidth()
+            .onGloballyPositioned { coords[0] = it }
             .pointerInput(drag) {
                 if (drag == null) return@pointerInput
                 // слушаем раньше клавиш (Initial): тянуть можно с любой точки панели, и с клавиши тоже;
@@ -183,6 +200,7 @@ fun KeypadPanel(vm: DialerViewModel, drag: PanelDrag? = null) {
                 awaitEachGesture {
                     val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
                     var dx = 0f; var dy = 0f; var dragging = false
+                    var last = windowOf(down.position)
                     while (true) {
                         val ev = awaitPointerEvent(PointerEventPass.Initial)
                         val ch = ev.changes.firstOrNull { it.id == down.id } ?: run { if (dragging) drag.end(0f); null } ?: break
@@ -190,12 +208,13 @@ fun KeypadPanel(vm: DialerViewModel, drag: PanelDrag? = null) {
                             if (dragging) { ch.consume(); drag.end(tracker.calculateVelocity().y) }
                             break
                         }
-                        val step = ch.position.y - ch.previousPosition.y
-                        dx += ch.position.x - ch.previousPosition.x; dy += step
+                        val w = windowOf(ch.position)
+                        val step = w.y - last.y
+                        dx += w.x - last.x; dy += step; last = w
                         // горизонтальный жест — стирание номера, его не трогаем
                         if (!dragging && kotlin.math.abs(dx) > slop && kotlin.math.abs(dx) > kotlin.math.abs(dy)) break
                         if (!dragging && dy > slop) { dragging = true; tracker.resetTracking(); drag.start() }
-                        if (dragging) { ch.consume(); tracker.addPosition(ch.uptimeMillis, ch.position); drag.by(step) }
+                        if (dragging) { ch.consume(); tracker.addPosition(ch.uptimeMillis, w); drag.by(step) }
                     }
                 }
             },
@@ -270,6 +289,14 @@ private fun TypedNumber(vm: DialerViewModel) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         val style = OzType.digit.copy(fontSize = size)
+        // пустое поле: серым последний набранный номер, нажатие подставляет его
+        val last = vm.lastDialed
+        if (vm.keypad.isEmpty() && last != null) {
+            Text(
+                PhoneFormat.formatTyping(last, vm.region), style = OzType.digit.copy(fontSize = 24.sp), color = oz.fg3, maxLines = 1,
+                modifier = Modifier.press({ vm.fillLast() }, shape = com.khizrim.dialer.ui.theme.OzShape.text, label = stringResource(R.string.call_number, PhoneFormat.formatTyping(last, vm.region))).padding(horizontal = 12.dp, vertical = 4.dp),
+            )
+        }
         Text(head, style = style, color = oz.fg, maxLines = 1)
         key(vm.keypad.length) {
             val shift = with(LocalDensity.current) { 4.dp.toPx() }

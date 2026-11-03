@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="main_number">main</string>
+    <string name="make_main">Make default</string>
+    <string name="call_mic">Mute</string>
+    <string name="call_mic_off">Muted</string>
+    <string name="call_digits">Keypad</string>
+    <string name="outgoing_no_answer">Outgoing, no answer</string>
+    <plurals name="feed_missed_many">
+        <item quantity="one">%1$d missed, last %2$s</item>
+        <item quantity="other">%1$d missed, last %2$s</item>
+    </plurals>
+    <plurals name="silent_unknown">
+        <item quantity="one">%1$d unknown, silenced</item>
+        <item quantity="other">%1$d unknown, silenced</item>
+    </plurals>
+    <string name="silenced">silenced</string>
+    <string name="not_default_dialer">Ozero Phone is not the default phone app</string>
+    <string name="fix_it">Fix</string>
+    <string name="paste_number">Paste %1$s</string>
+    <string name="create_named">Create contact “%1$s”</string>
+    <string name="create_with_number">Create contact with this number</string>
+</resources>

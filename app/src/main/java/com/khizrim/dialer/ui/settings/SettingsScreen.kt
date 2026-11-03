@@ -56,6 +56,7 @@ fun SettingsScreen(vm: DialerViewModel) {
     val context = LocalContext.current
     val role = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { vm.reload() }
     var simOpen by remember { mutableStateOf(false) }
+    val askWrite = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ok -> if (ok) vm.askClearLog(missed = false) }
     val saveFile = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri -> uri?.let(vm::exportTo) }
     val openFile = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> uri?.let(vm::importFrom) }
     fun open(intent: Intent) { runCatching { context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) } }
@@ -67,9 +68,14 @@ fun SettingsScreen(vm: DialerViewModel) {
                 stringResource(R.string.settings), style = OzType.namePerson, color = oz.fg,
                 modifier = Modifier.padding(start = 12.dp, top = 24.dp, bottom = 8.dp).semantics { heading() },
             )
+            // «звонилка по умолчанию: да» ничего не сообщает — строка есть, только когда это нужно исправить
+            if (!vm.isDefaultDialer) ValueRow(stringResource(R.string.not_default_dialer), stringResource(R.string.fix_it)) {
+                val intent = Launcher.defaultDialerRequest(context)
+                if (intent != null) runCatching { role.launch(intent) } else open(Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS))
+            }
 
-            Group(stringResource(R.string.set_calls))
             if (vm.sims.size > 1) {
+                Group(stringResource(R.string.set_calls))
                 val current = vm.sims.firstOrNull { it.first == vm.simForCalls }?.second ?: stringResource(R.string.set_sim_ask)
                 ValueRow(stringResource(R.string.set_sim), current) { simOpen = !simOpen }
                 if (simOpen) {
@@ -78,13 +84,13 @@ fun SettingsScreen(vm: DialerViewModel) {
                     }
                 }
             }
-            SwitchRow(stringResource(R.string.silence_unknown), vm.silenceUnknown, vm::toggleSilenceUnknown)
-            ValueRow(stringResource(R.string.unknown_numbers), null, onClick = vm::openUnknown)
 
-            Group(stringResource(R.string.set_blocking))
-            ValueRow(stringResource(R.string.blocked_numbers), null, onClick = vm::openBlocked)
+            // всё про незнакомые номера — одной группой: без звука, спам, определитель, заблокированные
+            Group(stringResource(R.string.unknown_numbers))
+            SwitchRow(stringResource(R.string.silence_unknown), vm.silenceUnknown, vm::toggleSilenceUnknown)
             com.khizrim.dialer.callerid.SuspiciousCallsSetting(Modifier.padding(horizontal = 12.dp))
             com.khizrim.dialer.callerid.ExternalCallerIdRow(Modifier.padding(start = 12.dp, end = 12.dp, top = 16.dp))
+            ValueRow(stringResource(R.string.blocked_numbers), vm.blocked.size.takeIf { it > 0 }?.toString(), onClick = vm::openBlocked)
 
             Group(stringResource(R.string.set_appearance))
             SwitchRow(stringResource(R.string.set_fav_nickname), vm.favNickname, vm::toggleFavNickname)
@@ -101,9 +107,9 @@ fun SettingsScreen(vm: DialerViewModel) {
             }
 
             Group(stringResource(R.string.set_app))
-            ValueRow(stringResource(R.string.set_default_dialer), stringResource(if (vm.isDefaultDialer) R.string.yes else R.string.no)) {
-                val intent = Launcher.defaultDialerRequest(context)
-                if (intent != null && !vm.isDefaultDialer) runCatching { role.launch(intent) } else open(Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS))
+            // журнал теперь — лента главной; очистить его можно здесь
+            ValueRow(stringResource(R.string.clear_log), null) {
+                if (vm.canClearLog) vm.askClearLog(missed = false) else askWrite.launch(android.Manifest.permission.WRITE_CALL_LOG)
             }
             ValueRow(stringResource(R.string.set_permissions), null) { open(appDetails) }
             ValueRow(stringResource(R.string.set_version), versionName(context), onClick = null)

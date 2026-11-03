@@ -16,16 +16,16 @@
     <string name="net_phone">Phone</string>
     <string name="choose_method">Choose how</string>
     <string name="home_empty_title">Quiet and empty</string>
-    <string name="home_empty_text">People you get in touch with will appear here. Dial a number or open all contacts.</string>
-    <string name="home_clear">Clear home</string>
+    <string name="home_empty_text">People you get in touch with will appear here. Dial a number or swipe up to find a contact.</string>
+    <string name="home_clear">Hide everyone</string>
     <string name="all_contacts">All contacts</string>
     <string name="undo">Undo</string>
     <string name="open_keypad">Open keypad</string>
     <string name="menu">Menu</string>
-    <string name="removed_from_home">%1$s removed from home</string>
-    <string name="removed_from_home_f">%1$s removed from home</string>
-    <string name="clear_home_title">Clear home?</string>
-    <string name="clear_home_text">Names leave the home screen, contacts stay. People come back when you get in touch with them.</string>
+    <string name="removed_from_home">%1$s hidden until you get in touch again</string>
+    <string name="removed_from_home_f">%1$s hidden until you get in touch again</string>
+    <string name="clear_home_title">Hide everyone from this screen?</string>
+    <string name="clear_home_text">Contacts stay. A person comes back here when you get in touch with them.</string>
     <string name="clear">Clear</string>
     <string name="cancel">Cancel</string>
     <string name="close">Close</string>
@@ -45,7 +45,7 @@
     <string name="how_to_reach">How to reach</string>
     <string name="how_to_reach_named">How to reach %1$s</string>
     <string name="on_tap_title">What a tap on the name does</string>
-    <string name="make_default">Make it the default</string>
+    <string name="make_default">Choose what a tap does</string>
     <string name="ask_every_time">Ask every time</string>
     <string name="now_on_tap">On tap now: %1$s</string>
     <string name="now_ask">We will ask every time</string>
@@ -68,7 +68,7 @@
     <string name="blocked_empty">Nobody is blocked. You can block a number during a call or by holding it on the home screen.</string>
     <string name="unblock">Unblock</string>
     <string name="block_title">Block %1$s?</string>
-    <string name="block_text">Calls and texts from this number won\'t reach you. You can unblock it in All contacts.</string>
+    <string name="block_text">Calls and texts from this number won\'t reach you. You can unblock it in Settings.</string>
     <string name="blocked_done">%1$s blocked</string>
     <string name="unblocked_done">%1$s unblocked</string>
     <string name="block_failed">Couldn\'t block the number</string>
@@ -105,7 +105,7 @@
     <string name="decline">Decline</string>
     <string name="answer">Answer</string>
     <string name="send_sms">Send SMS</string>
-    <string name="remind">Remind me</string>
+    <string name="remind">Remind in 1 hour</string>
     <string name="mute">Mute</string>
     <string name="speaker">Speaker</string>
     <string name="keypad">Keypad</string>
@@ -159,7 +159,7 @@
     <string name="alert_open">Open</string>
     <string name="err_call_permission">Allow calls in settings to dial from Ozero Phone</string>
     <string name="hold_to_answer">Hold to answer</string>
-    <string name="recents">Recent calls</string>
+    <string name="recents">Recents</string>
     <string name="recents_empty">No calls yet.</string>
     <string name="alert_contacts_silence">Silencing unknown callers needs contacts access, otherwise everyone would be silenced</string>
     <string name="merge">Merge</string>
@@ -169,7 +169,7 @@
     <string name="incoming_strip">Incoming: %1$s · Answer</string>
     <string name="delete_from_log">Delete from call log</string>
     <string name="call_deleted">Call deleted</string>
-    <string name="set_fav_nickname">Favourites by nickname</string>
+    <string name="set_fav_nickname">Short names in favourites</string>
     <string name="number_copied">Number copied</string>
     <string name="log_delete_failed">Couldn’t delete the call</string>
     <string name="settings">Settings</string>
@@ -229,7 +229,7 @@
     <string name="sync_wa_3">Open WhatsApp and pull to refresh the contact list</string>
     <string name="sync_back">Come back here. Calls and video appear in about a minute.</string>
     <string name="open_app">Open %1$s</string>
-    <string name="set_transfer">Transfer</string>
+    <string name="set_transfer">Backup</string>
     <string name="transfer_save">Save people settings to a file</string>
     <string name="transfer_save_sub">Ways to reach, numbers, blocked</string>
     <string name="transfer_restore">Restore from a file</string>
@@ -276,7 +276,7 @@
     <string name="edit_discard">Leave</string>
     <string name="call_to">Call %1$s</string>
     <string name="search_by_name">Search by name</string>
-    <string name="search_hint">Pull the list up to find a contact</string>
+    <string name="search_hint">Swipe up for contacts and search</string>
     <string name="search_nothing">No one found</string>
     <string name="found_company">company: %1$s</string>
     <string name="found_title">job title: %1$s</string>
@@ -291,5 +291,5 @@
     <string name="clear_log_text">The calls disappear from the phone’s call log. Contacts stay.</string>
     <string name="log_cleared">Call log cleared</string>
     <string name="log_clear_failed">Couldn’t clear the call log</string>
-    <string name="swipe_hide">Hide</string>
+    <string name="hide">Hide</string>
 </resources>

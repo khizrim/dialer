@@ -191,6 +191,19 @@ fun GhostIconButton(
     ) { OzIcon(icon, tint, iconSize) }
 }
 
+/**
+ * Кнопка связи справа у строки: значок способа по умолчанию (трубка тоже), нажатие связывает.
+ * «Спрашивать каждый раз» — значок swap: по нажатию будет выбор.
+ */
+@Composable
+fun ReachButton(method: com.khizrim.dialer.model.Method?, who: String, onClick: () -> Unit) {
+    GhostIconButton(
+        method?.icon ?: R.drawable.ic_oz_swap,
+        stringResource(method?.title ?: R.string.choose_method) + ": " + who,
+        onClick, tint = LocalOz.current.fg3, size = 48.dp, iconSize = 22.dp,
+    )
+}
+
 /** Тихая текстовая кнопка. */
 @Composable
 fun TextAction(
@@ -274,7 +287,6 @@ fun Modifier.swipeAway(enabled: Boolean = true, hint: String? = null, onRight: (
                 onDragEnd = {
                     val v = tracker.calculateVelocity().x
                     scope.launch { hintAlpha.animateTo(0f, com.khizrim.dialer.ui.theme.Motion.exit(com.khizrim.dialer.ui.theme.Motion.FADE)) }
-                    android.util.Log.d("OzMotion", "swipeAway end offset=${offset.value} v=$v")
                     scope.launch {
                         val settle = com.khizrim.dialer.ui.theme.Motion.settle<Float>()
                         if (offset.value > threshold && onRight != null) {
@@ -287,7 +299,6 @@ fun Modifier.swipeAway(enabled: Boolean = true, hint: String? = null, onRight: (
                             // список убирает её сразу: соседи смыкаются, пока она ещё уезжает, а не после
                             // долгого хвоста пружины (иначе ~1 с на её месте пусто, а потом всё прыгает)
                             onSwiped()
-                            android.util.Log.d("OzMotion", "swipeAway removed")
                             if (!reduced) offset.animateTo(-w[0], settle, v.coerceAtMost(0f))
                             // если строку так и не убрали (нет прав и т. п.) — через мгновение возвращаем
                             kotlinx.coroutines.delay(700)

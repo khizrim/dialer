@@ -64,6 +64,10 @@ data class HomeEntry(
     val number: String?,
     val lastAt: Long,
     val missedNote: String?,
+    /** Вторая строка, если звонок был необычный, но не пропущенный: «Исходящий, без ответа». */
+    val note: String? = null,
+    /** >0 — это не человек, а свёрнутая строка «N незнакомых без звука». */
+    val silent: Int = 0,
 ) {
     val title: String get() = person?.shownName ?: com.khizrim.dialer.data.PhoneFormat.pretty(number.orEmpty())
 }
