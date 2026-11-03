@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -241,7 +242,7 @@ private fun Key(d: Char, letters: String, vm: DialerViewModel, modifier: Modifie
         verticalArrangement = Arrangement.Center,
     ) {
         Text(d.toString(), style = OzType.digit, color = oz.fg)
-        Text(letters, style = OzType.tiny, color = oz.fg3, modifier = Modifier.height(14.dp))
+        Text(letters, style = OzType.tiny, color = oz.fg3, modifier = Modifier.heightIn(min = 14.dp))
     }
 }
 

@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
@@ -254,7 +255,7 @@ private fun Dtmf(typed: String, actions: CallActions) {
     val oz = LocalOz.current
     val big = OzType.digit.copy(fontSize = OzType.nameHome.fontSize)
     Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(typed.ifEmpty { " " }, style = big, color = oz.fg, modifier = Modifier.height(40.dp))
+        Text(typed.ifEmpty { " " }, style = big, color = oz.fg, maxLines = 1, modifier = Modifier.heightIn(min = 40.dp))
         Column(Modifier.padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             "123456789*0#".chunked(3).forEach { row ->
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
