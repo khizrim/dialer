@@ -259,7 +259,11 @@ fun CallStrip(modifier: Modifier = Modifier) {
         modifier = modifier
             .lift(OzShape.row)
             .background(oz.sheet, com.khizrim.dialer.ui.theme.OzShape.row)
-            .clickable { context.startActivity(com.khizrim.dialer.telecom.CallActivity.intent(context)) }
+            // входящий: надпись обещает «Ответить» — нажатие отвечает и открывает экран звонка
+            .clickable {
+                if (live.phase == com.khizrim.dialer.model.CallPhase.RINGING) com.khizrim.dialer.telecom.CallManager.answer()
+                context.startActivity(com.khizrim.dialer.telecom.CallActivity.intent(context))
+            }
             .padding(horizontal = 16.dp, vertical = 14.dp),
     )
 }

@@ -165,12 +165,14 @@ fun PersonScreen(vm: DialerViewModel, id: Long) {
                 ) { OzIcon(R.drawable.ic_oz_chevron_down, Color.White, 20.dp) }
             }
             // под кнопкой одна тихая строка: куда звоним и, при двух SIM, с какой (нажатие переключает)
+            // «на номер» нужно, только когда номеров несколько; с одним он и так виден строкой выше
             val target = vm.numberFor(p)
+            val shownTarget = target?.takeIf { p.phones.size > 1 }
             val sim = vm.personSim(target)
-            if (target != null || sim != null) {
+            if (shownTarget != null || sim != null) {
                 Row(Modifier.fillMaxWidth().padding(top = 8.dp).heightIn(min = 20.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        target?.let { stringResource(R.string.card_to_number, com.khizrim.dialer.data.PhoneFormat.pretty(it)) }.orEmpty(),
+                        shownTarget?.let { stringResource(R.string.card_to_number, com.khizrim.dialer.data.PhoneFormat.pretty(it)) }.orEmpty(),
                         style = OzType.small.copy(fontSize = 12.sp), color = oz.fg3, maxLines = 1, modifier = Modifier.weight(1f),
                     )
                     if (sim != null) Text(
