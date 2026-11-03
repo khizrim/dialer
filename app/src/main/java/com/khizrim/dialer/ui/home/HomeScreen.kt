@@ -22,6 +22,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -60,9 +61,9 @@ fun HomeScreen(vm: DialerViewModel) {
                 if (vm.home.isEmpty()) {
                     item(key = "empty") {
                         Column(Modifier.padding(start = 12.dp, end = 12.dp, bottom = 24.dp).animateItem()) {
-                            Text("Пусто и тихо", style = OzType.nameHome, color = oz.fg)
+                            Text(stringResource(R.string.home_empty_title), style = OzType.nameHome, color = oz.fg)
                             Text(
-                                "Здесь появятся люди, с которыми вы связываетесь. Наберите номер или откройте все контакты.",
+                                stringResource(R.string.home_empty_text),
                                 style = OzType.body, color = oz.fg2, modifier = Modifier.padding(top = 8.dp).widthIn(max = 320.dp),
                             )
                         }
@@ -94,7 +95,7 @@ fun HomeScreen(vm: DialerViewModel) {
                             .press(
                                 onClick = { vm.tap(e) },
                                 onLongClick = { vm.openMenu(e, MenuContext.HOME) },
-                                label = e.title + ": " + (method?.title ?: "Выбрать способ") + (note?.let { ", $it" } ?: ""),
+                                label = e.title + ": " + stringResource(method?.title ?: R.string.choose_method) + (note?.let { ", $it" } ?: ""),
                             )
                             .padding(horizontal = 12.dp, vertical = 10.dp),
                         verticalAlignment = Alignment.CenterVertically,
@@ -115,7 +116,7 @@ fun HomeScreen(vm: DialerViewModel) {
             }
             if (vm.tidy) {
                 TextAction(
-                    "Очистить главную", oz.fg3, vm::askClearHome, style = OzType.small,
+                    stringResource(R.string.home_clear), oz.fg3, vm::askClearHome, style = OzType.small,
                     modifier = Modifier.padding(start = 12.dp, top = 4.dp),
                 )
             }
@@ -137,11 +138,11 @@ fun HomeScreen(vm: DialerViewModel) {
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Text(t?.text ?: "", style = OzType.small, color = oz.bg, modifier = Modifier.weight(1f))
-                            TextAction("Вернуть", oz.toastAct, vm::undo, style = OzType.small.copy(fontWeight = FontWeight.SemiBold))
+                            TextAction(stringResource(R.string.undo), oz.toastAct, vm::undo, style = OzType.small.copy(fontWeight = FontWeight.SemiBold))
                         }
                     }
                     if (t?.undo != true) {
-                        TextAction("Все контакты", oz.fg2, vm::openContacts, modifier = Modifier.heightIn(min = 48.dp))
+                        TextAction(stringResource(R.string.all_contacts), oz.fg2, vm::openContacts, modifier = Modifier.heightIn(min = 48.dp))
                     }
                 }
                 KeypadFab { vm.openKeypad() }

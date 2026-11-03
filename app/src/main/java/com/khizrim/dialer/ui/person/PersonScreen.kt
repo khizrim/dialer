@@ -33,6 +33,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.heading
@@ -90,23 +91,23 @@ fun PersonScreen(vm: DialerViewModel, id: Long) {
             ) {
                 OzIcon(method?.icon ?: R.drawable.ic_oz_help, Color.White)
                 Spacer(Modifier.width(10.dp))
-                Text(method?.title ?: "Выбрать способ", style = OzType.strong, color = Color.White)
+                Text(stringResource(method?.title ?: R.string.choose_method), style = OzType.strong, color = Color.White)
             }
             Column(Modifier.padding(top = 12.dp).offset(x = (-12).dp)) {
-                TextAction("Другой способ", oz.accent, { vm.openSheet(p, SheetMode.OTHER) })
-                TextAction("Изменить по умолчанию", oz.fg3, { vm.openSheet(p, SheetMode.DEFAULT) })
+                TextAction(stringResource(R.string.other_way), oz.accent, { vm.openSheet(p, SheetMode.OTHER) })
+                TextAction(stringResource(R.string.change_default), oz.fg3, { vm.openSheet(p, SheetMode.DEFAULT) })
             }
         }
         Row(
             Modifier.fillMaxWidth().padding(12.dp, 16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            GhostIconButton(R.drawable.ic_oz_back, "Назад", vm::leavePerson)
+            GhostIconButton(R.drawable.ic_oz_back, stringResource(R.string.back), vm::leavePerson)
             Row {
-            GhostIconButton(R.drawable.ic_oz_edit, "Изменить контакт", { vm.editContact(p) })
+            GhostIconButton(R.drawable.ic_oz_edit, stringResource(R.string.edit_contact), { vm.editContact(p) })
             GhostIconButton(
                 if (fav) R.drawable.ic_oz_star_on else R.drawable.ic_oz_star,
-                if (fav) "Убрать из избранного" else "Добавить в избранное",
+                if (fav) stringResource(R.string.remove_favorite) else stringResource(R.string.add_favorite),
                 { vm.toggleFavorite(p) },
             )
             }

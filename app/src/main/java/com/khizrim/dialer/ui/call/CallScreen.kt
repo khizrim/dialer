@@ -30,6 +30,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -80,12 +81,12 @@ fun CallScreen(c: CallState, actions: CallActions) {
         while (c.phase == CallPhase.ACTIVE) { now = System.currentTimeMillis(); delay(500) }
     }
     val known = c.name != null
-    val title = c.name ?: c.number.takeIf { it.isNotEmpty() }?.let { PhoneFormat.pretty(it) } ?: "Скрытый номер"
+    val title = c.name ?: c.number.takeIf { it.isNotEmpty() }?.let { PhoneFormat.pretty(it) } ?: stringResource(R.string.hidden_number)
     val sub = when (c.phase) {
-        CallPhase.RINGING -> if (known) "мобильный" else c.label ?: "Нет в контактах"
-        CallPhase.DIALING -> "Вызов"
-        CallPhase.ACTIVE -> if (c.onHold) "На удержании" else
-            "Телефон  " + CallManager.timer(((now - c.connectedAt).coerceAtLeast(0)) / 1000)
+        CallPhase.RINGING -> if (known) stringResource(R.string.mobile) else c.label ?: stringResource(R.string.not_in_contacts)
+        CallPhase.DIALING -> stringResource(R.string.calling)
+        CallPhase.ACTIVE -> if (c.onHold) stringResource(R.string.on_hold) else
+            stringResource(R.string.net_phone) + "  " + CallManager.timer(((now - c.connectedAt).coerceAtLeast(0)) / 1000)
         CallPhase.ENDED -> c.endText
     }
     val inCall = c.phase == CallPhase.ACTIVE || c.phase == CallPhase.DIALING
@@ -139,13 +140,13 @@ private fun Ringing(actions: CallActions, known: Boolean, onBlock: () -> Unit) {
     val oz = LocalOz.current
     Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
         Row(Modifier.fillMaxWidth().padding(bottom = 28.dp), horizontalArrangement = Arrangement.SpaceAround) {
-            TextAction("Написать SMS", oz.fg2, actions::quickSms, style = OzType.small)
-            if (known) TextAction("Напомнить", oz.fg2, actions::remind, style = OzType.small)
-            else TextAction("Заблокировать", oz.fg2, onBlock, style = OzType.small)
+            TextAction(stringResource(R.string.send_sms), oz.fg2, actions::quickSms, style = OzType.small)
+            if (known) TextAction(stringResource(R.string.remind), oz.fg2, actions::remind, style = OzType.small)
+            else TextAction(stringResource(R.string.block), oz.fg2, onBlock, style = OzType.small)
         }
         Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 24.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-            LabeledRound(R.drawable.ic_oz_end_call, "Отклонить", oz.dangerFill, actions::decline)
-            LabeledRound(R.drawable.ic_oz_phone, "Ответить", oz.accentFill, actions::answer)
+            LabeledRound(R.drawable.ic_oz_end_call, stringResource(R.string.decline), oz.dangerFill, actions::decline)
+            LabeledRound(R.drawable.ic_oz_phone, stringResource(R.string.answer), oz.accentFill, actions::answer)
         }
     }
 }
@@ -171,15 +172,15 @@ private fun Active(c: CallState, actions: CallActions) {
     Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
         Row(Modifier.fillMaxWidth().padding(bottom = 32.dp), horizontalArrangement = Arrangement.SpaceAround) {
             // микрофон: мгновенная смена иконки и цвета, без анимации формы
-            Toggle(if (c.muted) R.drawable.ic_oz_mic_off else R.drawable.ic_oz_mic, "Микрофон", c.muted, actions::toggleMute)
-            Toggle(R.drawable.ic_oz_speaker, "Динамик", c.speaker, actions::toggleSpeaker)
-            Toggle(R.drawable.ic_oz_grid, "Клавиши", c.dtmf != null, actions::toggleDtmf)
+            Toggle(if (c.muted) R.drawable.ic_oz_mic_off else R.drawable.ic_oz_mic, stringResource(R.string.mute), c.muted, actions::toggleMute)
+            Toggle(R.drawable.ic_oz_speaker, stringResource(R.string.speaker), c.speaker, actions::toggleSpeaker)
+            Toggle(R.drawable.ic_oz_grid, stringResource(R.string.keypad), c.dtmf != null, actions::toggleDtmf)
         }
         Box(
             Modifier
                 .padding(bottom = 40.dp)
                 .size(64.dp)
-                .press(actions::hangup, shape = CircleShape, pressColor = oz.dangerFill, label = "Завершить звонок")
+                .press(actions::hangup, shape = CircleShape, pressColor = oz.dangerFill, label = stringResource(R.string.end_call))
                 .background(oz.dangerFill, CircleShape),
             contentAlignment = Alignment.Center,
         ) { OzIcon(R.drawable.ic_oz_end_call, Color.White, 28.dp) }
@@ -190,11 +191,12 @@ private fun Active(c: CallState, actions: CallActions) {
 private fun Toggle(icon: Int, label: String, on: Boolean, onClick: () -> Unit) {
     val oz = LocalOz.current
     val color = if (on) oz.accent else oz.fg
+    val stateText = stringResource(if (on) R.string.state_on else R.string.state_off)
     Column(
         Modifier
             .width(96.dp)
             .press(onClick, shape = RoundedCornerShape(16.dp), role = Role.Switch)
-            .semantics { stateDescription = if (on) "включено" else "выключено" }
+            .semantics { stateDescription = stateText }
             .padding(vertical = 10.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -215,7 +217,7 @@ private fun Dtmf(typed: String, actions: CallActions) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     row.forEach { d ->
                         Box(
-                            Modifier.weight(1f).height(56.dp).press({ actions.tone(d) }, shape = RoundedCornerShape(14.dp), label = "Тон $d"),
+                            Modifier.weight(1f).height(56.dp).press({ actions.tone(d) }, shape = RoundedCornerShape(14.dp), label = stringResource(R.string.tone, d.toString())),
                             contentAlignment = Alignment.Center,
                         ) { Text(d.toString(), style = big, color = oz.fg) }
                     }
@@ -240,20 +242,20 @@ private fun BlockConfirm(number: String, onCancel: () -> Unit, onBlock: () -> Un
                 .background(oz.sheet, RoundedCornerShape(24.dp))
                 .padding(24.dp),
         ) {
-            Text("Заблокировать $number?", style = OzType.title, color = oz.fg)
+            Text(stringResource(R.string.block_title, number), style = OzType.title, color = oz.fg)
             Text(
-                "Звонки и SMS с этого номера больше не будут доходить. Разблокировать можно во «Всех контактах».",
+                stringResource(R.string.block_text),
                 style = OzType.small, color = oz.fg3, modifier = Modifier.padding(top = 8.dp),
             )
             Row(Modifier.fillMaxWidth().padding(top = 24.dp), horizontalArrangement = Arrangement.End) {
-                TextAction("Отмена", oz.fg, onCancel, style = OzType.small.copy(fontWeight = FontWeight.SemiBold))
+                TextAction(stringResource(R.string.cancel), oz.fg, onCancel, style = OzType.small.copy(fontWeight = FontWeight.SemiBold))
                 Spacer(Modifier.width(8.dp))
                 Box(
                     Modifier
                         .press(onBlock, shape = RoundedCornerShape(22.dp), pressColor = oz.dangerFill)
                         .background(oz.dangerFill, RoundedCornerShape(22.dp))
                         .padding(horizontal = 16.dp, vertical = 12.dp),
-                ) { Text("Заблокировать", style = OzType.small.copy(fontWeight = FontWeight.SemiBold), color = Color.White) }
+                ) { Text(stringResource(R.string.block), style = OzType.small.copy(fontWeight = FontWeight.SemiBold), color = Color.White) }
             }
         }
     }

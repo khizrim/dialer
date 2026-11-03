@@ -28,6 +28,10 @@ android {
     kotlinOptions {
         jvmTarget = "17"
     }
+    androidResources {
+        // только языки, которые мы переводим
+        localeFilters += listOf("en", "ru")
+    }
     buildFeatures {
         compose = true
     }
@@ -43,5 +47,7 @@ dependencies {
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
+    implementation("com.github.petrovich4j:petrovich4j:1.1.3")
     debugImplementation("androidx.compose.ui:ui-tooling")
+    testImplementation("junit:junit:4.13.2")
 }

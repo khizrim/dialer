@@ -14,6 +14,7 @@ import com.khizrim.dialer.data.CallLogSource
 import com.khizrim.dialer.data.CallRecord
 import com.khizrim.dialer.data.ContactsSource
 import com.khizrim.dialer.data.Dates
+import com.khizrim.dialer.data.Declension
 import com.khizrim.dialer.data.Interaction
 import com.khizrim.dialer.data.Numbers
 import com.khizrim.dialer.data.PhoneFormat
@@ -30,8 +31,9 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.util.Locale
 
-enum class Screen { HOME, CONTACTS, PERSON, BLOCKED }
+enum class Screen { HOME, CONTACTS, PERSON, BLOCKED, UNKNOWN }
 enum class SheetMode { OTHER, DEFAULT }
 enum class MenuContext { HOME, SEARCH }
 
@@ -53,6 +55,8 @@ private class Loaded(
 /** Состояние приложения поверх настоящих контактов, журнала звонков и системного чёрного списка. */
 class DialerViewModel(app: Application) : AndroidViewModel(app) {
     private val ctx get() = getApplication<Application>()
+    private val res get() = ctx.resources
+    private fun str(id: Int, vararg args: Any): String = ctx.getString(id, *args)
     private val prefs = Prefs(app)
     val region: String = PhoneFormat.defaultRegion
 
@@ -74,6 +78,12 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     var blocked by mutableStateOf<List<String>>(emptyList()); private set
 
     val home = mutableStateListOf<HomeEntry>()
+
+    /** «Не беспокоить незнакомым»: такие звонки не звонят и не попадают на главную. */
+    var silenceUnknown by mutableStateOf(prefs.silenceUnknown); private set
+
+    /** Звонки с номеров не из контактов, новые сверху. */
+    var unknownCalls by mutableStateOf<List<CallRecord>>(emptyList()); private set
     private var defaultsVersion by mutableStateOf(0)
 
     var screen by mutableStateOf(Screen.HOME); private set
@@ -119,6 +129,7 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
             calls = loaded.calls
             interactions = loaded.interactions
             blocked = loaded.blocked
+            unknownCalls = loaded.calls.filter { byNumber[Numbers.key(it.number)] == null }.take(100)
             rebuildHome()
             ready = true
         }
@@ -147,7 +158,8 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
             if (prefs.hiddenAt(key) >= a.last) return@mapNotNull null
             val person = personByKey[key]
             if (person == null && !key.startsWith("n:")) return@mapNotNull null
-            val missed = if (a.lastMissed > a.lastOther) Dates.missed(a.lastMissed) else null
+            if (person == null && silenceUnknown) return@mapNotNull null
+            val missed = if (a.lastMissed > a.lastOther) Dates.missed(res, a.lastMissed) else null
             HomeEntry(key, person, if (person == null) a.number else null, a.last, missed)
         }.sortedBy { it.lastAt }.takeLast(HOME_SIZE)
         // обновляем список на месте, чтобы строки переезжали, а не мигали
@@ -162,6 +174,24 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
 
     fun openContacts() { closeKeypad(); screen = Screen.CONTACTS }
     fun openBlocked() { screen = Screen.BLOCKED }
+    fun openUnknown() { screen = Screen.UNKNOWN }
+
+    fun toggleSilenceUnknown() {
+        silenceUnknown = !silenceUnknown
+        prefs.silenceUnknown = silenceUnknown
+        rebuildHome()
+    }
+
+    fun callUnknown(number: String) { Launcher.call(ctx, number)?.let { say(it) } }
+    fun openUnknownMenu(number: String) { menu = MenuState(HomeEntry("n:" + Numbers.key(number), null, number, 0L, null), MenuContext.SEARCH) }
+
+    /** «Как связаться с Мамой» по-русски, иначе нейтрально. */
+    fun reachTitle(p: Person): String {
+        if (Locale.getDefault().language == "ru") {
+            Declension.instrumental(p.name)?.let { return str(R.string.how_to_reach_named, Declension.withPreposition(it)) }
+        }
+        return str(R.string.how_to_reach)
+    }
     fun goHome() { screen = Screen.HOME }
 
     fun openPerson(id: Long) {
@@ -182,7 +212,7 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
         menu != null -> { menu = null; true }
         keypadOpen -> { closeKeypad(); true }
         screen == Screen.PERSON -> { leavePerson(); true }
-        screen == Screen.BLOCKED -> { screen = Screen.CONTACTS; true }
+        screen == Screen.BLOCKED || screen == Screen.UNKNOWN -> { screen = Screen.CONTACTS; true }
         screen == Screen.CONTACTS -> { screen = Screen.HOME; true }
         else -> false
     }
@@ -285,7 +315,7 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
             prefs.setDefault(p.lookupKey, m)
             defaultsVersion++
             sheet = null
-            say("Теперь по нажатию: ${m.title}")
+            say(str(R.string.now_on_tap, m.label(ctx)))
         } else {
             perform(p, m)
         }
@@ -298,7 +328,7 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
             prefs.setDefault(p.lookupKey, null)
             defaultsVersion++
             sheet = null
-            say("Теперь будем спрашивать каждый раз")
+            say(str(R.string.now_ask))
         } else {
             sheet = s.copy(mode = SheetMode.DEFAULT)
         }
@@ -311,9 +341,9 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
             if (ok) {
                 people = people.map { if (it.id == p.id) it.copy(starred = next) else it }
                 byId = people.associateBy { it.id }
-                say(if (next) "Добавлено в избранное" else "Убрано из избранного")
+                say(str(if (next) R.string.added_favorite else R.string.removed_favorite))
             } else {
-                say("Не получилось изменить избранное")
+                say(str(R.string.favorite_failed))
             }
         }
     }
@@ -321,9 +351,9 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     fun history(p: Person): List<HistoryEntry> {
         val keys = p.phones.map { Numbers.key(it.number) }.toSet()
         val events = ArrayList<Triple<Long, String, Boolean>>()
-        calls.filter { Numbers.key(it.number) in keys }.take(12).forEach { events += Triple(it.date, it.text, it.missed) }
-        interactions.filter { it.key == p.key }.takeLast(12).forEach { events += Triple(it.at, it.method.title, false) }
-        return events.sortedByDescending { it.first }.take(6).map { HistoryEntry(Dates.day(it.first), it.second, it.third) }
+        calls.filter { Numbers.key(it.number) in keys }.take(12).forEach { events += Triple(it.date, it.text(res), it.missed) }
+        interactions.filter { it.key == p.key }.takeLast(12).forEach { events += Triple(it.at, it.method.label(ctx), false) }
+        return events.sortedByDescending { it.first }.take(6).map { HistoryEntry(Dates.day(res, it.first), it.second, it.third) }
     }
 
     fun smsTo(number: String) { Launcher.sms(ctx, number)?.let { say(it) } }
@@ -345,11 +375,11 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
             prefs.hide(listOf(key))
             removed = listOf(at to entry)
             tidy = true
-            say("${entry.title} ${if (entry.person == null) "убран" else removedWord(entry.title)} с главной", undo = true)
+            say(str(if (entry.person != null && looksFeminine(entry.title)) R.string.removed_from_home_f else R.string.removed_from_home, entry.title), undo = true)
         }
     }
 
-    private fun removedWord(name: String): String = if (name.trim().split(" ").first().last() in "ая") "убрана" else "убран"
+    private fun looksFeminine(name: String): Boolean = name.trim().split(" ").first().lastOrNull()?.let { it in "аяАЯ" } == true
 
     fun undo() {
         removed.sortedBy { it.first }.forEach { (at, e) ->
@@ -364,9 +394,9 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
 
     fun askClearHome() {
         confirm = ConfirmState(
-            "Очистить главную?",
-            "Имена уйдут с главной, контакты останутся. Люди вернутся сюда, когда вы с ними свяжетесь.",
-            "Очистить",
+            str(R.string.clear_home_title),
+            str(R.string.clear_home_text),
+            str(R.string.clear),
         ) {
             prefs.hide(home.map { it.key })
             home.clear(); tidy = false; toast = null; removed = emptyList()
@@ -379,16 +409,16 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     // ---------- чёрный список ----------
     fun askBlock(number: String) {
         menu = null
-        if (!isDefaultDialer) { say("Блокировать номера может только звонилка по умолчанию"); return }
+        if (!isDefaultDialer) { say(str(R.string.block_need_role)); return }
         val shown = PhoneFormat.pretty(number)
         confirm = ConfirmState(
-            "Заблокировать $shown?",
-            "Звонки и SMS с этого номера больше не будут доходить. Разблокировать можно во «Всех контактах».",
-            "Заблокировать",
+            str(R.string.block_title, shown),
+            str(R.string.block_text),
+            str(R.string.block),
         ) {
             viewModelScope.launch {
                 val ok = withContext(Dispatchers.IO) { Blocklist.block(ctx, number) }
-                say(if (ok) "Номер $shown заблокирован" else "Не получилось заблокировать")
+                say(if (ok) str(R.string.blocked_done, shown) else str(R.string.block_failed))
                 if (ok) { prefs.hide(listOf("n:" + Numbers.key(number))); reload() }
             }
         }
@@ -398,7 +428,7 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             val ok = withContext(Dispatchers.IO) { Blocklist.unblock(ctx, number) }
             if (ok) blocked = blocked - number
-            say(if (ok) "Номер ${PhoneFormat.pretty(number)} разблокирован" else "Не получилось разблокировать")
+            say(if (ok) str(R.string.unblocked_done, PhoneFormat.pretty(number)) else str(R.string.unblock_failed))
         }
     }
 

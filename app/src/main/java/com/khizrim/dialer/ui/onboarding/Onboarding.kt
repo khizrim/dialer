@@ -1,5 +1,6 @@
 package com.khizrim.dialer.ui.onboarding
 
+import com.khizrim.dialer.R
 import android.Manifest
 import android.content.Intent
 import android.net.Uri
@@ -22,6 +23,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.heading
@@ -72,8 +74,8 @@ fun Onboarding(vm: DialerViewModel) {
     ) {
         Text("Ozero Phone", style = OzType.namePerson, color = oz.fg, modifier = Modifier.semantics { heading() })
         Text(
-            if (roleStep) "Сделайте Ozero Phone звонилкой по умолчанию: так он сможет принимать звонки и блокировать ненужные номера."
-            else "Разрешите доступ к контактам и журналу звонков, чтобы на главной были ваши люди.",
+            if (roleStep) stringResource(R.string.ob_role_text)
+            else stringResource(R.string.ob_perm_text),
             style = OzType.body, color = oz.fg2, modifier = Modifier.padding(top = 12.dp, bottom = 32.dp),
         )
         Box(
@@ -84,13 +86,13 @@ fun Onboarding(vm: DialerViewModel) {
                 .background(oz.accentFill, RoundedCornerShape(18.dp)),
             contentAlignment = Alignment.Center,
         ) {
-            Text(if (roleStep) "Сделать звонилкой по умолчанию" else "Разрешить доступ", style = OzType.strong, color = Color.White)
+            Text(if (roleStep) stringResource(R.string.ob_role_button) else stringResource(R.string.ob_perm_button), style = OzType.strong, color = Color.White)
         }
         if (roleStep) {
-            TextAction("Не сейчас", oz.fg3, { vm.roleSkipped = true }, modifier = Modifier.padding(top = 12.dp).offset(x = (-12).dp))
+            TextAction(stringResource(R.string.not_now), oz.fg3, { vm.roleSkipped = true }, modifier = Modifier.padding(top = 12.dp).offset(x = (-12).dp))
         } else {
             // если доступ уже запрещён навсегда, система не покажет вопрос снова
-            TextAction("Открыть настройки приложения", oz.fg3, {
+            TextAction(stringResource(R.string.open_settings), oz.fg3, {
                 context.startActivity(
                     Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", context.packageName, null))
                         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),

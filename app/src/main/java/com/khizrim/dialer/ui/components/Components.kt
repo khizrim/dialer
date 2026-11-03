@@ -24,6 +24,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
@@ -78,7 +79,7 @@ private fun Modifier.ozPressImpl(
             indication = null,
             role = role,
             onClickLabel = null,
-            onLongClickLabel = if (onLongClick != null) "Меню" else null,
+            onLongClickLabel = if (onLongClick != null) stringResource(R.string.menu) else null,
             onLongClick = onLongClick,
             onClick = onClick,
         )
@@ -164,5 +165,5 @@ fun BottomBar(content: @Composable RowScope.() -> Unit) {
 
 @Composable
 fun KeypadFab(onClick: () -> Unit) {
-    RoundButton(R.drawable.ic_oz_grid, "Открыть клавиатуру", LocalOz.current.accentFill, onClick)
+    RoundButton(R.drawable.ic_oz_grid, stringResource(R.string.open_keypad), LocalOz.current.accentFill, onClick)
 }

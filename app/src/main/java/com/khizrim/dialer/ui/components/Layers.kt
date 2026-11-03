@@ -32,6 +32,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
@@ -70,7 +71,7 @@ fun BoxScope.SheetLayer(visible: Boolean, title: String, onDismiss: () -> Unit, 
     AnimatedVisibility(visible, enter = fadeIn(Motion.enter(Motion.MOVE)), exit = fadeOut(Motion.exit(Motion.MOVE))) {
         Box(
             Modifier.fillMaxSize().background(oz.scrim)
-                .clickable(remember { MutableInteractionSource() }, null, onClickLabel = "Закрыть", onClick = onDismiss),
+                .clickable(remember { MutableInteractionSource() }, null, onClickLabel = stringResource(R.string.close), onClick = onDismiss),
         )
     }
     AnimatedVisibility(
@@ -101,18 +102,25 @@ fun BoxScope.MethodSheet(vm: DialerViewModel) {
     val s = rememberLast(vm.sheet)
     val p = s?.let { vm.person(it.personId) }
     val setMode = s?.mode == SheetMode.DEFAULT
-    val title = if (setMode) "Что делать по нажатию на имя" else "Как связаться"
+    val neutral = stringResource(R.string.how_to_reach)
+    // «Как связаться с Мамой», если имя склоняется; иначе имя и подпись под ним
+    val reach = p?.let { vm.reachTitle(it) } ?: neutral
+    val title = if (setMode) stringResource(R.string.on_tap_title) else reach
     SheetLayer(vm.sheet != null, title, vm::closeSheet) {
         if (p == null) return@SheetLayer
         val current = vm.defaultOf(p)
-        Text(p.name, style = OzType.nameSearch, color = oz.fg, modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 4.dp))
-        Text(title, style = OzType.small, color = oz.fg3, modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 2.dp, bottom = 8.dp))
+        if (!setMode && reach != neutral) {
+            Text(reach, style = OzType.strong, color = oz.fg, modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 4.dp, bottom = 8.dp))
+        } else {
+            Text(p.name, style = OzType.nameSearch, color = oz.fg, modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 4.dp))
+            Text(title, style = OzType.small, color = oz.fg3, modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 2.dp, bottom = 8.dp))
+        }
         p.methods.forEachIndexed { i, m ->
             if (i > 0) HorizontalDivider(thickness = 1.dp, color = oz.line)
-            MethodRow(m, if (m == Method.PHONE) "${m.title} ${com.khizrim.dialer.data.PhoneFormat.pretty(p.mainNumber.orEmpty())}" else m.title, m == current) { vm.pickInSheet(m) }
+            MethodRow(m, if (m == Method.PHONE) stringResource(m.title) + " " + com.khizrim.dialer.data.PhoneFormat.pretty(p.mainNumber.orEmpty()) else stringResource(m.title), m == current) { vm.pickInSheet(m) }
         }
         HorizontalDivider(Modifier.padding(top = 4.dp), thickness = 1.dp, color = oz.line)
-        SheetRow(if (setMode) "Спрашивать каждый раз" else "Сделать способом по умолчанию", oz.fg3, vm::sheetFooter)
+        SheetRow(if (setMode) stringResource(R.string.ask_every_time) else stringResource(R.string.make_default), oz.fg3, vm::sheetFooter)
     }
 }
 
@@ -167,16 +175,16 @@ fun BoxScope.PersonMenu(vm: DialerViewModel) {
             modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 4.dp, bottom = 8.dp),
         )
         if (p != null) {
-            SheetRow("Открыть карточку", oz.fg, { vm.openPerson(p.id) }, R.drawable.ic_oz_user)
-            SheetRow("Другой способ", oz.fg, { vm.openSheet(p, SheetMode.OTHER) }, R.drawable.ic_oz_swap)
+            SheetRow(stringResource(R.string.open_card), oz.fg, { vm.openPerson(p.id) }, R.drawable.ic_oz_user)
+            SheetRow(stringResource(R.string.other_way), oz.fg, { vm.openSheet(p, SheetMode.OTHER) }, R.drawable.ic_oz_swap)
         } else {
             val number = e.number.orEmpty()
-            SheetRow("Добавить в контакты", oz.fg, { vm.addToContacts(number) }, R.drawable.ic_oz_user_plus)
-            SheetRow("Написать SMS", oz.fg, { vm.closeMenu(); vm.smsTo(number) }, R.drawable.ic_oz_sms)
-            SheetRow("Заблокировать", oz.fg, { vm.askBlock(number) }, R.drawable.ic_oz_ban)
+            SheetRow(stringResource(R.string.add_to_contacts), oz.fg, { vm.addToContacts(number) }, R.drawable.ic_oz_user_plus)
+            SheetRow(stringResource(R.string.send_sms), oz.fg, { vm.closeMenu(); vm.smsTo(number) }, R.drawable.ic_oz_sms)
+            SheetRow(stringResource(R.string.block), oz.fg, { vm.askBlock(number) }, R.drawable.ic_oz_ban)
         }
         if (m?.context == MenuContext.HOME) {
-            SheetRow("Убрать с главной", oz.fg, { vm.removeFromHome(e.key) }, R.drawable.ic_oz_hide)
+            SheetRow(stringResource(R.string.remove_from_home), oz.fg, { vm.removeFromHome(e.key) }, R.drawable.ic_oz_hide)
         }
     }
 }
@@ -208,7 +216,7 @@ fun BoxScope.ConfirmLayer(vm: DialerViewModel) {
             Text(c.title, style = OzType.title, color = oz.fg)
             Text(c.description, style = OzType.small, color = oz.fg3, modifier = Modifier.padding(top = 8.dp))
             Row(Modifier.fillMaxWidth().padding(top = 24.dp), horizontalArrangement = Arrangement.End) {
-                TextAction("Отмена", oz.fg, vm::cancelConfirm, style = OzType.small.copy(fontWeight = FontWeight.SemiBold))
+                TextAction(stringResource(R.string.cancel), oz.fg, vm::cancelConfirm, style = OzType.small.copy(fontWeight = FontWeight.SemiBold))
                 Spacer(Modifier.width(8.dp))
                 Box(
                     Modifier

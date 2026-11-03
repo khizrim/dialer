@@ -60,6 +60,15 @@
             </intent-filter>
         </service>
 
+        <service
+            android:name=".telecom.OzScreeningService"
+            android:exported="true"
+            android:permission="android.permission.BIND_SCREENING_SERVICE">
+            <intent-filter>
+                <action android:name="android.telecom.CallScreeningService" />
+            </intent-filter>
+        </service>
+
         <receiver android:name=".telecom.CallActionReceiver" android:exported="false" />
         <receiver android:name=".telecom.ReminderReceiver" android:exported="false" />
     </application>

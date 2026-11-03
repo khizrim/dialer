@@ -36,7 +36,7 @@ class CallActivity : ComponentActivity() {
             override fun answer() = CallManager.answer()
             override fun decline() = CallManager.decline()
             override fun hangup() = CallManager.hangup()
-            override fun quickSms() = CallManager.rejectWithMessage("Не могу говорить, перезвоню")
+            override fun quickSms() = CallManager.rejectWithMessage(getString(com.khizrim.dialer.R.string.quick_reply))
             override fun remind() {
                 val number = CallManager.currentNumber() ?: return
                 CallNotifications.scheduleReminder(applicationContext, CallManager.currentName() ?: number, number)

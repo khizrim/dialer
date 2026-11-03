@@ -2,10 +2,13 @@ package com.khizrim.dialer.data
 
 import android.content.ContentValues
 import android.content.Context
+import android.content.res.Resources
 import android.provider.BlockedNumberContract
 import android.provider.BlockedNumberContract.BlockedNumbers
 import android.provider.CallLog
+import com.khizrim.dialer.R
 import com.khizrim.dialer.model.Method
+import java.text.DateFormat
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -14,14 +17,14 @@ import java.util.Locale
 /** Запись журнала звонков. */
 data class CallRecord(val number: String, val type: Int, val date: Long, val duration: Long) {
     val missed: Boolean get() = type == CallLog.Calls.MISSED_TYPE
-    val text: String get() = when (type) {
-        CallLog.Calls.INCOMING_TYPE -> "Входящий" + Dates.duration(duration)
-        CallLog.Calls.OUTGOING_TYPE -> if (duration > 0) "Исходящий" + Dates.duration(duration) else "Исходящий, без ответа"
-        CallLog.Calls.MISSED_TYPE -> "Пропущенный"
-        CallLog.Calls.REJECTED_TYPE -> "Отклонённый"
-        CallLog.Calls.BLOCKED_TYPE -> "Заблокированный"
-        CallLog.Calls.VOICEMAIL_TYPE -> "Голосовая почта"
-        else -> "Звонок"
+    fun text(res: Resources): String = when (type) {
+        CallLog.Calls.INCOMING_TYPE -> Dates.withDuration(res, res.getString(R.string.h_incoming), duration)
+        CallLog.Calls.OUTGOING_TYPE -> if (duration > 0) Dates.withDuration(res, res.getString(R.string.h_outgoing), duration) else res.getString(R.string.h_outgoing_no_answer)
+        CallLog.Calls.MISSED_TYPE -> res.getString(R.string.h_missed)
+        CallLog.Calls.REJECTED_TYPE -> res.getString(R.string.h_rejected)
+        CallLog.Calls.BLOCKED_TYPE -> res.getString(R.string.h_blocked)
+        CallLog.Calls.VOICEMAIL_TYPE -> res.getString(R.string.h_voicemail)
+        else -> res.getString(R.string.h_call)
     }
 }
 
@@ -73,6 +76,10 @@ class Prefs(context: Context) {
         sp.edit().putString("log", lines.joinToString("\n") { "${it.key}\t${it.method.name}\t${it.at}" }).apply()
     }
 
+    var silenceUnknown: Boolean
+        get() = sp.getBoolean("silenceUnknown", false)
+        set(v) { sp.edit().putBoolean("silenceUnknown", v).apply() }
+
     companion object { const val ASK = "ASK" }
 }
 
@@ -99,36 +106,38 @@ object Blocklist {
 }
 
 object Dates {
-    private val ru = Locale("ru")
+    private val locale: Locale get() = Locale.getDefault()
 
     /** «Сегодня», «Вчера», «Пн», «12 окт». */
-    fun day(ts: Long, now: Long = System.currentTimeMillis()): String {
+    fun day(res: Resources, ts: Long, now: Long = System.currentTimeMillis()): String {
         val a = Calendar.getInstance().apply { timeInMillis = ts }
         val b = Calendar.getInstance().apply { timeInMillis = now }
         val days = daysBetween(a, b)
         return when {
-            days <= 0 -> "Сегодня"
-            days == 1 -> "Вчера"
-            days < 7 -> SimpleDateFormat("EE", ru).format(Date(ts)).replaceFirstChar { it.uppercase() }.trimEnd('.')
-            a.get(Calendar.YEAR) == b.get(Calendar.YEAR) -> SimpleDateFormat("d MMM", ru).format(Date(ts)).trimEnd('.')
-            else -> SimpleDateFormat("d MMM yyyy", ru).format(Date(ts))
+            days <= 0 -> res.getString(R.string.today)
+            days == 1 -> res.getString(R.string.yesterday)
+            days < 7 -> SimpleDateFormat("EE", locale).format(Date(ts)).replaceFirstChar { it.uppercase() }.trimEnd('.')
+            a.get(Calendar.YEAR) == b.get(Calendar.YEAR) -> SimpleDateFormat("d MMM", locale).format(Date(ts)).trimEnd('.')
+            else -> SimpleDateFormat("d MMM yyyy", locale).format(Date(ts))
         }
     }
 
-    /** «вчера», «сегодня в 14:30» для подписи на главной. */
-    fun missed(ts: Long): String {
-        val d = day(ts)
-        return "Пропущенный, " + when (d) {
-            "Сегодня" -> "в " + SimpleDateFormat("HH:mm", ru).format(Date(ts))
-            "Вчера" -> "вчера"
-            else -> d.lowercase()
+    /** «Пропущенный, вчера» для подписи на главной. */
+    fun missed(res: Resources, ts: Long): String {
+        val a = Calendar.getInstance().apply { timeInMillis = ts }
+        val days = daysBetween(a, Calendar.getInstance())
+        val whenText = when {
+            days <= 0 -> res.getString(R.string.at_time, DateFormat.getTimeInstance(DateFormat.SHORT, locale).format(Date(ts)))
+            days == 1 -> res.getString(R.string.yesterday_lower)
+            else -> day(res, ts)
         }
+        return res.getString(R.string.missed_when, whenText)
     }
 
-    fun duration(seconds: Long): String = when {
-        seconds <= 0 -> ""
-        seconds < 60 -> ", $seconds с"
-        else -> ", ${seconds / 60} мин"
+    fun withDuration(res: Resources, base: String, seconds: Long): String = when {
+        seconds <= 0 -> base
+        seconds < 60 -> res.getString(R.string.dur_sec, base, seconds.toInt())
+        else -> res.getString(R.string.dur_min, base, (seconds / 60).toInt())
     }
 
     private fun daysBetween(a: Calendar, b: Calendar): Int {

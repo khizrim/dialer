@@ -10,6 +10,7 @@ import android.telecom.VideoProfile
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.khizrim.dialer.R
 import com.khizrim.dialer.data.Blocklist
 import com.khizrim.dialer.data.ContactsSource
 import com.khizrim.dialer.model.CallPhase
@@ -39,10 +40,13 @@ object CallManager {
     }
 
     private val primary: Call?
-        get() = calls.firstOrNull { it.state == Call.STATE_RINGING }
-            ?: calls.firstOrNull { it.state == Call.STATE_ACTIVE }
-            ?: calls.firstOrNull { it.state != Call.STATE_DISCONNECTED }
-            ?: calls.firstOrNull()
+        get() {
+            val visible = calls.filter { it !in silenced }
+            return visible.firstOrNull { it.state == Call.STATE_RINGING }
+                ?: visible.firstOrNull { it.state == Call.STATE_ACTIVE }
+                ?: visible.firstOrNull { it.state != Call.STATE_DISCONNECTED }
+                ?: visible.firstOrNull()
+        }
 
     internal fun attach(service: OzInCallService) {
         this.service = service
@@ -69,13 +73,24 @@ object CallManager {
         refresh()
     }
 
+    /** Звонки с незнакомых номеров, которые пользователь попросил не показывать. */
+    private val silenced = mutableSetOf<Call>()
+
+    fun isSilenced(call: Call): Boolean = call in silenced
+
+    internal fun silence(call: Call) { silenced += call }
+
+    /** Есть ли сейчас звонок, который надо показать пользователю. */
+    val hasVisibleCall: Boolean get() = calls.any { it !in silenced && it.state != Call.STATE_DISCONNECTED }
+
     internal fun remove(call: Call) {
         call.unregisterCallback(callback)
+        silenced -= call
         calls -= call
-        if (calls.isEmpty()) {
+        if (calls.none { it !in silenced }) {
             dtmf = null
             // держим экран «Звонок завершён» ещё 1.2 с, потом он гаснет
-            main.postDelayed({ if (calls.isEmpty()) state = null }, 1200)
+            main.postDelayed({ if (calls.none { it !in silenced }) state = null }, 1200)
         } else {
             refresh()
         }
@@ -97,12 +112,14 @@ object CallManager {
         }
         val connectedAt = call.details?.connectTimeMillis ?: 0L
         if (phase == CallPhase.ENDED && endText == null) {
-            endText = when (call.details?.disconnectCause?.code) {
-                DisconnectCause.REJECTED -> "Отклонён"
-                DisconnectCause.MISSED -> "Пропущенный"
-                DisconnectCause.BUSY -> "Занято"
-                DisconnectCause.ERROR -> "Не удалось позвонить"
-                else -> if (connectedAt > 0) "Звонок завершён, " + timer((System.currentTimeMillis() - connectedAt) / 1000) else "Звонок завершён"
+            val ctx = appContext
+            endText = if (ctx == null) "" else when (call.details?.disconnectCause?.code) {
+                DisconnectCause.REJECTED -> ctx.getString(R.string.end_rejected)
+                DisconnectCause.MISSED -> ctx.getString(R.string.end_missed)
+                DisconnectCause.BUSY -> ctx.getString(R.string.end_busy)
+                DisconnectCause.ERROR -> ctx.getString(R.string.end_error)
+                else -> if (connectedAt > 0) ctx.getString(R.string.end_done_time, timer((System.currentTimeMillis() - connectedAt) / 1000))
+                else ctx.getString(R.string.end_done)
             }
         }
         state = CallState(
@@ -117,7 +134,8 @@ object CallManager {
             endText = endText.orEmpty(),
             onHold = call.state == Call.STATE_HOLDING,
         )
-        service?.let { CallNotifications.update(it, state, call) }
+        // тихий незнакомый звонок: без уведомления и без экрана
+        if (call !in silenced) service?.let { CallNotifications.update(it, state, call) }
     }
 
     // ---------- действия ----------

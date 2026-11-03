@@ -72,6 +72,7 @@ fun DialerApp(vm: DialerViewModel = viewModel()) {
                         Screen.CONTACTS -> ContactsScreen(vm)
                         Screen.PERSON -> r.personId?.let { PersonScreen(vm, it) }
                         Screen.BLOCKED -> BlockedScreen(vm)
+                        Screen.UNKNOWN -> com.khizrim.dialer.ui.contacts.UnknownScreen(vm)
                     }
                 }
 

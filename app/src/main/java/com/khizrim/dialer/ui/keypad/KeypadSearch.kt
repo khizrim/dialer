@@ -25,6 +25,7 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -51,10 +52,18 @@ import com.khizrim.dialer.ui.theme.LocalReducedMotion
 import com.khizrim.dialer.ui.theme.Motion
 import com.khizrim.dialer.ui.theme.OzType
 
-private val KEYS = listOf(
+private val KEYS_RU = listOf(
     '1' to "", '2' to "АБВГ", '3' to "ДЕЖЗ", '4' to "ИЙКЛ", '5' to "МНОП", '6' to "РСТУ",
     '7' to "ФХЦЧ", '8' to "ШЩЪЫ", '9' to "ЬЭЮЯ", '*' to "", '0' to "+", '#' to "",
 )
+private val KEYS_LATIN = listOf(
+    '1' to "", '2' to "ABC", '3' to "DEF", '4' to "GHI", '5' to "JKL", '6' to "MNO",
+    '7' to "PQRS", '8' to "TUV", '9' to "WXYZ", '*' to "", '0' to "+", '#' to "",
+)
+
+/** Буквы на клавишах по языку интерфейса; поиск понимает обе раскладки. */
+private val KEYS: List<Pair<Char, String>>
+    get() = if (java.util.Locale.getDefault().language == "ru") KEYS_RU else KEYS_LATIN
 
 /** Отфильтрованные люди над клавиатурой. Живут в верхней половине экрана. */
 @Composable
@@ -78,7 +87,7 @@ fun SearchResults(vm: DialerViewModel, modifier: Modifier = Modifier) {
                     .press(
                         onClick = { vm.perform(p, method) },
                         onLongClick = { vm.openMenu(p) },
-                        label = "${p.name}, ${hit.phone}: ${method?.title ?: "Выбрать способ"}",
+                        label = "${p.name}, ${hit.phone}: ${stringResource(method?.title ?: R.string.choose_method)}",
                     )
                     .padding(horizontal = 12.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -102,7 +111,7 @@ fun SearchResults(vm: DialerViewModel, modifier: Modifier = Modifier) {
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     OzIcon(R.drawable.ic_oz_user_plus, oz.fg2)
-                    Text("Добавить номер в контакты", style = OzType.body, color = oz.fg2)
+                    Text(stringResource(R.string.add_number_to_contacts), style = OzType.body, color = oz.fg2)
                 }
             }
         }
@@ -136,16 +145,16 @@ fun KeypadPanel(vm: DialerViewModel) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                GhostIconButton(R.drawable.ic_oz_chevron_down, "Скрыть клавиатуру", vm::closeKeypad, tint = oz.fg2, size = 56.dp)
+                GhostIconButton(R.drawable.ic_oz_chevron_down, stringResource(R.string.hide_keypad), vm::closeKeypad, tint = oz.fg2, size = 56.dp)
             }
             Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                val label = if (vm.keypad.isEmpty()) "Позвонить" else "Позвонить на ${PhoneFormat.formatTyping(vm.keypad, vm.region)}"
+                val label = if (vm.keypad.isEmpty()) stringResource(R.string.call) else stringResource(R.string.call_number, PhoneFormat.formatTyping(vm.keypad, vm.region))
                 RoundButton(R.drawable.ic_oz_phone, label, oz.accentFill, vm::callTyped)
             }
             Box(Modifier.weight(1f).size(56.dp), contentAlignment = Alignment.Center) {
                 if (vm.keypad.isNotEmpty()) {
                     GhostIconButton(
-                        R.drawable.ic_oz_backspace, "Стереть цифру", vm::backspace,
+                        R.drawable.ic_oz_backspace, stringResource(R.string.delete_digit), vm::backspace,
                         tint = oz.fg2, size = 56.dp, onLongClick = vm::clearKeypad,
                     )
                 }
@@ -159,6 +168,7 @@ private fun TypedNumber(vm: DialerViewModel) {
     val oz = LocalOz.current
     val reduced = LocalReducedMotion.current
     val formatted = PhoneFormat.formatTyping(vm.keypad, vm.region)
+    val noNumber = stringResource(R.string.no_number)
     val size = when {
         formatted.length > 16 -> 24.sp
         formatted.length > 13 -> 28.sp
@@ -174,7 +184,7 @@ private fun TypedNumber(vm: DialerViewModel) {
             .fillMaxWidth()
             .height(56.dp)
             .padding(start = 24.dp, end = 24.dp, top = 4.dp)
-            .semantics { liveRegion = LiveRegionMode.Polite; contentDescription = formatted.ifEmpty { "Номер не набран" } },
+            .semantics { liveRegion = LiveRegionMode.Polite; contentDescription = formatted.ifEmpty { noNumber } },
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -200,6 +210,8 @@ private fun Key(d: Char, letters: String, vm: DialerViewModel, modifier: Modifie
     val source = remember { MutableInteractionSource() }
     val pressed by source.collectIsPressedAsState()
     val alpha by animateFloatAsState(if (pressed) 0.45f else 1f, Motion.enter(Motion.PRESS), label = "key")
+    val dialZero = stringResource(R.string.dial_zero)
+    val dialDigit = stringResource(R.string.dial_digit, d.toString())
     Column(
         modifier
             .height(66.dp)
@@ -210,7 +222,7 @@ private fun Key(d: Char, letters: String, vm: DialerViewModel, modifier: Modifie
                 onLongClick = if (d == '0') ({ vm.type('+') }) else null,
                 onClick = { vm.type(d) },
             )
-            .semantics { contentDescription = if (d == '0') "Набрать 0, удерживать для +" else "Набрать $d" }
+            .semantics { contentDescription = if (d == '0') dialZero else dialDigit }
             .graphicsLayer { this.alpha = alpha },
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,

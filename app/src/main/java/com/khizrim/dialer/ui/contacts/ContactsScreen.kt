@@ -20,6 +20,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -76,10 +77,10 @@ fun ContactsScreen(vm: DialerViewModel) {
                 if (people.isEmpty() && vm.ready) {
                     item(key = "empty") {
                         Column(Modifier.padding(12.dp)) {
-                            Text("Контактов пока нет", style = OzType.nameSearch, color = oz.fg)
+                            Text(stringResource(R.string.no_contacts), style = OzType.nameSearch, color = oz.fg)
                             Text(
-                                if (vm.hasContacts) "Добавьте людей в приложении «Контакты», и они появятся здесь."
-                                else "Разрешите доступ к контактам, чтобы видеть своих людей.",
+                                if (vm.hasContacts) stringResource(R.string.no_contacts_text)
+                                else stringResource(R.string.no_contacts_permission),
                                 style = OzType.body, color = oz.fg2, modifier = Modifier.padding(top = 8.dp),
                             )
                         }
@@ -115,16 +116,16 @@ fun ContactsScreen(vm: DialerViewModel) {
                                 }
                                 GhostIconButton(
                                     method?.icon ?: R.drawable.ic_oz_help,
-                                    "${method?.title ?: "Выбрать способ"}: ${p.name}",
+                                    "${stringResource(method?.title ?: R.string.choose_method)}: ${p.name}",
                                     { vm.perform(p, method) },
                                     tint = oz.fg3, iconSize = 22.dp,
                                 )
                             }
                         }
-                        Footer -> TextAction(
-                            "Заблокированные номера", oz.fg3, vm::openBlocked, style = OzType.small,
-                            modifier = Modifier.padding(top = 24.dp, bottom = 8.dp),
-                        )
+                        Footer -> Column(Modifier.padding(top = 24.dp, bottom = 8.dp)) {
+                            TextAction(stringResource(R.string.unknown_numbers), oz.fg3, vm::openUnknown, style = OzType.small)
+                            TextAction(stringResource(R.string.blocked_numbers), oz.fg3, vm::openBlocked, style = OzType.small)
+                        }
                     }
                 }
             }
@@ -142,7 +143,7 @@ fun ContactsScreen(vm: DialerViewModel) {
                             style = OzType.tiny.copy(letterSpacing = OzType.small.letterSpacing),
                             color = oz.fg2,
                             modifier = Modifier
-                                .press({ scope.launch { state.scrollToItem(at) } }, label = "Перейти к букве $l")
+                                .press({ scope.launch { state.scrollToItem(at) } }, label = stringResource(R.string.go_to_letter, l.toString()))
                                 .padding(horizontal = 6.dp, vertical = 1.dp),
                         )
                     }
@@ -150,7 +151,7 @@ fun ContactsScreen(vm: DialerViewModel) {
             }
         }
         BottomBar {
-            GhostIconButton(R.drawable.ic_oz_back, "Вернуться на главную", vm::goHome)
+            GhostIconButton(R.drawable.ic_oz_back, stringResource(R.string.back_home), vm::goHome)
             KeypadFab { vm.openKeypad() }
         }
     }
@@ -163,29 +164,87 @@ fun BlockedScreen(vm: DialerViewModel) {
     Column(Modifier.fillMaxSize()) {
         LazyColumn(Modifier.weight(1f).fillMaxWidth().padding(horizontal = 24.dp), verticalArrangement = Arrangement.Bottom) {
             item(key = "title") {
-                Text("Заблокированные", style = OzType.namePerson, color = oz.fg, modifier = Modifier.padding(bottom = 16.dp).semantics { heading() })
+                Text(stringResource(R.string.blocked_title), style = OzType.namePerson, color = oz.fg, modifier = Modifier.padding(bottom = 16.dp).semantics { heading() })
             }
             if (!vm.isDefaultDialer) {
                 item(key = "role") {
                     Text(
-                        "Список доступен, когда Ozero Phone выбран звонилкой по умолчанию.",
+                        stringResource(R.string.blocked_need_role),
                         style = OzType.body, color = oz.fg2, modifier = Modifier.padding(bottom = 16.dp),
                     )
                 }
             } else if (vm.blocked.isEmpty()) {
                 item(key = "empty") {
-                    Text("Никого не блокировали. Заблокировать номер можно прямо во время звонка или долгим нажатием на главной.", style = OzType.body, color = oz.fg2, modifier = Modifier.padding(bottom = 16.dp))
+                    Text(stringResource(R.string.blocked_empty), style = OzType.body, color = oz.fg2, modifier = Modifier.padding(bottom = 16.dp))
                 }
             }
             items(vm.blocked, key = { it }) { n ->
                 Row(Modifier.fillMaxWidth().height(56.dp).animateItem(), verticalAlignment = Alignment.CenterVertically) {
                     Text(com.khizrim.dialer.data.PhoneFormat.pretty(n), style = OzType.list, color = oz.fg, modifier = Modifier.weight(1f))
-                    TextAction("Разблокировать", oz.accent, { vm.unblock(n) }, style = OzType.small)
+                    TextAction(stringResource(R.string.unblock), oz.accent, { vm.unblock(n) }, style = OzType.small)
                 }
             }
         }
         BottomBar {
-            GhostIconButton(R.drawable.ic_oz_back, "Назад", vm::openContacts)
+            GhostIconButton(R.drawable.ic_oz_back, stringResource(R.string.back), vm::openContacts)
+            Box(Modifier)
+        }
+    }
+}
+
+/** Незнакомые номера: тихий режим и список звонков, которые не звенели. */
+@Composable
+fun UnknownScreen(vm: DialerViewModel) {
+    val oz = LocalOz.current
+    val res = androidx.compose.ui.platform.LocalContext.current.resources
+    val onText = stringResource(R.string.on)
+    val offText = stringResource(R.string.off)
+    Column(Modifier.fillMaxSize()) {
+        LazyColumn(Modifier.weight(1f).fillMaxWidth().padding(horizontal = 24.dp), verticalArrangement = Arrangement.Bottom) {
+            item(key = "title") {
+                Text(stringResource(R.string.unknown_title), style = OzType.namePerson, color = oz.fg, modifier = Modifier.padding(bottom = 16.dp).semantics { heading() })
+            }
+            if (vm.unknownCalls.isEmpty()) {
+                item(key = "empty") {
+                    Text(stringResource(R.string.unknown_empty), style = OzType.body, color = oz.fg2, modifier = Modifier.padding(bottom = 16.dp))
+                }
+            }
+            items(vm.unknownCalls, key = { "${it.number}:${it.date}" }) { c ->
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .height(56.dp)
+                        .press({ vm.callUnknown(c.number) }, onLongClick = { vm.openUnknownMenu(c.number) }, shape = RoundedCornerShape(14.dp)),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text(com.khizrim.dialer.data.PhoneFormat.pretty(c.number), style = OzType.list, color = oz.fg, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(c.text(res), style = OzType.small, color = if (c.missed) oz.danger else oz.fg3)
+                    }
+                    Text(com.khizrim.dialer.data.Dates.day(res, c.date), style = OzType.small, color = oz.fg3)
+                }
+            }
+            item(key = "toggle") {
+                Column(Modifier.padding(top = 24.dp, bottom = 8.dp)) {
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .height(56.dp)
+                            .press({ vm.toggleSilenceUnknown() }, shape = RoundedCornerShape(14.dp), label = stringResource(R.string.silence_unknown)),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(stringResource(R.string.silence_unknown), style = OzType.list, color = oz.fg, modifier = Modifier.weight(1f))
+                        Text(if (vm.silenceUnknown) onText else offText, style = OzType.small, color = if (vm.silenceUnknown) oz.accent else oz.fg3)
+                    }
+                    Text(
+                        if (vm.isDefaultDialer) stringResource(R.string.silence_unknown_text) else stringResource(R.string.silence_need_role),
+                        style = OzType.small, color = oz.fg3,
+                    )
+                }
+            }
+        }
+        BottomBar {
+            GhostIconButton(R.drawable.ic_oz_back, stringResource(R.string.back), vm::openContacts)
             Box(Modifier)
         }
     }

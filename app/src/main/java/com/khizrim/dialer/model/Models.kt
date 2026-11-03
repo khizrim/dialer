@@ -1,24 +1,30 @@
 package com.khizrim.dialer.model
 
+import android.content.Context
 import androidx.annotation.DrawableRes
+import androidx.annotation.StringRes
 import com.khizrim.dialer.R
 
 enum class MethodKind { CALL, CHAT }
 
 /** Способ связи: что произойдёт по нажатию на имя. */
-enum class Method(@DrawableRes val icon: Int, val title: String, val network: String, val kind: MethodKind) {
-    WA_VIDEO(R.drawable.ic_oz_video, "Видео в WhatsApp", "WhatsApp", MethodKind.CALL),
-    WA_CALL(R.drawable.ic_oz_phone, "Звонок в WhatsApp", "WhatsApp", MethodKind.CALL),
-    WA_CHAT(R.drawable.ic_oz_chat, "Чат в WhatsApp", "WhatsApp", MethodKind.CHAT),
-    TG_CALL(R.drawable.ic_oz_phone, "Звонок в Telegram", "Telegram", MethodKind.CALL),
-    TG_VIDEO(R.drawable.ic_oz_video, "Видео в Telegram", "Telegram", MethodKind.CALL),
-    TG_CHAT(R.drawable.ic_oz_send, "Написать в Telegram", "Telegram", MethodKind.CHAT),
-    SIG_CALL(R.drawable.ic_oz_phone, "Звонок в Signal", "Signal", MethodKind.CALL),
-    SIG_CHAT(R.drawable.ic_oz_chat, "Написать в Signal", "Signal", MethodKind.CHAT),
-    VB_CALL(R.drawable.ic_oz_phone, "Звонок в Viber", "Viber", MethodKind.CALL),
-    VB_CHAT(R.drawable.ic_oz_chat, "Написать в Viber", "Viber", MethodKind.CHAT),
-    PHONE(R.drawable.ic_oz_phone, "Обычный звонок", "Телефон", MethodKind.CALL),
-    SMS(R.drawable.ic_oz_sms, "Написать SMS", "SMS", MethodKind.CHAT),
+enum class Method(@DrawableRes val icon: Int, @StringRes val title: Int, val brand: String?, val kind: MethodKind) {
+    WA_VIDEO(R.drawable.ic_oz_video, R.string.m_wa_video, "WhatsApp", MethodKind.CALL),
+    WA_CALL(R.drawable.ic_oz_phone, R.string.m_wa_call, "WhatsApp", MethodKind.CALL),
+    WA_CHAT(R.drawable.ic_oz_chat, R.string.m_wa_chat, "WhatsApp", MethodKind.CHAT),
+    TG_CALL(R.drawable.ic_oz_phone, R.string.m_tg_call, "Telegram", MethodKind.CALL),
+    TG_VIDEO(R.drawable.ic_oz_video, R.string.m_tg_video, "Telegram", MethodKind.CALL),
+    TG_CHAT(R.drawable.ic_oz_send, R.string.m_tg_chat, "Telegram", MethodKind.CHAT),
+    SIG_CALL(R.drawable.ic_oz_phone, R.string.m_sig_call, "Signal", MethodKind.CALL),
+    SIG_CHAT(R.drawable.ic_oz_chat, R.string.m_sig_chat, "Signal", MethodKind.CHAT),
+    VB_CALL(R.drawable.ic_oz_phone, R.string.m_vb_call, "Viber", MethodKind.CALL),
+    VB_CHAT(R.drawable.ic_oz_chat, R.string.m_vb_chat, "Viber", MethodKind.CHAT),
+    PHONE(R.drawable.ic_oz_phone, R.string.m_phone, null, MethodKind.CALL),
+    SMS(R.drawable.ic_oz_sms, R.string.m_sms, "SMS", MethodKind.CHAT),
+    ;
+
+    fun label(context: Context): String = context.getString(title)
+    fun network(context: Context): String = brand ?: context.getString(R.string.net_phone)
 }
 
 data class Phone(val number: String, val label: String)

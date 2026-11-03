@@ -11,6 +11,9 @@ import android.content.Intent
 import android.telecom.Call
 import android.telecom.CallAudioState
 import android.telecom.InCallService
+import android.telecom.TelecomManager
+import com.khizrim.dialer.data.ContactsSource
+import com.khizrim.dialer.data.Prefs
 import com.khizrim.dialer.MainActivity
 import com.khizrim.dialer.R
 import com.khizrim.dialer.model.CallPhase
@@ -30,6 +33,13 @@ class OzInCallService : InCallService() {
     }
 
     override fun onCallAdded(call: Call) {
+        if (shouldSilence(call)) {
+            // «Не беспокоить незнакомым»: без звонка, без уведомления; звонок останется в журнале
+            CallManager.silence(call)
+            runCatching { getSystemService(TelecomManager::class.java)?.silenceRinger() }
+            CallManager.add(call)
+            return
+        }
         CallManager.add(call)
         // исходящий открываем сразу; входящий показывает полноэкранное уведомление
         if (call.state != Call.STATE_RINGING) {
@@ -37,9 +47,15 @@ class OzInCallService : InCallService() {
         }
     }
 
+    private fun shouldSilence(call: Call): Boolean {
+        if (call.state != Call.STATE_RINGING || !Prefs(this).silenceUnknown) return false
+        val number = call.details?.handle?.schemeSpecificPart.orEmpty()
+        return number.isBlank() || ContactsSource.nameFor(this, number) == null
+    }
+
     override fun onCallRemoved(call: Call) {
         CallManager.remove(call)
-        if (CallManager.currentNumber() == null) CallNotifications.cancel(this)
+        if (!CallManager.hasVisibleCall) CallNotifications.cancel(this)
     }
 
     @Deprecated("Deprecated in Java")
@@ -58,14 +74,14 @@ object CallNotifications {
     fun createChannels(context: Context) {
         val nm = context.getSystemService(NotificationManager::class.java) ?: return
         nm.createNotificationChannel(
-            NotificationChannel(CHANNEL_INCOMING, "Входящие звонки", NotificationManager.IMPORTANCE_HIGH).apply {
+            NotificationChannel(CHANNEL_INCOMING, context.getString(R.string.ch_incoming), NotificationManager.IMPORTANCE_HIGH).apply {
                 // звонок звенит сам через систему, уведомлению звук не нужен
                 setSound(null, null)
                 enableVibration(false)
             },
         )
-        nm.createNotificationChannel(NotificationChannel(CHANNEL_ONGOING, "Идущий звонок", NotificationManager.IMPORTANCE_LOW))
-        nm.createNotificationChannel(NotificationChannel(CHANNEL_REMIND, "Напоминания перезвонить", NotificationManager.IMPORTANCE_DEFAULT))
+        nm.createNotificationChannel(NotificationChannel(CHANNEL_ONGOING, context.getString(R.string.ch_ongoing), NotificationManager.IMPORTANCE_LOW))
+        nm.createNotificationChannel(NotificationChannel(CHANNEL_REMIND, context.getString(R.string.ch_remind), NotificationManager.IMPORTANCE_DEFAULT))
     }
 
     private fun action(context: Context, act: String, code: Int): PendingIntent =
@@ -79,27 +95,27 @@ object CallNotifications {
         val nm = context.getSystemService(NotificationManager::class.java) ?: return
         if (state == null || state.phase == CallPhase.ENDED) return
         val open = PendingIntent.getActivity(context, 10, CallActivity.intent(context), PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
-        val who = state.name ?: state.number.ifEmpty { "Скрытый номер" }
+        val who = state.name ?: state.number.ifEmpty { context.getString(R.string.hidden_number) }
         val ringing = state.phase == CallPhase.RINGING
         val b = Notification.Builder(context, if (ringing) CHANNEL_INCOMING else CHANNEL_ONGOING)
             .setSmallIcon(R.drawable.ic_oz_phone)
             .setContentTitle(who)
-            .setContentText(if (ringing) "Входящий звонок" else if (state.phase == CallPhase.DIALING) "Вызов" else "Идёт звонок")
+            .setContentText(context.getString(if (ringing) R.string.incoming_call else if (state.phase == CallPhase.DIALING) R.string.calling else R.string.call_in_progress))
             .setCategory(Notification.CATEGORY_CALL)
             .setOngoing(true)
             .setContentIntent(open)
         if (ringing) {
             b.setFullScreenIntent(open, true)
-            b.addAction(Notification.Action.Builder(null, "Отклонить", action(context, CallActionReceiver.DECLINE, 1)).build())
+            b.addAction(Notification.Action.Builder(null, context.getString(R.string.decline), action(context, CallActionReceiver.DECLINE, 1)).build())
             // «Ответить» открывает экран звонка напрямую: запуск экрана из приёмника Android 12+ запрещает
             val answer = PendingIntent.getActivity(
                 context, 11, CallActivity.intent(context).putExtra(CallActivity.EXTRA_ANSWER, true),
                 PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
             )
-            b.addAction(Notification.Action.Builder(null, "Ответить", answer).build())
+            b.addAction(Notification.Action.Builder(null, context.getString(R.string.answer), answer).build())
         } else {
             b.setUsesChronometer(state.connectedAt > 0).setWhen(if (state.connectedAt > 0) state.connectedAt else System.currentTimeMillis())
-            b.addAction(Notification.Action.Builder(null, "Завершить", action(context, CallActionReceiver.HANGUP, 3)).build())
+            b.addAction(Notification.Action.Builder(null, context.getString(R.string.end), action(context, CallActionReceiver.HANGUP, 3)).build())
         }
         runCatching { nm.notify(ID_CALL, b.build()) }
     }
@@ -126,8 +142,8 @@ object CallNotifications {
         )
         val n = Notification.Builder(context, CHANNEL_REMIND)
             .setSmallIcon(R.drawable.ic_oz_remind)
-            .setContentTitle("Перезвонить: $name")
-            .setContentText("Вы просили напомнить час назад")
+            .setContentTitle(context.getString(R.string.remind_title, name))
+            .setContentText(context.getString(R.string.remind_text))
             .setContentIntent(open)
             .setAutoCancel(true)
             .build()

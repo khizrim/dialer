@@ -12,6 +12,7 @@ import android.os.Build
 import android.os.Bundle
 import android.provider.ContactsContract
 import android.telecom.TelecomManager
+import com.khizrim.dialer.R
 import com.khizrim.dialer.model.Method
 import com.khizrim.dialer.model.Person
 
@@ -22,14 +23,14 @@ object Launcher {
     fun perform(context: Context, person: Person, method: Method): String? {
         val channel = person.channels.firstOrNull { it.method == method }
         return when {
-            method == Method.PHONE -> person.mainNumber?.let { call(context, it) } ?: "У контакта нет номера"
-            method == Method.SMS -> person.mainNumber?.let { sms(context, it) } ?: "У контакта нет номера"
+            method == Method.PHONE -> person.mainNumber?.let { call(context, it) } ?: context.getString(R.string.err_no_number)
+            method == Method.SMS -> person.mainNumber?.let { sms(context, it) } ?: context.getString(R.string.err_no_number)
             channel?.dataId != null && channel.mimeType != null -> {
                 val uri = ContentUris.withAppendedId(ContactsContract.Data.CONTENT_URI, channel.dataId)
                 val intent = Intent(Intent.ACTION_VIEW).setDataAndType(uri, channel.mimeType).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                start(context, intent, "${method.network} не открылся")
+                start(context, intent, context.getString(R.string.err_app_failed, method.network(context)))
             }
-            else -> "${method.network} не нашёлся у этого контакта"
+            else -> context.getString(R.string.err_app_missing, method.network(context))
         }
     }
 
@@ -41,22 +42,22 @@ object Launcher {
                 tm.placeCall(uri, Bundle())
                 null
             } catch (e: SecurityException) {
-                start(context, Intent(Intent.ACTION_DIAL, uri).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK), "Не получилось позвонить")
+                start(context, Intent(Intent.ACTION_DIAL, uri).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK), context.getString(R.string.err_call))
             }
         }
         // без разрешения отдаём номер системной звонилке
-        return start(context, Intent(Intent.ACTION_DIAL, uri).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK), "Не получилось позвонить")
+        return start(context, Intent(Intent.ACTION_DIAL, uri).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK), context.getString(R.string.err_call))
     }
 
     fun sms(context: Context, number: String): String? =
-        start(context, Intent(Intent.ACTION_SENDTO, Uri.fromParts("smsto", number, null)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK), "Не нашлось приложения для SMS")
+        start(context, Intent(Intent.ACTION_SENDTO, Uri.fromParts("smsto", number, null)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK), context.getString(R.string.err_no_sms))
 
     fun addContact(context: Context, number: String): String? {
         val intent = Intent(ContactsContract.Intents.Insert.ACTION)
             .setType(ContactsContract.RawContacts.CONTENT_TYPE)
             .putExtra(ContactsContract.Intents.Insert.PHONE, number)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        return start(context, intent, "Не нашлось приложения контактов")
+        return start(context, intent, context.getString(R.string.err_no_contacts_app))
     }
 
     fun editContact(context: Context, person: Person): String? {
@@ -64,7 +65,7 @@ object Launcher {
         val intent = Intent(Intent.ACTION_EDIT).setDataAndType(uri, ContactsContract.Contacts.CONTENT_ITEM_TYPE)
             .putExtra("finishActivityOnSaveCompleted", true)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        return start(context, intent, "Не нашлось приложения контактов")
+        return start(context, intent, context.getString(R.string.err_no_contacts_app))
     }
 
     private fun start(context: Context, intent: Intent, error: String): String? = try {
