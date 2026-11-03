@@ -174,22 +174,24 @@ fun HomeScreen(vm: DialerViewModel) {
             // избранные: один тихий ряд имён со значком способа, без заголовка и без заливок
             val favs = vm.favorites
             if (favs.isNotEmpty()) {
+                // избранные — ступенью выше подписей: Literata 20, как имена в списках, и отдельной полосой над панелью
                 androidx.compose.foundation.lazy.LazyRow(
-                    Modifier.fillMaxWidth().padding(top = 4.dp),
+                    Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 4.dp),
                     contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
                     items(favs, key = { "f" + it.id }) { p ->
                         val m = vm.defaultOf(p)
                         Row(
-                            Modifier.heightIn(min = 48.dp)
+                            Modifier.heightIn(min = 56.dp)
                                 .press({ vm.perform(p, m) }, onLongClick = { vm.openMenu(p) }, shape = com.khizrim.dialer.ui.theme.OzShape.text,
                                     label = stringResource(R.string.favorite_label, p.name, stringResource(m?.title ?: R.string.choose_method)))
                                 .padding(horizontal = 12.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             // трубку не рисуем: она у всех одинаковая; значок только у тех, кому обычно пишут
-                            if (m != Method.PHONE) OzIcon(m?.icon ?: R.drawable.ic_oz_help, oz.fg3, 16.dp, modifier = Modifier.padding(end = 6.dp))
-                            Text(p.name.substringBefore(' '), style = OzType.body.copy(fontFamily = com.khizrim.dialer.ui.theme.Literata), color = oz.fg, maxLines = 1)
+                            if (m != Method.PHONE) OzIcon(m?.icon ?: R.drawable.ic_oz_help, oz.fg3, 18.dp, modifier = Modifier.padding(end = 8.dp))
+                            Text(vm.favLabel(p), style = OzType.nameList, color = oz.fg, maxLines = 1)
                         }
                     }
                 }

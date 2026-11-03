@@ -87,6 +87,7 @@ fun SettingsScreen(vm: DialerViewModel) {
             com.khizrim.dialer.callerid.ExternalCallerIdRow(Modifier.padding(start = 12.dp, end = 12.dp, top = 16.dp))
 
             Group(stringResource(R.string.set_appearance))
+            SwitchRow(stringResource(R.string.set_fav_nickname), vm.favNickname, vm::toggleFavNickname)
             ValueRow(stringResource(R.string.set_language), stringResource(R.string.set_language_system)) {
                 // язык приложения задаётся системой (Android 13+), иначе — языком телефона
                 if (Build.VERSION.SDK_INT >= 33) open(Intent(Settings.ACTION_APP_LOCALE_SETTINGS, Uri.fromParts("package", context.packageName, null)))
