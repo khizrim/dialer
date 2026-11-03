@@ -35,6 +35,7 @@ def nodes(retry=True):
         return nodes(False)
     return out
 def shot(name):
+    nodes()
     step[0] += 1; base = os.path.join(OUT, f"{step[0]:02d}-{name}")
     with open(base + ".png", "wb") as f:
         f.write(subprocess.run(["adb", "exec-out", "screencap", "-p"], capture_output=True).stdout)
