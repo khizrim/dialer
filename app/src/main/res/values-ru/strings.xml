@@ -15,16 +15,16 @@
     <string name="net_phone">Телефон</string>
     <string name="choose_method">Выбрать способ</string>
     <string name="home_empty_title">Пусто и тихо</string>
-    <string name="home_empty_text">Здесь появятся люди, с которыми вы связываетесь. Наберите номер или откройте все контакты.</string>
-    <string name="home_clear">Очистить главную</string>
+    <string name="home_empty_text">Здесь появятся люди, с которыми вы связываетесь. Наберите номер или проведите вверх, чтобы найти контакт.</string>
+    <string name="home_clear">Скрыть всех</string>
     <string name="all_contacts">Все контакты</string>
     <string name="undo">Вернуть</string>
     <string name="open_keypad">Открыть клавиатуру</string>
     <string name="menu">Меню</string>
-    <string name="removed_from_home">%1$s убран с главной</string>
-    <string name="removed_from_home_f">%1$s убрана с главной</string>
-    <string name="clear_home_title">Очистить главную?</string>
-    <string name="clear_home_text">Имена уйдут с главной, контакты останутся. Люди вернутся сюда, когда вы с ними свяжетесь.</string>
+    <string name="removed_from_home">%1$s скрыт, пока вы снова не свяжетесь</string>
+    <string name="removed_from_home_f">%1$s скрыта, пока вы снова не свяжетесь</string>
+    <string name="clear_home_title">Скрыть всех с этого экрана?</string>
+    <string name="clear_home_text">Контакты останутся. Человек вернётся сюда, когда вы с ним свяжетесь.</string>
     <string name="clear">Очистить</string>
     <string name="cancel">Отмена</string>
     <string name="close">Закрыть</string>
@@ -44,7 +44,7 @@
     <string name="how_to_reach">Как связаться</string>
     <string name="how_to_reach_named">Как связаться %1$s</string>
     <string name="on_tap_title">Что делать по нажатию на имя</string>
-    <string name="make_default">Сделать способом по умолчанию</string>
+    <string name="make_default">Выбрать, что делать по нажатию</string>
     <string name="ask_every_time">Спрашивать каждый раз</string>
     <string name="now_on_tap">Теперь по нажатию: %1$s</string>
     <string name="now_ask">Теперь будем спрашивать каждый раз</string>
@@ -67,7 +67,7 @@
     <string name="blocked_empty">Никого не блокировали. Заблокировать номер можно прямо во время звонка или долгим нажатием на главной.</string>
     <string name="unblock">Разблокировать</string>
     <string name="block_title">Заблокировать %1$s?</string>
-    <string name="block_text">Звонки и SMS с этого номера больше не будут доходить. Разблокировать можно во «Всех контактах».</string>
+    <string name="block_text">Звонки и SMS с этого номера больше не будут доходить. Разблокировать можно в Настройках.</string>
     <string name="blocked_done">Номер %1$s заблокирован</string>
     <string name="unblocked_done">Номер %1$s разблокирован</string>
     <string name="block_failed">Не получилось заблокировать</string>
@@ -104,8 +104,8 @@
     <string name="decline">Отклонить</string>
     <string name="answer">Ответить</string>
     <string name="send_sms">Написать SMS</string>
-    <string name="remind">Напомнить</string>
-    <string name="mute">Микрофон</string>
+    <string name="remind">Напомнить через час</string>
+    <string name="mute">Откл. звук</string>
     <string name="speaker">Динамик</string>
     <string name="keypad">Клавиши</string>
     <string name="end_call">Завершить звонок</string>
@@ -158,7 +158,7 @@
     <string name="alert_open">Открыть</string>
     <string name="err_call_permission">Разрешите звонки в настройках, чтобы звонить из Ozero Phone</string>
     <string name="hold_to_answer">Удерживайте, чтобы ответить</string>
-    <string name="recents">Недавние звонки</string>
+    <string name="recents">Журнал</string>
     <string name="recents_empty">Звонков пока нет.</string>
     <string name="alert_contacts_silence">Тихому режиму нужен доступ к контактам, иначе он заглушит всех</string>
     <string name="merge">Объединить</string>
@@ -168,7 +168,7 @@
     <string name="incoming_strip">Входящий: %1$s · Ответить</string>
     <string name="delete_from_log">Удалить из журнала</string>
     <string name="call_deleted">Звонок удалён</string>
-    <string name="set_fav_nickname">Избранные по никнейму</string>
+    <string name="set_fav_nickname">Короткие имена в избранных</string>
     <string name="number_copied">Номер скопирован</string>
     <string name="log_delete_failed">Не получилось удалить звонок</string>
     <string name="settings">Настройки</string>
@@ -232,7 +232,7 @@
     <string name="sync_wa_3">Откройте WhatsApp и обновите список контактов</string>
     <string name="sync_back">Вернитесь сюда. Через минуту появятся звонок и видео.</string>
     <string name="open_app">Открыть %1$s</string>
-    <string name="set_transfer">Перенос</string>
+    <string name="set_transfer">Резервная копия</string>
     <string name="transfer_save">Сохранить настройки людей в файл</string>
     <string name="transfer_save_sub">Способы связи, номера, заблокированные</string>
     <string name="transfer_restore">Восстановить из файла</string>
@@ -281,7 +281,7 @@
     <string name="edit_discard">Выйти</string>
     <string name="call_to">Позвонить на %1$s</string>
     <string name="search_by_name">Искать по имени</string>
-    <string name="search_hint">Потяните стопку вверх, чтобы найти контакт</string>
+    <string name="search_hint">Проведите вверх: контакты и поиск</string>
     <string name="search_nothing">Никого не нашлось</string>
     <string name="found_company">совпало в компании: %1$s</string>
     <string name="found_title">совпало в должности: %1$s</string>
@@ -296,4 +296,5 @@
     <string name="clear_log_text">Звонки исчезнут из журнала телефона. Контакты останутся.</string>
     <string name="log_cleared">Журнал очищен</string>
     <string name="log_clear_failed">Не получилось очистить журнал</string>
+    <string name="hide">Скрыть</string>
 </resources>
