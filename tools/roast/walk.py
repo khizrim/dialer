@@ -62,6 +62,10 @@ def swipe(y1, y2, ms=350, wait=1.5): sh("shell", "input", "swipe", "540", str(y1
 def hswipe(y, x1=950, x2=120, ms=300, wait=1.5): sh("shell", "input", "swipe", str(x1), str(y), str(x2), str(y), str(ms)); time.sleep(wait)
 def drag(x, y1, y2, ms=400, wait=1.5): sh("shell", "input", "swipe", str(x), str(y1), str(x), str(y2), str(ms)); time.sleep(wait)
 def calls(tag): note(f"call-log rows {tag}: " + subprocess.run(["adb", "shell", "content query --uri content://call_log/calls --projection _id | wc -l"], capture_output=True, text=True).stdout.strip() + " / in-call: " + subprocess.run(["adb", "shell", "dumpsys telecom | grep -c 'state=DIALING\\|state=CONNECTING\\|state=ACTIVE'"], capture_output=True, text=True).stdout.strip())
+def hangup():
+    # ENDCALL без звонка усыпляет экран: кладём трубку через telecom-кнопку, потом будим
+    sh("shell", "input", "keyevent", "KEYCODE_ENDCALL"); time.sleep(1.5)
+    sh("shell", "input", "keyevent", "KEYCODE_WAKEUP"); sh("shell", "wm", "dismiss-keyguard"); time.sleep(1)
 def keys(s):
     for c in s: sh("shell", "input", "keyevent", f"KEYCODE_{c}"); time.sleep(0.25)
 def record(name, seconds, actions):
@@ -137,7 +141,7 @@ if num:
     record("card-number-long", 6, lambda: sh("shell", "input", "swipe", str(x), str(y), str(x), str(y), "900")); shot("card-number-long")
     back(); calls("before-card-tap")
     sh("shell", "input", "tap", str(x), str(y)); time.sleep(3); shot("card-number-tap"); calls("after-card-tap")
-    subprocess.run(["adb", "shell", "input", "keyevent", "KEYCODE_ENDCALL"]); time.sleep(2)
+    hangup(); time.sleep(2)
 start(); tap("Мама", long=True, wait=2); tap(T["card"], wait=2.5)
 record("card-swipe-down", 6, lambda: drag(540, 900, 2100, 350, 2.5)); shot("after-card-swipe-down")
 start(); tap(T["keypad"], wait=2); keys("89161234567"); time.sleep(1); shot("keypad-before-erase")
@@ -153,7 +157,7 @@ start(); tap(T["journal"], wait=2.5); calls("before-journal-swipe-right")
 jr = [y for t, d, x, y, b in nodes() if t.startswith("+7") and 1300 < y < 2000]
 jy2 = jr[-1] if jr else 1900; note(f"journal swipe-right row y={jy2}")
 record("journal-swipe-row-right", 8, lambda: (sh("shell", "input", "swipe", "120", str(jy2), "950", str(jy2), "900"), time.sleep(4))); shot("journal-after-swipe-right"); calls("after-journal-swipe-right")
-subprocess.run(["adb", "shell", "input", "keyevent", "KEYCODE_ENDCALL"]); time.sleep(3)
+hangup(); time.sleep(3)
 # звонки
 start(); record("incoming-contact", 14, lambda: (subprocess.run(["adb", "emu", "gsm", "call", "+79161112233"]), time.sleep(4), tap(T["answer"], wait=4)))
 shot("in-call")
