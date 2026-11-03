@@ -21,24 +21,51 @@ object ExternalCallerId {
     /** Яндекс держит определитель номера в приложении «Яндекс с Алисой». */
     const val YANDEX = "ru.yandex.searchplugin"
 
-    /** Установленные приложения-определители, кроме нас. Порядок: Яндекс первым. */
-    fun installed(context: Context): List<String> = runCatching {
+    /** Известные определители: их видно даже тогда, когда функция внутри приложения ещё выключена. */
+    val KNOWN = listOf(YANDEX, "com.yandex.browser", "com.kaspersky.who_calls", "com.truecaller", "app.source.getcontact", "com.numbuster.android")
+
+    data class App(val pkg: String, val label: String, val ready: Boolean)
+
+    /**
+     * Установленные определители, кроме нас. ready = служба определителя включена и приложение
+     * можно выбрать в «Определитель номера и спам». Яндекс включает её только после того, как
+     * определитель включили в самом приложении. Порядок: готовые первыми, Яндекс выше других.
+     */
+    fun apps(context: Context): List<App> = runCatching {
         val pm = context.packageManager
-        pm.queryIntentServices(Intent(CallScreeningService.SERVICE_INTERFACE), PackageManager.GET_META_DATA)
-            .map { it.serviceInfo.packageName }
+        val intent = Intent(CallScreeningService.SERVICE_INTERFACE)
+        val enabled = pm.queryIntentServices(intent, 0).map { it.serviceInfo.packageName }.toSet()
+        val all = pm.queryIntentServices(intent, PackageManager.MATCH_DISABLED_COMPONENTS).map { it.serviceInfo.packageName }.toSet()
+        val known = KNOWN.filter { pkg -> runCatching { pm.getApplicationInfo(pkg, 0) }.isSuccess }
+        (all + known + enabled)
             .filter { it != context.packageName }
-            .distinct()
-            .sortedBy { if (it == YANDEX) 0 else 1 }
-            .mapNotNull { pkg -> runCatching { pm.getApplicationLabel(pm.getApplicationInfo(pkg, 0)).toString() }.getOrNull() }
+            .mapNotNull { pkg ->
+                val label = runCatching { pm.getApplicationLabel(pm.getApplicationInfo(pkg, 0)).toString() }.getOrNull() ?: return@mapNotNull null
+                App(pkg, label, pkg in enabled)
+            }
+            .sortedWith(compareBy({ !it.ready }, { it.pkg != YANDEX }))
     }.getOrDefault(emptyList())
 
-    /** Куда вести по нажатию: выбор приложения-определителя или, если его нет, Яндекс в магазине. */
-    fun chooseIntent(context: Context): Intent =
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && installed(context).isNotEmpty()) {
-            Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS)
-        } else {
-            Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=$YANDEX"))
-        }.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    /** Совместимость: названия установленных определителей. */
+    fun installed(context: Context): List<String> = apps(context).map { it.label }
+
+    /**
+     * Куда вести по нажатию:
+     * есть готовый определитель → системный выбор «Определитель номера и спам»;
+     * установлен, но выключен → само приложение, чтобы включить там определитель;
+     * ничего нет → Яндекс в магазине.
+     */
+    fun chooseIntent(context: Context, apps: List<App> = apps(context)): Intent {
+        val ready = apps.firstOrNull { it.ready }
+        val pending = apps.firstOrNull()
+        val intent = when {
+            ready != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q -> Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS)
+            pending != null -> context.packageManager.getLaunchIntentForPackage(pending.pkg)
+                ?: Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", pending.pkg, null))
+            else -> Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=$YANDEX"))
+        }
+        return intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    }
 
     fun storeFallback(): Intent =
         Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=$YANDEX")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
