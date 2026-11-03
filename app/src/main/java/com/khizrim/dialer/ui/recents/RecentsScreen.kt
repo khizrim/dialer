@@ -113,7 +113,8 @@ fun RecentsScreen(vm: DialerViewModel) {
             }
         }
         BottomBar {
-            GhostIconButton(R.drawable.ic_oz_back, stringResource(R.string.back), { vm.back() })
+            // назад — системным жестом, своя стрелка его только дублировала
+            Box(Modifier)
             // фильтр двумя словами: активное fg и 500, неактивное fg3, без заливки
             Row(Modifier.weight(1f)) {
                 TextAction(stringResource(R.string.filter_all), if (missedOnly) oz.fg3 else oz.fg, { vm.showMissedOnly(false) },

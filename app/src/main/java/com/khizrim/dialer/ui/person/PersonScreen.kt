@@ -8,6 +8,7 @@ import com.khizrim.dialer.ui.theme.OzShape
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -105,7 +106,8 @@ fun PersonScreen(vm: DialerViewModel, id: Long) {
             Modifier.fillMaxWidth().padding(12.dp, 16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            GhostIconButton(R.drawable.ic_oz_back, stringResource(R.string.back), vm::leavePerson)
+            // назад — системным жестом, своя стрелка его только дублировала
+            Box(Modifier)
             Row {
             GhostIconButton(R.drawable.ic_oz_edit, stringResource(R.string.edit_contact), { vm.editContact(p) })
             GhostIconButton(

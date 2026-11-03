@@ -164,7 +164,8 @@ fun ContactsScreen(vm: DialerViewModel) {
             }
         }
         BottomBar {
-            GhostIconButton(R.drawable.ic_oz_back, stringResource(R.string.back_home), vm::goHome)
+            // назад — системным жестом, своя стрелка его только дублировала
+            Box(Modifier)
             Row(verticalAlignment = Alignment.CenterVertically) {
                 GhostIconButton(R.drawable.ic_oz_sliders, stringResource(R.string.settings), vm::openSettings, tint = oz.fg2)
                 androidx.compose.foundation.layout.Spacer(Modifier.width(16.dp))
@@ -203,7 +204,8 @@ fun BlockedScreen(vm: DialerViewModel) {
             }
         }
         BottomBar {
-            GhostIconButton(R.drawable.ic_oz_back, stringResource(R.string.back), vm::openContacts)
+            // назад — системным жестом, своя стрелка его только дублировала
+            Box(Modifier)
             Box(Modifier)
         }
     }
@@ -271,7 +273,8 @@ fun UnknownScreen(vm: DialerViewModel) {
             }
         }
         BottomBar {
-            GhostIconButton(R.drawable.ic_oz_back, stringResource(R.string.back), vm::openContacts)
+            // назад — системным жестом, своя стрелка его только дублировала
+            Box(Modifier)
             Box(Modifier)
         }
     }
