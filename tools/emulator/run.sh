@@ -13,6 +13,7 @@ adb shell settings put global animator_duration_scale 1
 bash tools/emulator/seed.sh
 adb logcat -c
 OUT=shots python3 tools/emulator/review.py || true
+OUT=shots python3 tools/emulator/anim.py || true
 adb logcat -d -b crash > shots/crash.txt || true
 adb logcat -d | grep -E "$P|AndroidRuntime|Choreographer" | tail -400 > shots/logcat.txt || true
 adb shell dumpsys gfxinfo $P > shots/gfxinfo.txt || true
