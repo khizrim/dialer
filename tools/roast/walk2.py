@@ -149,13 +149,14 @@ if r:
 start(); r = feed_rows()
 card_ok = False
 if r:
-    x, y, d = [q for q in r if "Мама" in q[2]][0] if any("Мама" in q[2] for q in r) else r[0]
+    x, y, d = [q for q in r if q[2].startswith("Мама")][0] if any(q[2].startswith("Мама") for q in r) else r[0]
     record("feed-to-card", 6, lambda: (sh("shell", "input", "tap", str(x), str(y)), time.sleep(3)))
     card_ok = True
 if card_ok:
     shot("card"); note(f"card nodes: {onscreen()[:40]}")
     swipe(1700, 900); shot("card-scrolled")
-    hist = [(x, y, t or d) for t, d, x, y, b in nodes() if b[2] - b[0] > 800 and (b[3] - b[1]) < 260 and 600 < y < 2100]
+    nn = nodes(); ny = min([y for t, d, x, y, b in nn if t == "Мама"] or [1500])
+    hist = [(x, y, t) for t, d, x, y, b in nn if re.search(r"\d{1,2}:\d{2}|Today|Yesterday|Сегодня|Вчера", t) and y < ny]
     note(f"card rows: {hist}")
     if hist:
         hx, hy, ht = hist[-1]
@@ -176,13 +177,24 @@ start(); tap(T["keypad"], wait=2); shot("keypad-paste-check"); back(); back()
 start(); record("to-settings", 6, lambda: tap(T["settings"], wait=2.5)); shot("settings")
 swipe(1700, 500); shot("settings-2"); swipe(1700, 500); shot("settings-3"); back()
 # 9. звонки
-start(); record("incoming", 14, lambda: (subprocess.run(["adb", "emu", "gsm", "call", "+79161112233"]), time.sleep(4), shot("incoming-full"), tap(T["answer"], wait=1), fast("answer-1s"), time.sleep(2)))
-shot("in-call")
+def tstate(): return " ".join(re.findall(r"state=(\w+)", subprocess.run(["adb", "shell", "dumpsys telecom | grep 'Call id='"], capture_output=True, text=True).stdout)[:3])
+# 9а. ответ из строки в доке
+start(); subprocess.run(["adb", "emu", "gsm", "call", "+79161112233"]); time.sleep(4); shot("incoming-strip")
+strip = [(x, y) for t, d, x, y, b in nodes() if ("Incoming" in t or "Входящий" in t)]
+note(f"strip: {strip}")
+if strip:
+    sh("shell", "input", "tap", str(strip[0][0]), str(strip[0][1])); time.sleep(1); fast("strip-answer-1s"); time.sleep(2); shot("strip-after-answer")
+note(f"telecom after strip answer: {tstate()}")
+subprocess.run(["adb", "emu", "gsm", "cancel", "+79161112233"]); time.sleep(5); shot("call-ended")
+# 9б. полноэкранный входящий: открыть через heads-up, нажать «Ответить»
+start(); subprocess.run(["adb", "emu", "gsm", "call", "+79161112244"]); time.sleep(4)
+sh("shell", "input", "tap", "300", "170"); time.sleep(2.5); shot("incoming-fullscreen")
 ans = [(x, y) for t, d, x, y, b in nodes() if t == T["answer"] or d == T["answer"]]
+note(f"answer nodes: {ans}")
 if ans:
     ax, ay = ans[-1]; sh("shell", "input", "tap", str(ax), str(ay - 110)); time.sleep(1); fast("fullscreen-answer-1s"); time.sleep(2); shot("fullscreen-after-answer")
-note("telecom: " + subprocess.run(["adb", "shell", "dumpsys telecom | grep -m3 -E 'state=(ACTIVE|RINGING)'"], capture_output=True, text=True).stdout.strip())
-subprocess.run(["adb", "emu", "gsm", "cancel", "+79161112233"]); time.sleep(1.2); shot("call-ended"); time.sleep(4)
+note(f"telecom after fullscreen answer: {tstate()}")
+subprocess.run(["adb", "emu", "gsm", "cancel", "+79161112244"]); time.sleep(5)
 subprocess.run(["adb", "emu", "gsm", "call", "+74997001122"]); time.sleep(4); shot("incoming-unknown")
 subprocess.run(["adb", "emu", "gsm", "cancel", "+74997001122"]); time.sleep(4); shot("after-unknown")
 # 10. тёмная тема и крупный шрифт

@@ -22,6 +22,9 @@ call() { # номер тип минут_назад длительность
   $A content insert --uri content://call_log/calls --bind number:s:"$1" --bind type:i:$2 --bind date:l:$((now-$3*60000)) --bind duration:l:$4 --bind new:i:1
 }
 call "+79161112233" 2 5 120
+call "+79161112233" 1 700 240
+call "+79161112233" 3 2500 0
+call "+79161112233" 2 6000 60
 call "+79035556677" 3 30 0
 call "+79267778899" 1 90 300
 call "+79851234567" 2 200 45
