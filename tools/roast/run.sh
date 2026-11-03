@@ -16,6 +16,8 @@ OUT=shots/onb LANGSET=en python3 tools/roast/walk.py onboarding || true
 for p in READ_CONTACTS WRITE_CONTACTS READ_CALL_LOG WRITE_CALL_LOG CALL_PHONE READ_PHONE_STATE POST_NOTIFICATIONS; do adb shell pm grant $P android.permission.$p || true; done
 adb shell cmd role add-role-holder android.app.role.DIALER $P 0 || true
 adb shell cmd role add-role-holder android.app.role.CALL_SCREENING $P 0 || true
+adb shell dumpsys package $P | grep -E "android.permission.(WRITE|READ)_CALL_LOG" | tee shots/perm-check.txt || true
+adb shell cmd role get-role-holders android.app.role.DIALER | tee -a shots/perm-check.txt || true
 bash tools/roast/seed.sh
 # 2. английский (системный язык пользователя)
 OUT=shots/en LANGSET=en python3 tools/roast/walk.py main || true

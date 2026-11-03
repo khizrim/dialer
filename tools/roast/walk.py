@@ -125,7 +125,7 @@ time.sleep(1); shot("journal-undo-toast")
 record("journal-pull-up-home", 6, lambda: swipe(1700, 800, 300, 2.5)); shot("journal-after-pull-up")
 start(); record("contacts-sheet-drag-down", 9, lambda: (swipe(1700, 900, 300, 2.5), shot("sheet-open"), drag(540, 1350, 2250, 400, 2.5)))
 shot("after-sheet-drag-down")
-start(); record("keypad-drag-down", 8, lambda: (tap(T["keypad"], wait=2), shot("keypad-before-drag"), drag(540, 1150, 2250, 400, 2.5)))
+start(); record("keypad-drag-down", 8, lambda: (tap(T["keypad"], wait=2), shot("keypad-before-drag"), drag(540, 1500, 2300, 400, 2.5)))
 shot("after-keypad-drag-down")
 start(); tap("Мама", long=True, wait=2); tap(T["card"], wait=2.5); shot("person-2")
 num = [(x, y, t) for t, d, x, y, b in nodes() if t.startswith("+7")]
