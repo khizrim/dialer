@@ -41,6 +41,7 @@ import com.khizrim.dialer.ui.person.PersonScreen
 import com.khizrim.dialer.ui.theme.LocalOz
 import com.khizrim.dialer.ui.theme.LocalReducedMotion
 import com.khizrim.dialer.ui.theme.Motion
+import com.khizrim.dialer.ui.theme.lift
 import com.khizrim.dialer.ui.theme.rememberReducedMotion
 
 private data class Route(val screen: Screen, val personId: Long?)
@@ -101,11 +102,17 @@ fun DialerApp(vm: DialerViewModel = viewModel()) {
                 }
             }
 
-            // идёт звонок, а человек в приложении (например, нажал «Добавить»): тихая плашка сверху
+            // идёт звонок, а человек в приложении (например, нажал «Добавить»): тихая плашка внизу, под пальцем
             val live = com.khizrim.dialer.telecom.CallManager.state
             if (live != null && live.phase != com.khizrim.dialer.model.CallPhase.ENDED) {
                 val context = androidx.compose.ui.platform.LocalContext.current
-                Box(Modifier.fillMaxWidth().safeDrawingPadding().padding(horizontal = 12.dp, vertical = 4.dp)) {
+                Box(
+                    Modifier
+                        .align(androidx.compose.ui.Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .safeDrawingPadding()
+                        .padding(start = 12.dp, end = 12.dp, bottom = if (vm.keypadOpen) 380.dp else 96.dp),
+                ) {
                     androidx.compose.material3.Text(
                         androidx.compose.ui.res.stringResource(com.khizrim.dialer.R.string.back_to_call, live.name ?: com.khizrim.dialer.data.PhoneFormat.pretty(live.number)),
                         style = com.khizrim.dialer.ui.theme.OzType.small,
@@ -113,9 +120,10 @@ fun DialerApp(vm: DialerViewModel = viewModel()) {
                         maxLines = 1,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(oz.soft, com.khizrim.dialer.ui.theme.OzShape.text)
+                            .lift(com.khizrim.dialer.ui.theme.OzShape.row)
+                        .background(oz.sheet, com.khizrim.dialer.ui.theme.OzShape.row)
                             .clickable { context.startActivity(com.khizrim.dialer.telecom.CallActivity.intent(context)) }
-                            .padding(horizontal = 16.dp, vertical = 10.dp),
+                            .padding(horizontal = 16.dp, vertical = 14.dp),
                     )
                 }
             }

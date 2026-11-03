@@ -128,7 +128,7 @@ object CallManager {
             // звонок не прошёл — экран ждёт решения человека
             val s = state
             val delay = when {
-                s?.failed == true -> -1L
+                s?.failed == true -> 15000L
                 s != null && s.name == null && s.number.isNotEmpty() && s.connectedAt > 0 -> 3000L
                 else -> 1200L
             }

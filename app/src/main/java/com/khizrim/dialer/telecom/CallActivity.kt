@@ -127,6 +127,12 @@ class CallActivity : ComponentActivity() {
         CallManager.answer()
     }
 
+    override fun onStop() {
+        super.onStop()
+        // ушли с экрана «Не удалось позвонить» или «Звонок завершён»: не держим его
+        if (CallManager.state?.phase == CallPhase.ENDED) CallManager.dismiss()
+    }
+
     override fun onDestroy() {
         proximity(false)
         if (Build.VERSION.SDK_INT >= 33) (lockListener as? KeyguardManager.KeyguardLockedStateListener)?.let {
