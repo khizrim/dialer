@@ -39,6 +39,7 @@ class MainActivity : ComponentActivity() {
         val tel = intent?.data?.takeIf { it.scheme == "tel" }?.schemeSpecificPart
         when {
             intent?.getBooleanExtra(CallNotifications.EXTRA_OPEN_UNKNOWN, false) == true -> vm.openUnknown()
+            intent?.action == CallNotifications.ACTION_OPEN_MISSED -> vm.openMissed(intent.getStringExtra(CallNotifications.EXTRA_MISSED_NUMBER))
             // «Перезвонить» из уведомления о пропущенном
             intent?.action == CallNotifications.ACTION_CALL_BACK && tel != null -> vm.callNumber(tel)
             intent?.action == Intent.ACTION_DIAL -> vm.openKeypad(tel.orEmpty())

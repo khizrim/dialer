@@ -235,4 +235,9 @@
         <item quantity="one">Restored for %d person</item>
         <item quantity="other">Restored for %d people</item>
     </plurals>
+    <string name="journal">Recents</string>
+    <string name="contacts">Contacts</string>
+    <string name="filter_all">All</string>
+    <string name="filter_missed">Missed</string>
+    <string name="recents_no_missed">No missed calls</string>
 </resources>

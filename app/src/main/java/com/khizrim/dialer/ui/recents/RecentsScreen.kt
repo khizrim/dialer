@@ -3,6 +3,7 @@ package com.khizrim.dialer.ui.recents
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import com.khizrim.dialer.ui.components.TextAction
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -47,28 +48,28 @@ private data class Item(val record: CallRecord, val person: Person?) : Line
 fun RecentsScreen(vm: DialerViewModel) {
     val oz = LocalOz.current
     val res = LocalContext.current.resources
+    val missedOnly = vm.missedOnly
     val calls = vm.recentCalls
-    val lines = remember(calls) {
+    // список прижат к низу: новое внизу у большого пальца, подпись дня над своими звонками
+    val lines = remember(calls, missedOnly) {
         buildList<Line> {
-            var last: String? = null
-            calls.forEach { (r, p) ->
+            var day: String? = null
+            calls.filter { !missedOnly || it.first.missed }.forEach { (r, p) ->
                 val d = Dates.day(res, r.date)
-                if (d != last) { add(Day(d)); last = d }
+                if (day != null && d != day) add(Day(day!!))
+                day = d
                 add(Item(r, p))
             }
+            day?.let { add(Day(it)) }
         }
     }
     val time = remember { DateFormat.getTimeInstance(DateFormat.SHORT) }
     Column(Modifier.fillMaxSize()) {
-        LazyColumn(Modifier.weight(1f).fillMaxWidth().padding(horizontal = 12.dp), state = rememberLazyListState()) {
-            item(key = "title") {
-                Text(
-                    stringResource(R.string.recents), style = OzType.namePerson, color = oz.fg,
-                    modifier = Modifier.padding(start = 12.dp, top = 24.dp, bottom = 8.dp).semantics { heading() },
-                )
-            }
+        LazyColumn(Modifier.weight(1f).fillMaxWidth().padding(horizontal = 12.dp), state = rememberLazyListState(), reverseLayout = true) {
             if (lines.isEmpty()) {
-                item(key = "empty") { Text(stringResource(R.string.recents_empty), style = OzType.body, color = oz.fg2, modifier = Modifier.padding(12.dp)) }
+                item(key = "empty") {
+                    Text(stringResource(if (missedOnly) R.string.recents_no_missed else R.string.recents_empty), style = OzType.body, color = oz.fg2, modifier = Modifier.padding(12.dp))
+                }
             }
             items(lines, key = { l -> when (l) { is Day -> "d" + l.text; is Item -> "c" + l.record.date + l.record.number } }) { l ->
                 when (l) {
@@ -90,17 +91,30 @@ fun RecentsScreen(vm: DialerViewModel) {
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Column(Modifier.weight(1f)) {
-                                Text(title, style = OzType.list, color = oz.fg, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                Text(r.text(res), style = OzType.small, color = if (r.missed) oz.danger else oz.fg3)
+                                Text(title, style = OzType.list, color = if (r.missed) oz.danger else oz.fg, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                Text(r.text(res), style = OzType.small, color = oz.fg3)
                             }
                             Text(time.format(Date(r.date)), style = OzType.small, color = oz.fg3)
                         }
                     }
                 }
             }
+            item(key = "title") {
+                Text(
+                    stringResource(R.string.journal), style = OzType.namePerson, color = oz.fg,
+                    modifier = Modifier.padding(start = 12.dp, top = 24.dp, bottom = 8.dp).semantics { heading() },
+                )
+            }
         }
         BottomBar {
-            GhostIconButton(R.drawable.ic_oz_back, stringResource(R.string.back), vm::openContacts)
+            GhostIconButton(R.drawable.ic_oz_back, stringResource(R.string.back), { vm.back() })
+            // фильтр двумя словами: активное fg и 500, неактивное fg3, без заливки
+            Row(Modifier.weight(1f)) {
+                TextAction(stringResource(R.string.filter_all), if (missedOnly) oz.fg3 else oz.fg, { vm.showMissedOnly(false) },
+                    style = OzType.body.copy(fontWeight = if (missedOnly) FontWeight.Normal else FontWeight.Medium))
+                TextAction(stringResource(R.string.filter_missed), if (missedOnly) oz.fg else oz.fg3, { vm.showMissedOnly(true) },
+                    style = OzType.body.copy(fontWeight = if (missedOnly) FontWeight.Medium else FontWeight.Normal))
+            }
             KeypadFab { vm.openKeypad() }
         }
     }

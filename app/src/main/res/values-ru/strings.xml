@@ -240,4 +240,9 @@
         <item quantity="many">Восстановлено для %d человек</item>
         <item quantity="other">Восстановлено для %d человека</item>
     </plurals>
+    <string name="journal">Журнал</string>
+    <string name="contacts">Контакты</string>
+    <string name="filter_all">Все</string>
+    <string name="filter_missed">Пропущенные</string>
+    <string name="recents_no_missed">Пропущенных нет</string>
 </resources>

@@ -96,6 +96,8 @@ object CallNotifications {
     private const val ID_MISSED = 3
     private const val ID_SILENT = 4
     const val EXTRA_OPEN_UNKNOWN = "open_unknown"
+    const val ACTION_OPEN_MISSED = "com.khizrim.dialer.OPEN_MISSED"
+    const val EXTRA_MISSED_NUMBER = "missed_number"
     private const val ID_CALL = 1
     private const val ID_REMIND = 2
 
@@ -164,7 +166,10 @@ object CallNotifications {
         val name = number?.let { ContactsSource.nameFor(context, it) }
         val who = name ?: number?.takeIf { it.isNotBlank() }?.let { com.khizrim.dialer.data.PhoneFormat.pretty(it) } ?: context.getString(R.string.hidden_number)
         val open = PendingIntent.getActivity(
-            context, 30, Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+            // один пропущенный от контакта → карточка, остальное → журнал с фильтром «Пропущенные»
+            context, 30, Intent(context, MainActivity::class.java).setAction(ACTION_OPEN_MISSED)
+                .putExtra(EXTRA_MISSED_NUMBER, if (count == 1 && name != null) number else null)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
         val b = Notification.Builder(context, CHANNEL_MISSED)

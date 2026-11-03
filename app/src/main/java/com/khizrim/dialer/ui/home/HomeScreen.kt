@@ -144,7 +144,10 @@ fun HomeScreen(vm: DialerViewModel) {
                         }
                     }
                     if (t?.undo != true) {
-                        TextAction(stringResource(R.string.all_contacts), oz.fg2, vm::openContacts, modifier = Modifier.heightIn(min = 48.dp))
+                        Row {
+                            TextAction(stringResource(R.string.journal), oz.fg2, { vm.openRecents(fromHome = true) }, modifier = Modifier.heightIn(min = 48.dp))
+                            TextAction(stringResource(R.string.contacts), oz.fg2, vm::openContacts, modifier = Modifier.heightIn(min = 48.dp))
+                        }
                     }
                 }
                 KeypadFab { vm.openKeypad() }

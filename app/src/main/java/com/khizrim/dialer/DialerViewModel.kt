@@ -163,6 +163,7 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
             refreshHits()
             rebuildHome()
             ready = true
+            pendingMissed?.let { pendingMissed = null; openMissed(it) }
         }
     }
 
@@ -216,7 +217,21 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
         menu = null
         runCatching { ctx.startActivity(com.khizrim.dialer.callerid.CallerId.webSearchIntent(number).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)) }
     }
-    fun openRecents() { screen = Screen.RECENTS }
+    /** Журнал: открыт с главной (назад — на главную) или из контактов. */
+    var recentsFromHome by mutableStateOf(false); private set
+    var missedOnly by mutableStateOf(false); private set
+    fun openRecents(fromHome: Boolean = false, missed: Boolean = false) {
+        closeKeypad(); recentsFromHome = fromHome; missedOnly = missed; screen = Screen.RECENTS
+    }
+    fun showMissedOnly(v: Boolean) { missedOnly = v }
+
+    /** Из уведомления о пропущенном: карточка человека или журнал пропущенных. */
+    private var pendingMissed: String? = null
+    fun openMissed(number: String?) {
+        if (number != null && !ready) { pendingMissed = number; openRecents(missed = true); return }
+        val p = number?.let { byNumber[Numbers.key(it)] }
+        if (p != null) openPerson(p.id) else openRecents(missed = true)
+    }
 
     fun callNumber(number: String) { closeKeypad(); Launcher.call(ctx, number)?.let { say(it) } }
     fun openSettings() { closeKeypad(); sims = Launcher.sims(ctx); simForCalls = prefs.simForCalls; screen = Screen.SETTINGS }
@@ -276,6 +291,7 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
         menu != null -> { menu = null; true }
         keypadOpen -> { closeKeypad(); true }
         screen == Screen.PERSON -> { leavePerson(); true }
+        screen == Screen.RECENTS && recentsFromHome -> { screen = Screen.HOME; true }
         screen == Screen.BLOCKED || screen == Screen.UNKNOWN || screen == Screen.RECENTS || screen == Screen.SETTINGS -> { screen = Screen.CONTACTS; true }
         screen == Screen.CONTACTS -> { screen = Screen.HOME; true }
         else -> false
