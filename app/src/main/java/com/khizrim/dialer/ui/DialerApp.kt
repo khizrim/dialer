@@ -60,6 +60,8 @@ fun DialerApp(vm: DialerViewModel = viewModel()) {
         Box(Modifier.fillMaxSize().background(oz.bg)) {
             Box(Modifier.fillMaxSize().safeDrawingPadding()) {
                 // экраны: старый гаснет за 150 мс, новый проявляется с подъёмом 8 px за 200 мс
+                // касание, начатое до смены экрана, на новом (и на уходящем) уже ничего не нажимает
+                androidx.compose.runtime.LaunchedEffect(vm.screen, vm.personId, vm.keypadOpen) { com.khizrim.dialer.ui.components.TapGuard.gen++ }
                 AnimatedContent(
                     targetState = Route(vm.screen, vm.personId),
                     transitionSpec = {
