@@ -80,11 +80,6 @@ fun SearchResults(vm: DialerViewModel, modifier: Modifier = Modifier) {
             val method = vm.defaultOf(p)
             Row(
                 Modifier
-                    .animateItem(
-                        fadeInSpec = Motion.enter(Motion.FADE),
-                        placementSpec = if (reduced) null else Motion.enter(Motion.MOVE),
-                        fadeOutSpec = Motion.exit(Motion.FADE),
-                    )
                     .fillMaxWidth()
                     .press(
                         onClick = { vm.perform(p, method) },
@@ -105,7 +100,6 @@ fun SearchResults(vm: DialerViewModel, modifier: Modifier = Modifier) {
             item(key = "add") {
                 Row(
                     Modifier
-                        .animateItem()
                         .fillMaxWidth()
                         .press(onClick = { vm.addTypedToContacts() })
                         .padding(horizontal = 12.dp, vertical = 14.dp),
@@ -198,7 +192,7 @@ private fun TypedNumber(vm: DialerViewModel) {
         Text(head, style = style, color = oz.fg, maxLines = 1)
         key(vm.keypad.length) {
             val shift = with(LocalDensity.current) { 4.dp.toPx() }
-            val a = remember { Animatable(if (vm.keypad.isEmpty() || reduced) 1f else 0f) }
+            val a = remember { Animatable(1f) }
             LaunchedEffect(Unit) { a.animateTo(1f, Motion.enter(Motion.PRESS)) }
             Text(
                 tail, style = style, color = oz.fg, maxLines = 1,

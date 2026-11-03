@@ -277,4 +277,12 @@
     <string name="found_nickname">nickname: %1$s</string>
     <string name="found_layout">typed in the other keyboard layout</string>
     <string name="found_translit">transliteration</string>
+    <string name="favorites">Favorites</string>
+    <string name="favorite_label">%1$s, favorite: %2$s</string>
+    <string name="clear_log">Clear call log</string>
+    <string name="clear_log_title">Clear the whole call log?</string>
+    <string name="clear_missed_title">Clear missed calls?</string>
+    <string name="clear_log_text">The calls disappear from the phone’s call log. Contacts stay.</string>
+    <string name="log_cleared">Call log cleared</string>
+    <string name="log_clear_failed">Couldn’t clear the call log</string>
 </resources>

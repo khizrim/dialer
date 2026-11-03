@@ -64,6 +64,9 @@ fun RecentsScreen(vm: DialerViewModel) {
         }
     }
     val time = remember { DateFormat.getTimeInstance(DateFormat.SHORT) }
+    val askWrite = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.RequestPermission()) { ok ->
+        if (ok) vm.askClearLog()
+    }
     Column(Modifier.fillMaxSize()) {
         LazyColumn(Modifier.weight(1f).fillMaxWidth().padding(horizontal = 12.dp), state = rememberLazyListState(), reverseLayout = true) {
             if (lines.isEmpty()) {
@@ -118,7 +121,13 @@ fun RecentsScreen(vm: DialerViewModel) {
                 TextAction(stringResource(R.string.filter_missed), if (missedOnly) oz.fg else oz.fg3, { vm.showMissedOnly(true) },
                     style = OzType.body.copy(fontWeight = if (missedOnly) FontWeight.Medium else FontWeight.Normal))
             }
-            KeypadFab { vm.openKeypad() }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (lines.isNotEmpty()) GhostIconButton(R.drawable.ic_oz_trash, stringResource(R.string.clear_log), {
+                    if (vm.canClearLog) vm.askClearLog() else askWrite.launch(android.Manifest.permission.WRITE_CALL_LOG)
+                }, tint = oz.fg3)
+                androidx.compose.foundation.layout.Spacer(Modifier.padding(start = 12.dp))
+                KeypadFab { vm.openKeypad() }
+            }
         }
     }
 }

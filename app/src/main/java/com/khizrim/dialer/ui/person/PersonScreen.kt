@@ -71,10 +71,8 @@ fun PersonScreen(vm: DialerViewModel, id: Long) {
         ) {
             if (history.isNotEmpty()) {
                 Column(Modifier.padding(bottom = 40.dp)) {
-                    history.forEachIndexed { i, e ->
-                        val a = remember { Animatable(0f) }
-                        LaunchedEffect(Unit) { a.animateTo(1f, Motion.enter(Motion.MOVE, delay = Motion.FADE + i * 30)) }
-                        Row(Modifier.padding(vertical = 6.dp).graphicsLayer { alpha = a.value }) {
+                    history.forEach { e ->
+                        Row(Modifier.padding(vertical = 6.dp)) {
                             Text(e.day, style = OzType.small, color = oz.fg3, modifier = Modifier.width(48.dp))
                             Spacer(Modifier.width(16.dp))
                             Text(e.text, style = OzType.small, color = if (e.missed) oz.danger else oz.fg2)

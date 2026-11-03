@@ -96,7 +96,6 @@ interface CallActions {
 fun CallScreen(c: CallState, actions: CallActions, locked: Boolean = false) {
     val oz = LocalOz.current
     val reduced = LocalReducedMotion.current
-    val shift = with(LocalDensity.current) { 8.dp.roundToPx() }
     var confirmBlock by remember { mutableStateOf(false) }
     var routePicker by remember { mutableStateOf(false) }
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
@@ -142,9 +141,7 @@ fun CallScreen(c: CallState, actions: CallActions, locked: Boolean = false) {
             AnimatedContent(
                 targetState = when (c.phase) { CallPhase.RINGING -> 0; CallPhase.ENDED -> 2; else -> 1 },
                 transitionSpec = {
-                    val enter = if (reduced) fadeIn(Motion.enter(Motion.FADE)) else
-                        fadeIn(Motion.enter(Motion.MOVE, delay = Motion.FADE)) + slideInVertically(Motion.enter(Motion.MOVE, delay = Motion.FADE)) { shift }
-                    enter togetherWith fadeOut(Motion.exit(Motion.FADE))
+                    fadeIn(Motion.enter(Motion.FADE)) togetherWith fadeOut(Motion.exit(Motion.PRESS))
                 },
                 label = "call-phase",
             ) { phase ->

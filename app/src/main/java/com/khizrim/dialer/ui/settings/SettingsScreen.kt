@@ -104,7 +104,7 @@ fun SettingsScreen(vm: DialerViewModel) {
             ValueRow(stringResource(R.string.set_version), versionName(context), onClick = null)
         }
         BottomBar {
-            GhostIconButton(R.drawable.ic_oz_back, stringResource(R.string.back), vm::openContacts)
+            GhostIconButton(R.drawable.ic_oz_back, stringResource(R.string.back), vm::leaveSettings)
             Box(Modifier)
         }
     }
