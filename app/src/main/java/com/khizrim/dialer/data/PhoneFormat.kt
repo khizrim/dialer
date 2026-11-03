@@ -30,7 +30,7 @@ object PhoneFormat {
     }
 
     fun formatTyping(raw: String, region: String): String {
-        if (raw.isEmpty() || raw.contains('*') || raw.contains('#')) return raw
+        if (raw.isEmpty() || raw.any { it in "*#,;" }) return raw
         if (raw[0] == '+') {
             val d = raw.substring(1)
             for (n in 1..minOf(3, d.length)) {

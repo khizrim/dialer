@@ -67,7 +67,10 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     var hasCallLog by mutableStateOf(false); private set
 
     /** «Не сейчас» на шаге со звонилкой по умолчанию. */
-    var roleSkipped by mutableStateOf(false)
+    var roleSkipped by mutableStateOf(prefs.roleSkipped)
+        private set
+
+    fun skipRole() { roleSkipped = true; prefs.roleSkipped = true }
 
     val needsOnboarding: Boolean get() = !hasContacts || !hasCallLog || (!isDefaultDialer && !roleSkipped)
 
@@ -238,9 +241,21 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     // ---------- клавиатура = поиск ----------
-    fun openKeypad(prefill: String = "") { keypad = prefill.filter { it.isDigit() || it in "+*#" }.take(18); keypadOpen = true; refreshHits() }
+    fun openKeypad(prefill: String = "") { keypad = cleanNumber(prefill); keypadOpen = true; refreshHits() }
+
+    /** Цифры и служебные символы; запятая и точка с запятой — паузы для добавочного. */
+    private fun cleanNumber(s: String): String = s.filter { it.isDigit() || it in "+*#,;" }.take(32)
+
+    /** Вставить номер из буфера обмена. */
+    fun paste(text: String?) {
+        val n = cleanNumber(text.orEmpty())
+        if (n.isEmpty()) return
+        keypad = n; refreshHits()
+    }
+
+    fun callVoicemail() { closeKeypad(); Launcher.voicemail(ctx)?.let { say(it) } }
     fun closeKeypad() { keypadOpen = false; keypad = "" }
-    fun type(ch: Char) { if (keypad.length < 18) { keypad += ch; refreshHits() } }
+    fun type(ch: Char) { if (keypad.length < 32) { keypad += ch; refreshHits() } }
     fun backspace() { keypad = keypad.dropLast(1); refreshHits() }
     fun clearKeypad() { keypad = ""; refreshHits() }
 
@@ -266,7 +281,11 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun callTyped() {
-        if (PhoneFormat.digits(keypad).isEmpty()) return
+        if (PhoneFormat.digits(keypad).isEmpty()) {
+            // пустое поле: кнопка вызова подставляет последний набранный номер, второй тап звонит
+            calls.firstOrNull { it.type == android.provider.CallLog.Calls.OUTGOING_TYPE }?.let { keypad = cleanNumber(it.number); refreshHits() }
+            return
+        }
         val number = keypad
         closeKeypad()
         Launcher.call(ctx, number)?.let { say(it) }
@@ -377,11 +396,10 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
             prefs.hide(listOf(key))
             removed = listOf(at to entry)
             tidy = true
-            say(str(if (entry.person != null && looksFeminine(entry.title)) R.string.removed_from_home_f else R.string.removed_from_home, entry.title), undo = true)
+            say(str(if (entry.person != null && Declension.isFeminine(entry.title)) R.string.removed_from_home_f else R.string.removed_from_home, entry.title), undo = true)
         }
     }
 
-    private fun looksFeminine(name: String): Boolean = name.trim().split(" ").first().lastOrNull()?.let { it in "аяАЯ" } == true
 
     fun undo() {
         removed.sortedBy { it.first }.forEach { (at, e) ->

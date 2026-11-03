@@ -38,4 +38,16 @@ class DeclensionTest {
         assertEquals("со Святославом", Declension.withPreposition("Святославом"))
         assertEquals("с Сергеем", Declension.withPreposition("Сергеем"))
     }
+
+    @Test fun feminineForToast() {
+        org.junit.Assert.assertTrue(Declension.isFeminine("Мама"))
+        org.junit.Assert.assertTrue(Declension.isFeminine("Аня"))
+        org.junit.Assert.assertTrue(Declension.isFeminine("Саша Иванова"))
+        org.junit.Assert.assertTrue(Declension.isFeminine("Любовь"))
+        org.junit.Assert.assertFalse(Declension.isFeminine("Илья"))
+        org.junit.Assert.assertFalse(Declension.isFeminine("Никита Петров"))
+        org.junit.Assert.assertFalse(Declension.isFeminine("Саша"))
+        org.junit.Assert.assertFalse(Declension.isFeminine("Папа"))
+        org.junit.Assert.assertFalse(Declension.isFeminine("Mike"))
+    }
 }

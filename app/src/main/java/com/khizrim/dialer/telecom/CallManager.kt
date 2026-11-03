@@ -39,7 +39,11 @@ object CallManager {
     internal var service: OzInCallService? = null
 
     private val callback = object : Call.Callback() {
-        override fun onStateChanged(call: Call, newState: Int) = refresh()
+        override fun onStateChanged(call: Call, newState: Int) {
+            if (newState == Call.STATE_SELECT_PHONE_ACCOUNT) autoPickSim(call)
+            if (newState == Call.STATE_DISCONNECTED) pendingAnswer?.let { r -> if (call == endingForAnswer) { pendingAnswer = null; endingForAnswer = null; main.post(r) } }
+            refresh()
+        }
         override fun onDetailsChanged(call: Call, details: Call.Details) = refresh()
     }
 
@@ -66,6 +70,10 @@ object CallManager {
     internal fun attach(service: OzInCallService) {
         this.service = service
         appContext = service.applicationContext
+        // маска номера по стране SIM, даже если приложение не открывали
+        if (com.khizrim.dialer.data.PhoneFormat.simRegion == null) {
+            com.khizrim.dialer.data.PhoneFormat.simRegion = com.khizrim.dialer.data.PhoneFormat.detectRegion(service)
+        }
     }
 
     internal fun detach() {
@@ -77,6 +85,7 @@ object CallManager {
         call.registerCallback(callback)
         endText = null
         lookupName(call)
+        autoPickSim(call)
         refresh()
     }
 
@@ -132,7 +141,18 @@ object CallManager {
         @Suppress("DEPRECATION")
         val list = call.details?.extras?.getParcelableArrayList<PhoneAccountHandle>(Call.AVAILABLE_PHONE_ACCOUNTS)
             ?: extras.getParcelableArrayList<PhoneAccountHandle>(Call.AVAILABLE_PHONE_ACCOUNTS)
-        return list.orEmpty()
+        if (!list.isNullOrEmpty()) return list
+        // система не передала список: берём SIM-карты сами
+        @android.annotation.SuppressLint("MissingPermission")
+        val own = runCatching { appContext?.getSystemService(TelecomManager::class.java)?.callCapablePhoneAccounts }.getOrNull()
+        return own.orEmpty()
+    }
+
+    /** Если SIM одна, выбирать нечего: звоним с неё сразу. */
+    private fun autoPickSim(call: Call) {
+        if (call.state != Call.STATE_SELECT_PHONE_ACCOUNT) return
+        val accounts = simAccounts(call)
+        if (accounts.size == 1) call.phoneAccountSelected(accounts[0], false)
     }
 
     private fun simLabel(handle: PhoneAccountHandle, index: Int): String {
@@ -194,9 +214,16 @@ object CallManager {
     /** Завершить текущий и ответить на второй. */
     fun endAndAnswer() {
         val ringing = visible.firstOrNull { it.state == Call.STATE_RINGING } ?: return
-        visible.filter { it != ringing && it.state != Call.STATE_DISCONNECTED }.forEach { it.disconnect() }
-        main.postDelayed({ ringing.answer(VideoProfile.STATE_AUDIO_ONLY) }, 300)
+        val active = visible.firstOrNull { it != ringing && it.state == Call.STATE_ACTIVE }
+        if (active == null) { ringing.answer(VideoProfile.STATE_AUDIO_ONLY); return }
+        // отвечаем, когда текущий действительно завершился; удержанный не трогаем
+        endingForAnswer = active
+        pendingAnswer = Runnable { if (ringing.state == Call.STATE_RINGING) ringing.answer(VideoProfile.STATE_AUDIO_ONLY) }
+        active.disconnect()
     }
+
+    private var endingForAnswer: Call? = null
+    private var pendingAnswer: Runnable? = null
 
     fun decline() {
         val ringing = visible.firstOrNull { it.state == Call.STATE_RINGING }
@@ -228,7 +255,7 @@ object CallManager {
 
     /** Отклонить и отправить SMS. Текст отправляет сама система. */
     fun rejectWithMessage(text: String) {
-        calls.firstOrNull { it.state == Call.STATE_RINGING }?.reject(true, text)
+        visible.firstOrNull { it.state == Call.STATE_RINGING }?.reject(true, text)
     }
 
     fun block(context: Context): Boolean {

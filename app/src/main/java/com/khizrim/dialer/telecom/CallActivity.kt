@@ -1,5 +1,7 @@
 package com.khizrim.dialer.telecom
 
+import androidx.compose.runtime.remember
+
 import android.app.KeyguardManager
 import android.content.Context
 import android.content.Intent
@@ -64,10 +66,11 @@ class CallActivity : ComponentActivity() {
                     LaunchedEffect(Unit) {
                         snapshotFlow { CallManager.state }.collect { s ->
                             if (s == null) finishAndRemoveTask()
-                            proximity(s != null && s.phase != CallPhase.RINGING && !s.speaker && s.phase != CallPhase.ENDED)
+                            proximity(s != null && s.phase != CallPhase.RINGING && s.phase != CallPhase.ENDED && s.route == com.khizrim.dialer.model.CallState.ROUTE_EARPIECE)
                         }
                     }
-                    if (shown != null) CallScreen(shown, actions)
+                    val keyguard = remember { getSystemService(KeyguardManager::class.java) }
+                    if (shown != null) CallScreen(shown, actions, locked = keyguard?.isKeyguardLocked == true)
                 }
             }
         }

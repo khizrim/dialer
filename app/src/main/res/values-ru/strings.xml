@@ -157,4 +157,5 @@
     <string name="alert_fix">Исправить</string>
     <string name="alert_open">Открыть</string>
     <string name="err_call_permission">Разрешите звонки в настройках, чтобы звонить из Ozero Phone</string>
+    <string name="hold_to_answer">Удерживайте, чтобы ответить</string>
 </resources>

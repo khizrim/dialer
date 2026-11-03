@@ -51,6 +51,13 @@ object Launcher {
         return start(context, Intent(Intent.ACTION_DIAL, uri).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK), context.getString(R.string.err_call))
     }
 
+    /** Голосовая почта оператора. */
+    fun voicemail(context: Context): String? {
+        val tm = context.getSystemService(TelecomManager::class.java) ?: return context.getString(R.string.err_call)
+        if (context.checkSelfPermission(Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) return context.getString(R.string.err_call_permission)
+        return try { tm.placeCall(Uri.fromParts("voicemail", "", null), Bundle()); null } catch (e: Exception) { context.getString(R.string.err_call) }
+    }
+
     fun sms(context: Context, number: String): String? =
         start(context, Intent(Intent.ACTION_SENDTO, Uri.fromParts("smsto", number, null)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK), context.getString(R.string.err_no_sms))
 

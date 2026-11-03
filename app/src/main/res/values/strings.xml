@@ -158,4 +158,5 @@
     <string name="alert_fix">Fix</string>
     <string name="alert_open">Open</string>
     <string name="err_call_permission">Allow calls in settings to dial from Ozero Phone</string>
+    <string name="hold_to_answer">Hold to answer</string>
 </resources>

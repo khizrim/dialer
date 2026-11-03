@@ -164,6 +164,7 @@ fun KeypadPanel(vm: DialerViewModel) {
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun TypedNumber(vm: DialerViewModel) {
     val oz = LocalOz.current
@@ -180,11 +181,14 @@ private fun TypedNumber(vm: DialerViewModel) {
         .let { if (vm.keypad.last().isDigit()) it else formatted.length - 1 }
     val head = formatted.take(cut.coerceIn(0, formatted.length))
     val tail = formatted.drop(cut.coerceIn(0, formatted.length))
+    val clipboard = androidx.compose.ui.platform.LocalClipboardManager.current
     Row(
         Modifier
             .fillMaxWidth()
             .height(56.dp)
             .padding(start = 24.dp, end = 24.dp, top = 4.dp)
+            // долгое нажатие на поле вставляет номер из буфера
+            .combinedClickable(interactionSource = null, indication = null, onClick = {}, onLongClick = { vm.paste(clipboard.getText()?.text) })
             .semantics { liveRegion = LiveRegionMode.Polite; contentDescription = formatted.ifEmpty { noNumber } },
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
@@ -221,7 +225,11 @@ private fun Key(d: Char, letters: String, vm: DialerViewModel, modifier: Modifie
                 interactionSource = source,
                 indication = null,
                 role = Role.Button,
-                onLongClick = if (d == '0') ({ vm.type('+') }) else null,
+                onLongClick = when (d) {
+                    '0' -> ({ vm.type('+') })
+                    '1' -> ({ vm.callVoicemail() })
+                    else -> null
+                },
                 onClick = {
                     view.performHapticFeedback(android.view.HapticFeedbackConstants.KEYBOARD_TAP)
                     vm.type(d)

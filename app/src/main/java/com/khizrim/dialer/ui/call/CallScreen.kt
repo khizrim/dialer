@@ -76,7 +76,7 @@ interface CallActions {
 
 /** Входящий, исходящий и идущий звонок. Без подсказки про канал. */
 @Composable
-fun CallScreen(c: CallState, actions: CallActions) {
+fun CallScreen(c: CallState, actions: CallActions, locked: Boolean = false) {
     val oz = LocalOz.current
     val reduced = LocalReducedMotion.current
     val shift = with(LocalDensity.current) { 8.dp.roundToPx() }
@@ -127,7 +127,7 @@ fun CallScreen(c: CallState, actions: CallActions) {
                 label = "call-phase",
             ) { phase ->
                 when (phase) {
-                    0 -> Ringing(actions, known, secondLine = c.other != null, onBlock = { confirmBlock = true })
+                    0 -> Ringing(actions, known, secondLine = c.other != null, locked = locked, onBlock = { confirmBlock = true })
                     1 -> Active(c, actions, onRoutes = { routePicker = true })
                     else -> Spacer(Modifier.fillMaxWidth().height(144.dp))
                 }
@@ -147,8 +147,9 @@ fun CallScreen(c: CallState, actions: CallActions) {
 }
 
 @Composable
-private fun Ringing(actions: CallActions, known: Boolean, secondLine: Boolean, onBlock: () -> Unit) {
+private fun Ringing(actions: CallActions, known: Boolean, secondLine: Boolean, locked: Boolean, onBlock: () -> Unit) {
     val oz = LocalOz.current
+    var hint by remember { mutableStateOf(false) }
     Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
         Row(Modifier.fillMaxWidth().padding(bottom = 28.dp), horizontalArrangement = Arrangement.SpaceAround) {
             if (secondLine) {
@@ -162,20 +163,23 @@ private fun Ringing(actions: CallActions, known: Boolean, secondLine: Boolean, o
         }
         Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 24.dp), horizontalArrangement = Arrangement.SpaceBetween) {
             LabeledRound(R.drawable.ic_oz_end_call, stringResource(R.string.decline), oz.dangerFill, actions::decline)
+            // на заблокированном экране отвечаем удержанием, чтобы не принять звонок в кармане
             LabeledRound(
                 R.drawable.ic_oz_phone,
-                stringResource(if (secondLine) R.string.answer_hold else R.string.answer),
-                oz.accentFill, actions::answer,
+                stringResource(if (hint) R.string.hold_to_answer else if (secondLine) R.string.answer_hold else R.string.answer),
+                oz.accentFill,
+                onClick = if (locked) ({ hint = true }) else actions::answer,
+                onLongClick = if (locked) actions::answer else null,
             )
         }
     }
 }
 
 @Composable
-private fun LabeledRound(icon: Int, label: String, fill: Color, onClick: () -> Unit) {
+private fun LabeledRound(icon: Int, label: String, fill: Color, onClick: () -> Unit, onLongClick: (() -> Unit)? = null) {
     val oz = LocalOz.current
     Column(
-        Modifier.press(onClick, shape = RoundedCornerShape(20.dp), pressColor = Color.Transparent),
+        Modifier.press(onClick, onLongClick, shape = RoundedCornerShape(20.dp), pressColor = Color.Transparent),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {

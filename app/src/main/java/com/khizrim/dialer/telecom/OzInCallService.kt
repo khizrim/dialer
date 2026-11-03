@@ -34,25 +34,38 @@ class OzInCallService : InCallService() {
         super.onDestroy()
     }
 
+    private val io = java.util.concurrent.Executors.newSingleThreadExecutor()
+    private val main = android.os.Handler(android.os.Looper.getMainLooper())
+
     override fun onCallAdded(call: Call) {
-        if (shouldSilence(call)) {
-            // «Не беспокоить незнакомым»: без звонка, без уведомления; звонок останется в журнале
-            CallManager.silence(call)
-            runCatching { getSystemService(TelecomManager::class.java)?.silenceRinger() }
-            CallManager.add(call)
+        if (call.state == Call.STATE_RINGING && Prefs(this).silenceUnknown) {
+            // поиск в контактах не на главном потоке: большая книга не задержит входящий
+            val number = call.details?.handle?.schemeSpecificPart.orEmpty()
+            io.execute {
+                val unknown = number.isBlank() || ContactsSource.nameFor(this, number) == null
+                main.post {
+                    if (call.state == Call.STATE_DISCONNECTED) return@post
+                    if (unknown) addSilenced(call) else addVisible(call)
+                }
+            }
             return
         }
+        addVisible(call)
+    }
+
+    /** «Не беспокоить незнакомым»: без звонка, без уведомления; звонок останется в журнале. */
+    private fun addSilenced(call: Call) {
+        CallManager.silence(call)
+        runCatching { getSystemService(TelecomManager::class.java)?.silenceRinger() }
+        CallManager.add(call)
+    }
+
+    private fun addVisible(call: Call) {
         CallManager.add(call)
         // исходящий открываем сразу; входящий показывает полноэкранное уведомление
         if (call.state != Call.STATE_RINGING) {
             startActivity(CallActivity.intent(this))
         }
-    }
-
-    private fun shouldSilence(call: Call): Boolean {
-        if (call.state != Call.STATE_RINGING || !Prefs(this).silenceUnknown) return false
-        val number = call.details?.handle?.schemeSpecificPart.orEmpty()
-        return number.isBlank() || ContactsSource.nameFor(this, number) == null
     }
 
     override fun onCallRemoved(call: Call) {

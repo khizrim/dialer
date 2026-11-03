@@ -76,6 +76,10 @@ class Prefs(context: Context) {
         sp.edit().putString("log", lines.joinToString("\n") { "${it.key}\t${it.method.name}\t${it.at}" }).apply()
     }
 
+    var roleSkipped: Boolean
+        get() = sp.getBoolean("roleSkipped", false)
+        set(v) { sp.edit().putBoolean("roleSkipped", v).apply() }
+
     var xiaomiHintSeen: Boolean
         get() = sp.getBoolean("xiaomiHint", false)
         set(v) { sp.edit().putBoolean("xiaomiHint", v).apply() }
