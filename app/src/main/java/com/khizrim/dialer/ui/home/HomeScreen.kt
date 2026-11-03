@@ -266,12 +266,6 @@ fun HomeScreen(vm: DialerViewModel) {
                 // необязательные строки появляются и уходят, раздвигая место плавно: стопка над ними не прыгает
                 val alert = com.khizrim.dialer.ui.components.rememberLast(vm.callAlert)
                 QuietRow(vm.callAlert != null) { alert?.let { CallAlertRow(vm, it) } }
-                QuietRow(vm.tidy) {
-                    TextAction(
-                        stringResource(R.string.home_clear), oz.fg3, vm::askClearHome, style = OzType.small,
-                        modifier = Modifier.padding(start = 12.dp, top = 4.dp),
-                    )
-                }
                 BottomBar {
                     val t = vm.toast
                     Box(Modifier.weight(1f).padding(end = 16.dp)) {
