@@ -27,7 +27,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
-import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import kotlinx.coroutines.launch
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
@@ -143,10 +142,27 @@ fun KeypadPanel(vm: DialerViewModel) {
     Column(
         Modifier.fillMaxWidth()
             .pointerInput(vm) {
-                detectVerticalDragGestures(
-                    onDragEnd = { if (pull.value > limit) vm.closeKeypad(); scope.launch { pull.animateTo(0f, Motion.enter(Motion.MOVE)) } },
-                    onDragCancel = { scope.launch { pull.animateTo(0f) } },
-                ) { change, amount -> change.consume(); scope.launch { pull.snapTo((pull.value + amount).coerceAtLeast(0f)) } }
+                // слушаем раньше клавиш (Initial): тянуть можно с любой точки панели, и с клавиши тоже;
+                // после вертикального порога движение наше, нажатие клавиши отменяется
+                val slop = viewConfiguration.touchSlop
+                androidx.compose.foundation.gestures.awaitEachGesture {
+                    val down = androidx.compose.foundation.gestures.awaitFirstDown(requireUnconsumed = false, pass = androidx.compose.ui.input.pointer.PointerEventPass.Initial)
+                    var dx = 0f; var dy = 0f; var dragging = false
+                    while (true) {
+                        val ev = awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Initial)
+                        val ch = ev.changes.firstOrNull { it.id == down.id } ?: break
+                        if (!ch.pressed) {
+                            if (dragging) { ch.consume(); if (pull.value > limit) vm.closeKeypad() }
+                            scope.launch { pull.animateTo(0f, Motion.enter(Motion.MOVE)) }
+                            break
+                        }
+                        dx += ch.position.x - ch.previousPosition.x; dy += ch.position.y - ch.previousPosition.y
+                        // горизонтальный жест — стирание номера, его не трогаем
+                        if (!dragging && kotlin.math.abs(dx) > slop && kotlin.math.abs(dx) > kotlin.math.abs(dy)) break
+                        if (!dragging && dy > slop) dragging = true
+                        if (dragging) { ch.consume(); scope.launch { pull.snapTo(dy.coerceAtLeast(0f)) } }
+                    }
+                }
             }
             .graphicsLayer { translationY = pull.value }
             .background(oz.bg),
