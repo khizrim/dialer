@@ -165,4 +165,26 @@
     <string name="add_call">Добавить</string>
     <string name="write">Написать</string>
     <string name="back_to_call">Звонок: %1$s · Вернуться</string>
+    <string name="settings">Настройки</string>
+    <string name="set_calls">Звонки</string>
+    <string name="set_sim">SIM для звонков</string>
+    <string name="set_sim_ask">Спрашивать</string>
+    <string name="set_blocking">Блокировка</string>
+    <string name="set_appearance">Внешний вид</string>
+    <string name="set_language">Язык</string>
+    <string name="set_language_system">Как на телефоне</string>
+    <string name="set_app">Приложение</string>
+    <string name="set_default_dialer">Звонилка по умолчанию</string>
+    <string name="set_permissions">Доступы</string>
+    <string name="set_version">Версия</string>
+    <string name="yes">Да</string>
+    <string name="no">Нет</string>
+    <string name="ch_missed">Пропущенные звонки</string>
+    <string name="ch_silent">Незнакомые без звука</string>
+    <string name="missed_from">Пропущенный от %1$s</string>
+    <string name="missed_many">Пропущенных: %1$d</string>
+    <string name="call_back">Перезвонить</string>
+    <string name="silenced_summary">Без звука: незнакомых %1$d</string>
+    <string name="silenced_text">Они не звонили вслух. Список в «Незнакомых номерах».</string>
+    <string name="look">Посмотреть</string>
 </resources>

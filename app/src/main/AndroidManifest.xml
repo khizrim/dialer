@@ -76,6 +76,14 @@
             </intent-filter>
         </service>
 
+        <receiver
+            android:name=".telecom.MissedCallReceiver"
+            android:exported="true"
+            android:permission="android.permission.MODIFY_PHONE_STATE">
+            <intent-filter>
+                <action android:name="android.telecom.action.SHOW_MISSED_CALLS_NOTIFICATION" />
+            </intent-filter>
+        </receiver>
         <receiver android:name=".telecom.CallActionReceiver" android:exported="false" />
         <receiver android:name=".telecom.ReminderReceiver" android:exported="false" />
     </application>

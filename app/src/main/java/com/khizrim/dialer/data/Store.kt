@@ -76,6 +76,11 @@ class Prefs(context: Context) {
         sp.edit().putString("log", lines.joinToString("\n") { "${it.key}\t${it.method.name}\t${it.at}" }).apply()
     }
 
+    /** SIM для исходящих: null — спрашивать (или как решит система), иначе id PhoneAccountHandle. */
+    var simForCalls: String?
+        get() = sp.getString("simForCalls", null)
+        set(v) { sp.edit().putString("simForCalls", v).apply() }
+
     var roleSkipped: Boolean
         get() = sp.getBoolean("roleSkipped", false)
         set(v) { sp.edit().putBoolean("roleSkipped", v).apply() }

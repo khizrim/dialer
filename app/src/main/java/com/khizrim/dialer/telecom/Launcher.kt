@@ -40,7 +40,7 @@ object Launcher {
         val allowed = context.checkSelfPermission(Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED
         if (allowed && tm != null) {
             return try {
-                tm.placeCall(uri, Bundle())
+                tm.placeCall(uri, Bundle().apply { simHandle(context, tm)?.let { putParcelable(TelecomManager.EXTRA_PHONE_ACCOUNT_HANDLE, it) } })
                 null
             } catch (e: SecurityException) {
                 context.getString(R.string.err_call)
@@ -49,6 +49,24 @@ object Launcher {
         // мы и есть звонилка: ACTION_DIAL вернулся бы к нам же, поэтому просим разрешение
         if (isDefaultDialer(context)) return context.getString(R.string.err_call_permission)
         return start(context, Intent(Intent.ACTION_DIAL, uri).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK), context.getString(R.string.err_call))
+    }
+
+    /** SIM-карты, с которых можно звонить: (id, подпись). Пусто без READ_PHONE_STATE. */
+    @android.annotation.SuppressLint("MissingPermission")
+    fun sims(context: Context): List<Pair<String, String>> {
+        val tm = context.getSystemService(TelecomManager::class.java) ?: return emptyList()
+        val list = runCatching { tm.callCapablePhoneAccounts }.getOrNull().orEmpty()
+        return list.mapIndexed { i, h ->
+            val label = runCatching { tm.getPhoneAccount(h)?.label?.toString() }.getOrNull()?.takeIf { it.isNotBlank() }
+            h.id to (label?.let { "SIM ${i + 1} · $it" } ?: context.getString(R.string.sim_n, i + 1))
+        }
+    }
+
+    /** Выбранная в настройках SIM, если она всё ещё в телефоне. */
+    @android.annotation.SuppressLint("MissingPermission")
+    private fun simHandle(context: Context, tm: TelecomManager): android.telecom.PhoneAccountHandle? {
+        val id = com.khizrim.dialer.data.Prefs(context).simForCalls ?: return null
+        return runCatching { tm.callCapablePhoneAccounts }.getOrNull()?.firstOrNull { it.id == id }
     }
 
     /** Голосовая почта оператора. */

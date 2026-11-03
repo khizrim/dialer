@@ -60,6 +60,7 @@ class OzInCallService : InCallService() {
     /** «Не беспокоить незнакомым»: без звонка, без уведомления; звонок останется в журнале. */
     private fun addSilenced(call: Call) {
         CallManager.silence(call)
+        CallNotifications.showSilenced(this)
         runCatching { getSystemService(TelecomManager::class.java)?.silenceRinger() }
         CallManager.add(call)
     }
@@ -87,6 +88,11 @@ object CallNotifications {
     private const val CHANNEL_INCOMING = "incoming"
     private const val CHANNEL_ONGOING = "ongoing"
     private const val CHANNEL_REMIND = "remind"
+    private const val CHANNEL_MISSED = "missed"
+    private const val CHANNEL_SILENT = "silent"
+    private const val ID_MISSED = 3
+    private const val ID_SILENT = 4
+    const val EXTRA_OPEN_UNKNOWN = "open_unknown"
     private const val ID_CALL = 1
     private const val ID_REMIND = 2
 
@@ -101,6 +107,8 @@ object CallNotifications {
         )
         nm.createNotificationChannel(NotificationChannel(CHANNEL_ONGOING, context.getString(R.string.ch_ongoing), NotificationManager.IMPORTANCE_LOW))
         nm.createNotificationChannel(NotificationChannel(CHANNEL_REMIND, context.getString(R.string.ch_remind), NotificationManager.IMPORTANCE_DEFAULT))
+        nm.createNotificationChannel(NotificationChannel(CHANNEL_MISSED, context.getString(R.string.ch_missed), NotificationManager.IMPORTANCE_DEFAULT))
+        nm.createNotificationChannel(NotificationChannel(CHANNEL_SILENT, context.getString(R.string.ch_silent), NotificationManager.IMPORTANCE_LOW))
     }
 
     private fun action(context: Context, act: String, code: Int): PendingIntent =
@@ -145,6 +153,68 @@ object CallNotifications {
         }
         runCatching { nm.notify(ID_CALL, b.build()) }
     }
+
+    /** Пропущенный: «Пропущенный от Димы», «Перезвонить», «Написать». Несколько схлопываются в одно. */
+    fun showMissed(context: Context, count: Int, number: String?) {
+        val nm = context.getSystemService(NotificationManager::class.java) ?: return
+        if (count <= 0) { nm.cancel(ID_MISSED); return }
+        val name = number?.let { ContactsSource.nameFor(context, it) }
+        val who = name ?: number?.takeIf { it.isNotBlank() }?.let { com.khizrim.dialer.data.PhoneFormat.pretty(it) } ?: context.getString(R.string.hidden_number)
+        val open = PendingIntent.getActivity(
+            context, 30, Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        )
+        val b = Notification.Builder(context, CHANNEL_MISSED)
+            .setSmallIcon(R.drawable.ic_oz_missed)
+            .setContentTitle(if (count == 1) context.getString(R.string.missed_from, who) else context.getString(R.string.missed_many, count))
+            .setContentText(if (count == 1 && name != null) com.khizrim.dialer.data.PhoneFormat.pretty(number.orEmpty()) else who)
+            .setCategory(Notification.CATEGORY_MISSED_CALL)
+            .setContentIntent(open)
+            .setAutoCancel(true)
+        if (!number.isNullOrBlank()) {
+            val call = PendingIntent.getActivity(
+                context, 31, Intent(context, MainActivity::class.java).setAction(ACTION_CALL_BACK).setData(android.net.Uri.fromParts("tel", number, null))
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+            )
+            val sms = PendingIntent.getActivity(
+                context, 32, Intent(Intent.ACTION_SENDTO, android.net.Uri.fromParts("smsto", number, null)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+            )
+            b.addAction(Notification.Action.Builder(null, context.getString(R.string.call_back), call).build())
+            b.addAction(Notification.Action.Builder(null, context.getString(R.string.write), sms).build())
+        }
+        runCatching { nm.notify(ID_MISSED, b.build()) }
+    }
+
+    /** Одно тихое сводное уведомление о незнакомых без звука. */
+    fun showSilenced(context: Context) {
+        val nm = context.getSystemService(NotificationManager::class.java) ?: return
+        val prefs = context.getSharedPreferences("ozero", Context.MODE_PRIVATE)
+        val count = prefs.getInt("silencedCount", 0) + 1
+        prefs.edit().putInt("silencedCount", count).apply()
+        val open = PendingIntent.getActivity(
+            context, 40, Intent(context, MainActivity::class.java).putExtra(EXTRA_OPEN_UNKNOWN, true).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        )
+        val n = Notification.Builder(context, CHANNEL_SILENT)
+            .setSmallIcon(R.drawable.ic_oz_bell_off)
+            .setContentTitle(context.getString(R.string.silenced_summary, count))
+            .setContentText(context.getString(R.string.silenced_text))
+            .setContentIntent(open)
+            .addAction(Notification.Action.Builder(null, context.getString(R.string.look), open).build())
+            .setAutoCancel(true)
+            .build()
+        runCatching { nm.notify(ID_SILENT, n) }
+    }
+
+    /** Человек открыл приложение: сводки больше не нужны. */
+    fun clearSummaries(context: Context) {
+        context.getSharedPreferences("ozero", Context.MODE_PRIVATE).edit().putInt("silencedCount", 0).apply()
+        context.getSystemService(NotificationManager::class.java)?.let { it.cancel(ID_SILENT); it.cancel(ID_MISSED) }
+    }
+
+    const val ACTION_CALL_BACK = "com.khizrim.dialer.CALL_BACK"
 
     fun cancel(context: Context) {
         context.getSystemService(NotificationManager::class.java)?.cancel(ID_CALL)
@@ -195,5 +265,19 @@ class ReminderReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val number = intent.getStringExtra("number") ?: return
         CallNotifications.showReminder(context, intent.getStringExtra("name") ?: number, number)
+    }
+}
+
+/** Telecom просит звонилку по умолчанию показать пропущенные сама: делаем это в своём тоне. */
+class MissedCallReceiver : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+        if (intent.action != TelecomManager.ACTION_SHOW_MISSED_CALLS_NOTIFICATION) return
+        val count = intent.getIntExtra(TelecomManager.EXTRA_NOTIFICATION_COUNT, 0)
+        val number = intent.getStringExtra(TelecomManager.EXTRA_NOTIFICATION_PHONE_NUMBER)
+        val pending = goAsync()
+        Thread {
+            runCatching { CallNotifications.showMissed(context, count, number) }
+            pending.finish()
+        }.start()
     }
 }

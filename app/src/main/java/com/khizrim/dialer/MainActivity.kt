@@ -26,6 +26,7 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         vm.reload()
+        CallNotifications.clearSummaries(this)
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -37,6 +38,9 @@ class MainActivity : ComponentActivity() {
     private fun handle(intent: Intent?) {
         val tel = intent?.data?.takeIf { it.scheme == "tel" }?.schemeSpecificPart
         when {
+            intent?.getBooleanExtra(CallNotifications.EXTRA_OPEN_UNKNOWN, false) == true -> vm.openUnknown()
+            // «Перезвонить» из уведомления о пропущенном
+            intent?.action == CallNotifications.ACTION_CALL_BACK && tel != null -> vm.callNumber(tel)
             intent?.action == Intent.ACTION_DIAL -> vm.openKeypad(tel.orEmpty())
             intent?.action == Intent.ACTION_VIEW && tel != null -> vm.openKeypad(tel)
             // «Пропущенные» из системного уведомления: на главную, там они наверху

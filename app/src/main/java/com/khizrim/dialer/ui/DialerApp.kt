@@ -76,6 +76,7 @@ fun DialerApp(vm: DialerViewModel = viewModel()) {
                         Screen.BLOCKED -> BlockedScreen(vm)
                         Screen.UNKNOWN -> com.khizrim.dialer.ui.contacts.UnknownScreen(vm)
                         Screen.RECENTS -> com.khizrim.dialer.ui.recents.RecentsScreen(vm)
+                        Screen.SETTINGS -> com.khizrim.dialer.ui.settings.SettingsScreen(vm)
                     }
                 }
 

@@ -35,7 +35,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.Locale
 
-enum class Screen { HOME, CONTACTS, PERSON, BLOCKED, UNKNOWN, RECENTS }
+enum class Screen { HOME, CONTACTS, PERSON, BLOCKED, UNKNOWN, RECENTS, SETTINGS }
 enum class SheetMode { OTHER, DEFAULT }
 enum class MenuContext { HOME, SEARCH }
 
@@ -202,6 +202,14 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     }
     fun openRecents() { screen = Screen.RECENTS }
 
+    fun callNumber(number: String) { closeKeypad(); Launcher.call(ctx, number)?.let { say(it) } }
+    fun openSettings() { closeKeypad(); sims = Launcher.sims(ctx); simForCalls = prefs.simForCalls; screen = Screen.SETTINGS }
+
+    /** SIM-карты для настройки «SIM для звонков». */
+    var sims by mutableStateOf<List<Pair<String, String>>>(emptyList()); private set
+    var simForCalls by mutableStateOf<String?>(null); private set
+    fun chooseSimForCalls(id: String?) { prefs.simForCalls = id; simForCalls = id }
+
     /** Полный журнал: каждая строка — звонок, с именем, если номер есть в контактах. */
     var recentCalls by mutableStateOf<List<Pair<CallRecord, Person?>>>(emptyList()); private set
 
@@ -251,7 +259,7 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
         menu != null -> { menu = null; true }
         keypadOpen -> { closeKeypad(); true }
         screen == Screen.PERSON -> { leavePerson(); true }
-        screen == Screen.BLOCKED || screen == Screen.UNKNOWN || screen == Screen.RECENTS -> { screen = Screen.CONTACTS; true }
+        screen == Screen.BLOCKED || screen == Screen.UNKNOWN || screen == Screen.RECENTS || screen == Screen.SETTINGS -> { screen = Screen.CONTACTS; true }
         screen == Screen.CONTACTS -> { screen = Screen.HOME; true }
         else -> false
     }
