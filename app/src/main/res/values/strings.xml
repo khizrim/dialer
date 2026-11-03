@@ -151,4 +151,11 @@
     <string name="route_bluetooth">Bluetooth</string>
     <string name="route_wired">Headphones</string>
     <string name="route_earpiece">Phone</string>
+    <string name="alert_not_default">Ozero Phone isn\'t your phone app, calls go elsewhere</string>
+    <string name="alert_notifications">Notifications are off, incoming calls may not show</string>
+    <string name="alert_full_screen">Allow full-screen calls to see who is calling on the lock screen</string>
+    <string name="alert_xiaomi">On Xiaomi, allow «Show on lock screen» and «Pop-up windows»</string>
+    <string name="alert_fix">Fix</string>
+    <string name="alert_open">Open</string>
+    <string name="err_call_permission">Allow calls in settings to dial from Ozero Phone</string>
 </resources>

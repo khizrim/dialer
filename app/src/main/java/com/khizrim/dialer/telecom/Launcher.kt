@@ -37,15 +37,17 @@ object Launcher {
     fun call(context: Context, number: String): String? {
         val uri = Uri.fromParts("tel", number, null)
         val tm = context.getSystemService(TelecomManager::class.java)
-        if (context.checkSelfPermission(Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED && tm != null) {
+        val allowed = context.checkSelfPermission(Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED
+        if (allowed && tm != null) {
             return try {
                 tm.placeCall(uri, Bundle())
                 null
             } catch (e: SecurityException) {
-                start(context, Intent(Intent.ACTION_DIAL, uri).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK), context.getString(R.string.err_call))
+                context.getString(R.string.err_call)
             }
         }
-        // без разрешения отдаём номер системной звонилке
+        // мы и есть звонилка: ACTION_DIAL вернулся бы к нам же, поэтому просим разрешение
+        if (isDefaultDialer(context)) return context.getString(R.string.err_call_permission)
         return start(context, Intent(Intent.ACTION_DIAL, uri).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK), context.getString(R.string.err_call))
     }
 

@@ -114,6 +114,7 @@ fun HomeScreen(vm: DialerViewModel) {
                     }
                 }
             }
+            vm.callAlert?.let { CallAlertRow(vm, it) }
             if (vm.tidy) {
                 TextAction(
                     stringResource(R.string.home_clear), oz.fg3, vm::askClearHome, style = OzType.small,
@@ -151,3 +152,28 @@ fun HomeScreen(vm: DialerViewModel) {
     }
 }
 
+
+/** Одна тихая строка, если входящие могут не показаться. Исчезает, когда всё исправлено. */
+@Composable
+private fun CallAlertRow(vm: DialerViewModel, alert: com.khizrim.dialer.telecom.CallAlert) {
+    val oz = LocalOz.current
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val launcher = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult(),
+    ) { vm.reload() }
+    Row(
+        Modifier.fillMaxWidth().padding(start = 24.dp, end = 12.dp, top = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(stringResource(alert.text), style = OzType.small, color = oz.warn, modifier = Modifier.weight(1f))
+        TextAction(stringResource(alert.action), oz.accent, {
+            val intent = vm.alertIntent()
+            vm.alertOpened()
+            val ok = intent != null && runCatching { launcher.launch(intent) }.isSuccess
+            if (!ok) runCatching { context.startActivity(com.khizrim.dialer.telecom.CallReadiness.fallbackIntent(context)) }
+        }, style = OzType.small)
+        if (alert.dismissable) {
+            GhostIconButton(R.drawable.ic_oz_x, stringResource(R.string.close), vm::dismissAlert, tint = oz.fg3, iconSize = 18.dp)
+        }
+    }
+}

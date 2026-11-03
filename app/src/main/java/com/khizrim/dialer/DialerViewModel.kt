@@ -59,7 +59,7 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     private val res get() = ctx.resources
     private fun str(id: Int, vararg args: Any): String = ctx.getString(id, *args)
     private val prefs = Prefs(app)
-    val region: String = PhoneFormat.defaultRegion
+    val region: String = PhoneFormat.detectRegion(app)?.also { PhoneFormat.simRegion = it } ?: PhoneFormat.defaultRegion
 
     var ready by mutableStateOf(false); private set
     var isDefaultDialer by mutableStateOf(false); private set
@@ -82,6 +82,9 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
 
     /** «Не беспокоить незнакомым»: такие звонки не звонят и не попадают на главную. */
     var silenceUnknown by mutableStateOf(prefs.silenceUnknown); private set
+
+    /** Что мешает увидеть входящий; показываем одну строку на главной. */
+    var callAlert by mutableStateOf<com.khizrim.dialer.telecom.CallAlert?>(null); private set
 
     /** Звонки с номеров не из контактов, новые сверху. */
     var unknownCalls by mutableStateOf<List<CallRecord>>(emptyList()); private set
@@ -117,6 +120,8 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
         isDefaultDialer = Launcher.isDefaultDialer(ctx)
         hasContacts = granted(Manifest.permission.READ_CONTACTS)
         hasCallLog = granted(Manifest.permission.READ_CALL_LOG)
+        callAlert = com.khizrim.dialer.telecom.CallReadiness.check(ctx, isDefaultDialer, prefs.xiaomiHintSeen)
+        if (isDefaultDialer) com.khizrim.dialer.telecom.CallReadiness.clearMissed(ctx)
         loadJob?.cancel()
         loadJob = viewModelScope.launch {
             val loaded = withContext(Dispatchers.IO) {
@@ -438,6 +443,20 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
             toast = null
             if (undo) { tidy = false; removed = emptyList() }
         }
+    }
+
+    /** Intent для «Исправить»; null — экрана нет, показываем настройки приложения. */
+    fun alertIntent(): android.content.Intent? {
+        val a = callAlert ?: return null
+        return com.khizrim.dialer.telecom.CallReadiness.fixIntent(ctx, a)
+    }
+
+    fun alertOpened() {
+        if (callAlert == com.khizrim.dialer.telecom.CallAlert.XIAOMI) { prefs.xiaomiHintSeen = true; callAlert = null }
+    }
+
+    fun dismissAlert() {
+        if (callAlert?.dismissable == true) { prefs.xiaomiHintSeen = true; callAlert = null }
     }
 
     companion object {

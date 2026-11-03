@@ -30,7 +30,8 @@ class CallActivity : ComponentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         showOverLockScreen()
-        if (intent?.getBooleanExtra(EXTRA_ANSWER, false) == true) CallManager.answer()
+        // ответ из уведомления: только при первом создании, не после поворота
+        if (savedInstanceState == null) consumeAnswer(intent)
 
         val actions = object : CallActions {
             override fun answer() = CallManager.answer()
@@ -74,7 +75,14 @@ class CallActivity : ComponentActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        if (intent.getBooleanExtra(EXTRA_ANSWER, false)) CallManager.answer()
+        consumeAnswer(intent)
+    }
+
+    private fun consumeAnswer(intent: Intent?) {
+        if (intent?.getBooleanExtra(EXTRA_ANSWER, false) != true) return
+        intent.removeExtra(EXTRA_ANSWER)
+        setIntent(intent)
+        CallManager.answer()
     }
 
     override fun onDestroy() {

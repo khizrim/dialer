@@ -76,6 +76,10 @@ class Prefs(context: Context) {
         sp.edit().putString("log", lines.joinToString("\n") { "${it.key}\t${it.method.name}\t${it.at}" }).apply()
     }
 
+    var xiaomiHintSeen: Boolean
+        get() = sp.getBoolean("xiaomiHint", false)
+        set(v) { sp.edit().putBoolean("xiaomiHint", v).apply() }
+
     var silenceUnknown: Boolean
         get() = sp.getBoolean("silenceUnknown", false)
         set(v) { sp.edit().putBoolean("silenceUnknown", v).apply() }

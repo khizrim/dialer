@@ -150,4 +150,11 @@
     <string name="route_bluetooth">Bluetooth</string>
     <string name="route_wired">Наушники</string>
     <string name="route_earpiece">Телефон</string>
+    <string name="alert_not_default">Ozero Phone не звонилка по умолчанию, звонки идут мимо</string>
+    <string name="alert_notifications">Уведомления выключены, входящие могут не показаться</string>
+    <string name="alert_full_screen">Разрешите звонки на весь экран, чтобы видеть их на блокировке</string>
+    <string name="alert_xiaomi">На Xiaomi разрешите «Экран блокировки» и «Всплывающие окна»</string>
+    <string name="alert_fix">Исправить</string>
+    <string name="alert_open">Открыть</string>
+    <string name="err_call_permission">Разрешите звонки в настройках, чтобы звонить из Ozero Phone</string>
 </resources>
