@@ -28,9 +28,23 @@ jobs:
           echo "OZERO_KEYSTORE=$RUNNER_TEMP/ozero.keystore" >> "$GITHUB_ENV"
       - name: Unit tests
         run: ./gradlew testDebugUnitTest --stacktrace
-      - name: Build debug APK
-        run: ./gradlew assembleDebug --stacktrace
+      - name: Android Lint
+        run: ./gradlew lintDebug --stacktrace
+      - name: Lint report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lint-report
+          path: app/build/reports/lint-results-debug.*
+          if-no-files-found: ignore
+      - name: Build APKs
+        run: ./gradlew assembleDebug assembleRelease --stacktrace
       - uses: actions/upload-artifact@v4
         with:
           name: dialer-debug-apk
           path: app/build/outputs/apk/debug/*.apk
+      # для основного телефона: без режима отладки, тот же ключ
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ozero-phone-release-apk
+          path: app/build/outputs/apk/release/*.apk
