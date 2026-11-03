@@ -66,4 +66,30 @@ object Declension {
             else -> Gender.Male
         }
     }
+
+    /** Мужские имена на -а/-я и «семейные» слова мужского рода. */
+    private val maleA = setOf(
+        "илья", "никита", "кузьма", "фома", "лука", "савва", "данила", "гаврила", "фаддей",
+        "дима", "миша", "ваня", "петя", "коля", "паша", "гоша", "лёша", "леша", "серёжа", "сережа",
+        "вова", "витя", "костя", "толя", "юра", "гена", "боря", "слава", "стёпа", "степа", "федя", "егорка",
+        "папа", "дедушка", "дед", "дядя", "братишка", "сынуля",
+    )
+
+    private val ambiguous = setOf("саша", "женя", "валя", "шура")
+
+    /** Для рода в подписях вроде «Убрана с главной». Саша и Женя без фамилии считаются мужскими. */
+    fun isFeminine(name: String): Boolean {
+        val words = name.trim().split(Regex("\\s+")).filter { it.isNotEmpty() }
+        if (words.isEmpty() || words.none { w -> w.any { it in 'а'..'я' || it in 'А'..'Я' || it == 'ё' || it == 'Ё' } }) return false
+        val first = words[0].lowercase()
+        if (first in maleA) return false
+        if (first in ambiguous) return words.size > 1 && feminineRest(words.drop(1).map { it.lowercase() })
+        return genderOf(words) == Gender.Female
+    }
+
+    private fun feminineRest(rest: List<String>): Boolean {
+        rest.firstOrNull { isPatronymic(it) }?.let { return it.endsWith("на") }
+        val last = rest.first()
+        return last.endsWith("ова") || last.endsWith("ева") || last.endsWith("ина") || last.endsWith("ая") || last.endsWith("ёва")
+    }
 }

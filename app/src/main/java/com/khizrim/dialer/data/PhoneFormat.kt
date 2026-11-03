@@ -30,7 +30,7 @@ object PhoneFormat {
     }
 
     fun formatTyping(raw: String, region: String): String {
-        if (raw.isEmpty() || raw.contains('*') || raw.contains('#')) return raw
+        if (raw.isEmpty() || raw.any { it in "*#,;" }) return raw
         if (raw[0] == '+') {
             val d = raw.substring(1)
             for (n in 1..minOf(3, d.length)) {
@@ -42,7 +42,8 @@ object PhoneFormat {
             }
             return raw
         }
-        for (rule in national[region] ?: national.getValue("RU")) {
+        val rules = national[region] ?: return raw
+        for (rule in rules) {
             if (rule.prefix != null && !raw.startsWith(rule.prefix)) continue
             if (raw.length < rule.min) continue
             if (rule.prefix != null) {
@@ -55,9 +56,18 @@ object PhoneFormat {
         return raw
     }
 
-    /** Регион для маски: США или Россия (по умолчанию). */
+    /** Регион для маски: страна SIM-карты, иначе страна из настроек языка. Задаётся при старте. */
+    @Volatile var simRegion: String? = null
+
     val defaultRegion: String
-        get() = if (java.util.Locale.getDefault().country == "US") "US" else "RU"
+        get() = (simRegion ?: java.util.Locale.getDefault().country).uppercase().ifEmpty { "RU" }
+
+    /** Страна по SIM или сети, например «RU». */
+    fun detectRegion(context: android.content.Context): String? {
+        val tm = context.getSystemService(android.telephony.TelephonyManager::class.java) ?: return null
+        return listOf(runCatching { tm.simCountryIso }.getOrNull(), runCatching { tm.networkCountryIso }.getOrNull())
+            .firstOrNull { !it.isNullOrBlank() }?.uppercase()
+    }
 
     /** Сохранённый номер в аккуратном виде: +7 (916) 123-45-67. */
     fun pretty(number: String, region: String = defaultRegion): String {

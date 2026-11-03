@@ -76,6 +76,18 @@ class Prefs(context: Context) {
         sp.edit().putString("log", lines.joinToString("\n") { "${it.key}\t${it.method.name}\t${it.at}" }).apply()
     }
 
+    var roleSkipped: Boolean
+        get() = sp.getBoolean("roleSkipped", false)
+        set(v) { sp.edit().putBoolean("roleSkipped", v).apply() }
+
+    var xiaomiHintSeen: Boolean
+        get() = sp.getBoolean("xiaomiHint", false)
+        set(v) { sp.edit().putBoolean("xiaomiHint", v).apply() }
+
+    /** Глушим незнакомых, только если можем отличить знакомых: без доступа к контактам глушили бы всех. */
+    fun silenceUnknownActive(context: Context): Boolean =
+        silenceUnknown && context.checkSelfPermission(android.Manifest.permission.READ_CONTACTS) == android.content.pm.PackageManager.PERMISSION_GRANTED
+
     var silenceUnknown: Boolean
         get() = sp.getBoolean("silenceUnknown", false)
         set(v) { sp.edit().putBoolean("silenceUnknown", v).apply() }

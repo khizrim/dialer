@@ -35,7 +35,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.Locale
 
-enum class Screen { HOME, CONTACTS, PERSON, BLOCKED, UNKNOWN }
+enum class Screen { HOME, CONTACTS, PERSON, BLOCKED, UNKNOWN, RECENTS }
 enum class SheetMode { OTHER, DEFAULT }
 enum class MenuContext { HOME, SEARCH }
 
@@ -59,7 +59,7 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     private val res get() = ctx.resources
     private fun str(id: Int, vararg args: Any): String = ctx.getString(id, *args)
     private val prefs = Prefs(app)
-    val region: String = PhoneFormat.defaultRegion
+    val region: String = PhoneFormat.detectRegion(app)?.also { PhoneFormat.simRegion = it } ?: PhoneFormat.defaultRegion
 
     var ready by mutableStateOf(false); private set
     var isDefaultDialer by mutableStateOf(false); private set
@@ -67,14 +67,17 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     var hasCallLog by mutableStateOf(false); private set
 
     /** «Не сейчас» на шаге со звонилкой по умолчанию. */
-    var roleSkipped by mutableStateOf(false)
+    var roleSkipped by mutableStateOf(prefs.roleSkipped)
+        private set
+
+    fun skipRole() { roleSkipped = true; prefs.roleSkipped = true }
 
     val needsOnboarding: Boolean get() = !hasContacts || !hasCallLog || (!isDefaultDialer && !roleSkipped)
 
     var people by mutableStateOf<List<Person>>(emptyList()); private set
     private var byNumber: Map<String, Person> = emptyMap()
     private var byId: Map<Long, Person> = emptyMap()
-    private var calls: List<CallRecord> = emptyList()
+    private var calls: List<CallRecord> by mutableStateOf(emptyList())
     private var interactions: List<Interaction> = emptyList()
     var blocked by mutableStateOf<List<String>>(emptyList()); private set
 
@@ -82,6 +85,9 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
 
     /** «Не беспокоить незнакомым»: такие звонки не звонят и не попадают на главную. */
     var silenceUnknown by mutableStateOf(prefs.silenceUnknown); private set
+
+    /** Что мешает увидеть входящий; показываем одну строку на главной. */
+    var callAlert by mutableStateOf<com.khizrim.dialer.telecom.CallAlert?>(null); private set
 
     /** Звонки с номеров не из контактов, новые сверху. */
     var unknownCalls by mutableStateOf<List<CallRecord>>(emptyList()); private set
@@ -117,6 +123,8 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
         isDefaultDialer = Launcher.isDefaultDialer(ctx)
         hasContacts = granted(Manifest.permission.READ_CONTACTS)
         hasCallLog = granted(Manifest.permission.READ_CALL_LOG)
+        callAlert = com.khizrim.dialer.telecom.CallReadiness.check(ctx, isDefaultDialer, prefs.xiaomiHintSeen, prefs.silenceUnknown)
+        if (isDefaultDialer) com.khizrim.dialer.telecom.CallReadiness.clearMissed(ctx)
         loadJob?.cancel()
         loadJob = viewModelScope.launch {
             val loaded = withContext(Dispatchers.IO) {
@@ -185,6 +193,17 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     fun openContacts() { closeKeypad(); screen = Screen.CONTACTS }
     fun openBlocked() { screen = Screen.BLOCKED }
     fun openUnknown() { screen = Screen.UNKNOWN }
+    fun openRecents() { screen = Screen.RECENTS }
+
+    /** Полный журнал: каждая строка — звонок, с именем, если номер есть в контактах. */
+    val recentCalls: List<Pair<CallRecord, Person?>> get() = calls.map { it to byNumber[Numbers.key(it.number)] }
+
+    /** Тап в журнале: перезвонить на тот же номер. */
+    fun callBack(r: CallRecord) { closeKeypad(); Launcher.call(ctx, r.number)?.let { say(it) } }
+
+    fun openRecentMenu(r: CallRecord, p: Person?) {
+        menu = MenuState(if (p != null) HomeEntry(p.key, p, null, r.date, null) else HomeEntry("n:" + Numbers.key(r.number), null, r.number, r.date, null), MenuContext.SEARCH)
+    }
 
     fun toggleSilenceUnknown() {
         silenceUnknown = !silenceUnknown
@@ -222,7 +241,7 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
         menu != null -> { menu = null; true }
         keypadOpen -> { closeKeypad(); true }
         screen == Screen.PERSON -> { leavePerson(); true }
-        screen == Screen.BLOCKED || screen == Screen.UNKNOWN -> { screen = Screen.CONTACTS; true }
+        screen == Screen.BLOCKED || screen == Screen.UNKNOWN || screen == Screen.RECENTS -> { screen = Screen.CONTACTS; true }
         screen == Screen.CONTACTS -> { screen = Screen.HOME; true }
         else -> false
     }
@@ -233,9 +252,21 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     // ---------- клавиатура = поиск ----------
-    fun openKeypad(prefill: String = "") { keypad = prefill.filter { it.isDigit() || it in "+*#" }.take(18); keypadOpen = true; refreshHits() }
+    fun openKeypad(prefill: String = "") { keypad = cleanNumber(prefill); keypadOpen = true; refreshHits() }
+
+    /** Цифры и служебные символы; запятая и точка с запятой — паузы для добавочного. */
+    private fun cleanNumber(s: String): String = s.filter { it.isDigit() || it in "+*#,;" }.take(32)
+
+    /** Вставить номер из буфера обмена. */
+    fun paste(text: String?) {
+        val n = cleanNumber(text.orEmpty())
+        if (n.isEmpty()) return
+        keypad = n; refreshHits()
+    }
+
+    fun callVoicemail() { closeKeypad(); Launcher.voicemail(ctx)?.let { say(it) } }
     fun closeKeypad() { keypadOpen = false; keypad = "" }
-    fun type(ch: Char) { if (keypad.length < 18) { keypad += ch; refreshHits() } }
+    fun type(ch: Char) { if (keypad.length < 32) { keypad += ch; refreshHits() } }
     fun backspace() { keypad = keypad.dropLast(1); refreshHits() }
     fun clearKeypad() { keypad = ""; refreshHits() }
 
@@ -261,7 +292,11 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun callTyped() {
-        if (PhoneFormat.digits(keypad).isEmpty()) return
+        if (PhoneFormat.digits(keypad).isEmpty()) {
+            // пустое поле: кнопка вызова подставляет последний набранный номер, второй тап звонит
+            calls.firstOrNull { it.type == android.provider.CallLog.Calls.OUTGOING_TYPE }?.let { keypad = cleanNumber(it.number); refreshHits() }
+            return
+        }
         val number = keypad
         closeKeypad()
         Launcher.call(ctx, number)?.let { say(it) }
@@ -372,11 +407,10 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
             prefs.hide(listOf(key))
             removed = listOf(at to entry)
             tidy = true
-            say(str(if (entry.person != null && looksFeminine(entry.title)) R.string.removed_from_home_f else R.string.removed_from_home, entry.title), undo = true)
+            say(str(if (entry.person != null && Declension.isFeminine(entry.title)) R.string.removed_from_home_f else R.string.removed_from_home, entry.title), undo = true)
         }
     }
 
-    private fun looksFeminine(name: String): Boolean = name.trim().split(" ").first().lastOrNull()?.let { it in "аяАЯ" } == true
 
     fun undo() {
         removed.sortedBy { it.first }.forEach { (at, e) ->
@@ -438,6 +472,20 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
             toast = null
             if (undo) { tidy = false; removed = emptyList() }
         }
+    }
+
+    /** Intent для «Исправить»; null — экрана нет, показываем настройки приложения. */
+    fun alertIntent(): android.content.Intent? {
+        val a = callAlert ?: return null
+        return com.khizrim.dialer.telecom.CallReadiness.fixIntent(ctx, a)
+    }
+
+    fun alertOpened() {
+        if (callAlert == com.khizrim.dialer.telecom.CallAlert.XIAOMI) { prefs.xiaomiHintSeen = true; callAlert = null }
+    }
+
+    fun dismissAlert() {
+        if (callAlert?.dismissable == true) { prefs.xiaomiHintSeen = true; callAlert = null }
     }
 
     companion object {

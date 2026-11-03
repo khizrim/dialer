@@ -123,6 +123,7 @@ fun ContactsScreen(vm: DialerViewModel) {
                             }
                         }
                         Footer -> Column(Modifier.padding(top = 24.dp, bottom = 8.dp)) {
+                            TextAction(stringResource(R.string.recents), oz.fg3, vm::openRecents, style = OzType.small)
                             TextAction(stringResource(R.string.unknown_numbers), oz.fg3, vm::openUnknown, style = OzType.small)
                             TextAction(stringResource(R.string.blocked_numbers), oz.fg3, vm::openBlocked, style = OzType.small)
                         }

@@ -1,5 +1,7 @@
 package com.khizrim.dialer.telecom
 
+import android.os.Build
+
 import android.app.AlarmManager
 import android.app.Notification
 import android.app.NotificationChannel
@@ -32,25 +34,38 @@ class OzInCallService : InCallService() {
         super.onDestroy()
     }
 
+    private val io = java.util.concurrent.Executors.newSingleThreadExecutor()
+    private val main = android.os.Handler(android.os.Looper.getMainLooper())
+
     override fun onCallAdded(call: Call) {
-        if (shouldSilence(call)) {
-            // «Не беспокоить незнакомым»: без звонка, без уведомления; звонок останется в журнале
-            CallManager.silence(call)
-            runCatching { getSystemService(TelecomManager::class.java)?.silenceRinger() }
-            CallManager.add(call)
+        if (call.state == Call.STATE_RINGING && Prefs(this).silenceUnknownActive(this)) {
+            // поиск в контактах не на главном потоке: большая книга не задержит входящий
+            val number = call.details?.handle?.schemeSpecificPart.orEmpty()
+            io.execute {
+                val unknown = number.isBlank() || ContactsSource.nameFor(this, number) == null
+                main.post {
+                    if (call.state == Call.STATE_DISCONNECTED) return@post
+                    if (unknown) addSilenced(call) else addVisible(call)
+                }
+            }
             return
         }
+        addVisible(call)
+    }
+
+    /** «Не беспокоить незнакомым»: без звонка, без уведомления; звонок останется в журнале. */
+    private fun addSilenced(call: Call) {
+        CallManager.silence(call)
+        runCatching { getSystemService(TelecomManager::class.java)?.silenceRinger() }
+        CallManager.add(call)
+    }
+
+    private fun addVisible(call: Call) {
         CallManager.add(call)
         // исходящий открываем сразу; входящий показывает полноэкранное уведомление
         if (call.state != Call.STATE_RINGING) {
             startActivity(CallActivity.intent(this))
         }
-    }
-
-    private fun shouldSilence(call: Call): Boolean {
-        if (call.state != Call.STATE_RINGING || !Prefs(this).silenceUnknown) return false
-        val number = call.details?.handle?.schemeSpecificPart.orEmpty()
-        return number.isBlank() || ContactsSource.nameFor(this, number) == null
     }
 
     override fun onCallRemoved(call: Call) {
@@ -106,13 +121,20 @@ object CallNotifications {
             .setContentIntent(open)
         if (ringing) {
             b.setFullScreenIntent(open, true)
-            b.addAction(Notification.Action.Builder(null, context.getString(R.string.decline), action(context, CallActionReceiver.DECLINE, 1)).build())
+            val decline = action(context, CallActionReceiver.DECLINE, 1)
             // «Ответить» открывает экран звонка напрямую: запуск экрана из приёмника Android 12+ запрещает
             val answer = PendingIntent.getActivity(
                 context, 11, CallActivity.intent(context).putExtra(CallActivity.EXTRA_ANSWER, true),
                 PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
             )
-            b.addAction(Notification.Action.Builder(null, context.getString(R.string.answer), answer).build())
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                // системный вид входящего: крупные «Ответить» и «Отклонить», выше остальных уведомлений
+                val person = android.app.Person.Builder().setName(who).setImportant(true).build()
+                b.setStyle(Notification.CallStyle.forIncomingCall(person, decline, answer))
+            } else {
+                b.addAction(Notification.Action.Builder(null, context.getString(R.string.decline), decline).build())
+                b.addAction(Notification.Action.Builder(null, context.getString(R.string.answer), answer).build())
+            }
         } else {
             b.setUsesChronometer(state.connectedAt > 0).setWhen(if (state.connectedAt > 0) state.connectedAt else System.currentTimeMillis())
             b.addAction(Notification.Action.Builder(null, context.getString(R.string.end), action(context, CallActionReceiver.HANGUP, 3)).build())

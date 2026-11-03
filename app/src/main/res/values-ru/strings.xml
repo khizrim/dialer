@@ -139,4 +139,26 @@
     <string name="ob_perm_button">Разрешить доступ</string>
     <string name="not_now">Не сейчас</string>
     <string name="open_settings">Открыть настройки приложения</string>
+    <string name="choose_sim">С какой SIM позвонить</string>
+    <string name="sim_n">SIM %1$d</string>
+    <string name="end_and_answer">Завершить текущий и ответить</string>
+    <string name="answer_hold">Удержать и ответить</string>
+    <string name="hold">Удержать</string>
+    <string name="resume">Вернуть</string>
+    <string name="swap">Переключить</string>
+    <string name="line_on_hold">%1$s на удержании</string>
+    <string name="route_bluetooth">Bluetooth</string>
+    <string name="route_wired">Наушники</string>
+    <string name="route_earpiece">Телефон</string>
+    <string name="alert_not_default">Ozero Phone не звонилка по умолчанию, звонки идут мимо</string>
+    <string name="alert_notifications">Уведомления выключены, входящие могут не показаться</string>
+    <string name="alert_full_screen">Разрешите звонки на весь экран, чтобы видеть их на блокировке</string>
+    <string name="alert_xiaomi">На Xiaomi разрешите «Экран блокировки» и «Всплывающие окна»</string>
+    <string name="alert_fix">Исправить</string>
+    <string name="alert_open">Открыть</string>
+    <string name="err_call_permission">Разрешите звонки в настройках, чтобы звонить из Ozero Phone</string>
+    <string name="hold_to_answer">Удерживайте, чтобы ответить</string>
+    <string name="recents">Недавние звонки</string>
+    <string name="recents_empty">Звонков пока нет.</string>
+    <string name="alert_contacts_silence">Тихому режиму нужен доступ к контактам, иначе он заглушит всех</string>
 </resources>

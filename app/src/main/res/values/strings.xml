@@ -140,4 +140,26 @@
     <string name="ob_perm_button">Allow access</string>
     <string name="not_now">Not now</string>
     <string name="open_settings">Open app settings</string>
+    <string name="choose_sim">Choose a SIM</string>
+    <string name="sim_n">SIM %1$d</string>
+    <string name="end_and_answer">End current and answer</string>
+    <string name="answer_hold">Hold and answer</string>
+    <string name="hold">Hold</string>
+    <string name="resume">Resume</string>
+    <string name="swap">Swap</string>
+    <string name="line_on_hold">%1$s on hold</string>
+    <string name="route_bluetooth">Bluetooth</string>
+    <string name="route_wired">Headphones</string>
+    <string name="route_earpiece">Phone</string>
+    <string name="alert_not_default">Ozero Phone isn\'t your phone app, calls go elsewhere</string>
+    <string name="alert_notifications">Notifications are off, incoming calls may not show</string>
+    <string name="alert_full_screen">Allow full-screen calls to see who is calling on the lock screen</string>
+    <string name="alert_xiaomi">On Xiaomi, allow «Show on lock screen» and «Pop-up windows»</string>
+    <string name="alert_fix">Fix</string>
+    <string name="alert_open">Open</string>
+    <string name="err_call_permission">Allow calls in settings to dial from Ozero Phone</string>
+    <string name="hold_to_answer">Hold to answer</string>
+    <string name="recents">Recent calls</string>
+    <string name="recents_empty">No calls yet.</string>
+    <string name="alert_contacts_silence">Silencing unknown callers needs contacts access, otherwise everyone would be silenced</string>
 </resources>

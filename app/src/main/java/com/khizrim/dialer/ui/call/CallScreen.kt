@@ -67,15 +67,21 @@ interface CallActions {
     fun toggleSpeaker()
     fun toggleDtmf()
     fun tone(d: Char)
+    fun endAndAnswer()
+    fun toggleHold()
+    fun swap()
+    fun chooseSim(index: Int)
+    fun setRoute(route: Int)
 }
 
 /** Входящий, исходящий и идущий звонок. Без подсказки про канал. */
 @Composable
-fun CallScreen(c: CallState, actions: CallActions) {
+fun CallScreen(c: CallState, actions: CallActions, locked: Boolean = false) {
     val oz = LocalOz.current
     val reduced = LocalReducedMotion.current
     val shift = with(LocalDensity.current) { 8.dp.roundToPx() }
     var confirmBlock by remember { mutableStateOf(false) }
+    var routePicker by remember { mutableStateOf(false) }
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
     LaunchedEffect(c.phase) {
         while (c.phase == CallPhase.ACTIVE) { now = System.currentTimeMillis(); delay(500) }
@@ -84,7 +90,7 @@ fun CallScreen(c: CallState, actions: CallActions) {
     val title = c.name ?: c.number.takeIf { it.isNotEmpty() }?.let { PhoneFormat.pretty(it) } ?: stringResource(R.string.hidden_number)
     val sub = when (c.phase) {
         CallPhase.RINGING -> if (known) stringResource(R.string.mobile) else c.label ?: stringResource(R.string.not_in_contacts)
-        CallPhase.DIALING -> stringResource(R.string.calling)
+        CallPhase.DIALING -> if (c.simChoice != null) stringResource(R.string.choose_sim) else stringResource(R.string.calling)
         CallPhase.ACTIVE -> if (c.onHold) stringResource(R.string.on_hold) else
             stringResource(R.string.net_phone) + "  " + CallManager.timer(((now - c.connectedAt).coerceAtLeast(0)) / 1000)
         CallPhase.ENDED -> c.endText
@@ -105,8 +111,10 @@ fun CallScreen(c: CallState, actions: CallActions) {
                 modifier = Modifier.semantics { heading() },
             )
             Text(sub, style = OzType.small, color = oz.fg3, modifier = Modifier.padding(top = 8.dp).semantics { liveRegion = LiveRegionMode.Polite })
+            c.other?.let { OtherLineRow(it, c.phase, actions) }
             Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                if (inCall && c.dtmf != null) Dtmf(c.dtmf, actions)
+                if (c.simChoice != null) SimChoice(c.simChoice, actions)
+                else if (inCall && c.dtmf != null) Dtmf(c.dtmf, actions)
             }
             // после «Ответить» кнопки гаснут за 150 мс, управление поднимается на 8 px за 200 мс
             AnimatedContent(
@@ -119,11 +127,14 @@ fun CallScreen(c: CallState, actions: CallActions) {
                 label = "call-phase",
             ) { phase ->
                 when (phase) {
-                    0 -> Ringing(actions, known, onBlock = { confirmBlock = true })
-                    1 -> Active(c, actions)
+                    0 -> Ringing(actions, known, secondLine = c.other != null, locked = locked, onBlock = { confirmBlock = true })
+                    1 -> Active(c, actions, onRoutes = { routePicker = true })
                     else -> Spacer(Modifier.fillMaxWidth().height(144.dp))
                 }
             }
+        }
+        if (routePicker) {
+            RoutePicker(c, onPick = { routePicker = false; actions.setRoute(it) }, onCancel = { routePicker = false })
         }
         if (confirmBlock) {
             BlockConfirm(
@@ -136,26 +147,39 @@ fun CallScreen(c: CallState, actions: CallActions) {
 }
 
 @Composable
-private fun Ringing(actions: CallActions, known: Boolean, onBlock: () -> Unit) {
+private fun Ringing(actions: CallActions, known: Boolean, secondLine: Boolean, locked: Boolean, onBlock: () -> Unit) {
     val oz = LocalOz.current
+    var hint by remember { mutableStateOf(false) }
     Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
         Row(Modifier.fillMaxWidth().padding(bottom = 28.dp), horizontalArrangement = Arrangement.SpaceAround) {
-            TextAction(stringResource(R.string.send_sms), oz.fg2, actions::quickSms, style = OzType.small)
-            if (known) TextAction(stringResource(R.string.remind), oz.fg2, actions::remind, style = OzType.small)
-            else TextAction(stringResource(R.string.block), oz.fg2, onBlock, style = OzType.small)
+            if (secondLine) {
+                // второй звонок во время разговора: «Ответить» удержит текущий
+                TextAction(stringResource(R.string.end_and_answer), oz.fg2, actions::endAndAnswer, style = OzType.small)
+            } else {
+                TextAction(stringResource(R.string.send_sms), oz.fg2, actions::quickSms, style = OzType.small)
+                if (known) TextAction(stringResource(R.string.remind), oz.fg2, actions::remind, style = OzType.small)
+                else TextAction(stringResource(R.string.block), oz.fg2, onBlock, style = OzType.small)
+            }
         }
         Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 24.dp), horizontalArrangement = Arrangement.SpaceBetween) {
             LabeledRound(R.drawable.ic_oz_end_call, stringResource(R.string.decline), oz.dangerFill, actions::decline)
-            LabeledRound(R.drawable.ic_oz_phone, stringResource(R.string.answer), oz.accentFill, actions::answer)
+            // на заблокированном экране отвечаем удержанием, чтобы не принять звонок в кармане
+            LabeledRound(
+                R.drawable.ic_oz_phone,
+                stringResource(if (hint) R.string.hold_to_answer else if (secondLine) R.string.answer_hold else R.string.answer),
+                oz.accentFill,
+                onClick = if (locked) ({ hint = true }) else actions::answer,
+                onLongClick = if (locked) actions::answer else null,
+            )
         }
     }
 }
 
 @Composable
-private fun LabeledRound(icon: Int, label: String, fill: Color, onClick: () -> Unit) {
+private fun LabeledRound(icon: Int, label: String, fill: Color, onClick: () -> Unit, onLongClick: (() -> Unit)? = null) {
     val oz = LocalOz.current
     Column(
-        Modifier.press(onClick, shape = RoundedCornerShape(20.dp), pressColor = Color.Transparent),
+        Modifier.press(onClick, onLongClick, shape = RoundedCornerShape(20.dp), pressColor = Color.Transparent),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
@@ -167,13 +191,24 @@ private fun LabeledRound(icon: Int, label: String, fill: Color, onClick: () -> U
 }
 
 @Composable
-private fun Active(c: CallState, actions: CallActions) {
+private fun Active(c: CallState, actions: CallActions, onRoutes: () -> Unit) {
     val oz = LocalOz.current
     Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+        if (c.canHold && c.other == null && c.phase == CallPhase.ACTIVE) {
+            TextAction(
+                stringResource(if (c.onHold) R.string.resume else R.string.hold), if (c.onHold) oz.accent else oz.fg2,
+                actions::toggleHold, style = OzType.small, modifier = Modifier.padding(bottom = 16.dp),
+            )
+        }
         Row(Modifier.fillMaxWidth().padding(bottom = 32.dp), horizontalArrangement = Arrangement.SpaceAround) {
             // микрофон: мгновенная смена иконки и цвета, без анимации формы
             Toggle(if (c.muted) R.drawable.ic_oz_mic_off else R.drawable.ic_oz_mic, stringResource(R.string.mute), c.muted, actions::toggleMute)
-            Toggle(R.drawable.ic_oz_speaker, stringResource(R.string.speaker), c.speaker, actions::toggleSpeaker)
+            if (c.hasRouteChoice) {
+                // есть наушники или Bluetooth: подпись говорит, куда идёт звук, тап открывает выбор
+                Toggle(R.drawable.ic_oz_speaker, routeLabel(c, c.route), c.route != CallState.ROUTE_EARPIECE, onRoutes)
+            } else {
+                Toggle(R.drawable.ic_oz_speaker, stringResource(R.string.speaker), c.speaker, actions::toggleSpeaker)
+            }
             Toggle(R.drawable.ic_oz_grid, stringResource(R.string.keypad), c.dtmf != null, actions::toggleDtmf)
         }
         Box(
@@ -256,6 +291,80 @@ private fun BlockConfirm(number: String, onCancel: () -> Unit, onBlock: () -> Un
                         .background(oz.dangerFill, RoundedCornerShape(22.dp))
                         .padding(horizontal = 16.dp, vertical = 12.dp),
                 ) { Text(stringResource(R.string.block), style = OzType.small.copy(fontWeight = FontWeight.SemiBold), color = Color.White) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun routeLabel(c: CallState, route: Int): String = when (route) {
+    CallState.ROUTE_BLUETOOTH -> c.bluetoothName ?: stringResource(R.string.route_bluetooth)
+    CallState.ROUTE_WIRED -> stringResource(R.string.route_wired)
+    CallState.ROUTE_SPEAKER -> stringResource(R.string.speaker)
+    else -> stringResource(R.string.route_earpiece)
+}
+
+/** Вторая линия под именем: на удержании или входящий. Тап меняет линии местами. */
+@Composable
+private fun OtherLineRow(o: com.khizrim.dialer.model.OtherLine, phase: CallPhase, actions: CallActions) {
+    val oz = LocalOz.current
+    if (o.ringing) return // входящий второй показан целиком, текущий виден в подписи ниже
+    val text = stringResource(R.string.line_on_hold, o.title)
+    Row(
+        Modifier
+            .padding(top = 16.dp)
+            .press(actions::swap, shape = RoundedCornerShape(14.dp), label = text + ". " + stringResource(R.string.swap))
+            .padding(horizontal = 14.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(text, style = OzType.small, color = oz.fg2)
+        if (phase == CallPhase.ACTIVE) {
+            Spacer(Modifier.width(12.dp))
+            Text(stringResource(R.string.swap), style = OzType.small, color = oz.accent)
+        }
+    }
+}
+
+/** Система спрашивает SIM: крупные строки у большого пальца. */
+@Composable
+private fun SimChoice(labels: List<String>, actions: CallActions) {
+    val oz = LocalOz.current
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        labels.forEachIndexed { i, label ->
+            Box(
+                Modifier.fillMaxWidth().height(56.dp).press({ actions.chooseSim(i) }, shape = RoundedCornerShape(14.dp)).padding(horizontal = 16.dp),
+                contentAlignment = Alignment.CenterStart,
+            ) { Text(label, style = OzType.list, color = oz.fg) }
+        }
+    }
+}
+
+/** Выбор, куда идёт звук: телефон, динамик, наушники, Bluetooth. */
+@Composable
+private fun RoutePicker(c: CallState, onPick: (Int) -> Unit, onCancel: () -> Unit) {
+    val oz = LocalOz.current
+    val options = listOf(CallState.ROUTE_BLUETOOTH, CallState.ROUTE_WIRED, CallState.ROUTE_EARPIECE, CallState.ROUTE_SPEAKER)
+        .filter { c.routes and it != 0 }
+    Box(Modifier.fillMaxSize().background(oz.scrim).press(onCancel, shape = RoundedCornerShape(0.dp), pressColor = oz.scrim)) {
+        Column(
+            Modifier
+                .align(Alignment.BottomCenter)
+                .safeDrawingPadding()
+                .padding(12.dp)
+                .fillMaxWidth()
+                .press({}, shape = RoundedCornerShape(24.dp), pressColor = oz.sheet)
+                .background(oz.sheet, RoundedCornerShape(24.dp))
+                .padding(vertical = 12.dp),
+        ) {
+            options.forEach { r ->
+                val on = c.route == r
+                Row(
+                    Modifier.fillMaxWidth().height(56.dp).press({ onPick(r) }, shape = RoundedCornerShape(14.dp)).padding(horizontal = 24.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(routeLabel(c, r), style = OzType.list, color = if (on) oz.accent else oz.fg, modifier = Modifier.weight(1f))
+                    if (on) OzIcon(R.drawable.ic_oz_check, oz.accent, 20.dp)
+                }
             }
         }
     }

@@ -41,6 +41,7 @@ private val PERMISSIONS = buildList {
     add(Manifest.permission.WRITE_CONTACTS)
     add(Manifest.permission.READ_CALL_LOG)
     add(Manifest.permission.CALL_PHONE)
+    add(Manifest.permission.READ_PHONE_STATE)
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) add(Manifest.permission.POST_NOTIFICATIONS)
 }.toTypedArray()
 
@@ -52,7 +53,7 @@ fun Onboarding(vm: DialerViewModel) {
     val permissions = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { vm.reload() }
     val role = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         vm.reload()
-        if (!Launcher.isDefaultDialer(context)) vm.roleSkipped = true
+        if (!Launcher.isDefaultDialer(context)) vm.skipRole()
     }
     val roleStep = !vm.isDefaultDialer && !vm.roleSkipped
     fun next() {
@@ -62,7 +63,7 @@ fun Onboarding(vm: DialerViewModel) {
         }
         val intent = Launcher.defaultDialerRequest(context)
         if (intent == null) {
-            vm.roleSkipped = true
+            vm.skipRole()
             return
         }
         role.launch(intent)
@@ -89,7 +90,7 @@ fun Onboarding(vm: DialerViewModel) {
             Text(if (roleStep) stringResource(R.string.ob_role_button) else stringResource(R.string.ob_perm_button), style = OzType.strong, color = Color.White)
         }
         if (roleStep) {
-            TextAction(stringResource(R.string.not_now), oz.fg3, { vm.roleSkipped = true }, modifier = Modifier.padding(top = 12.dp).offset(x = (-12).dp))
+            TextAction(stringResource(R.string.not_now), oz.fg3, { vm.skipRole() }, modifier = Modifier.padding(top = 12.dp).offset(x = (-12).dp))
         } else {
             // если доступ уже запрещён навсегда, система не покажет вопрос снова
             TextAction(stringResource(R.string.open_settings), oz.fg3, {

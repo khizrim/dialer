@@ -35,9 +35,12 @@ class MainActivity : ComponentActivity() {
 
     /** tel:-ссылки и «Набрать номер» из других приложений открывают клавиатуру с номером. */
     private fun handle(intent: Intent?) {
-        if (intent?.action == Intent.ACTION_DIAL || intent?.action == Intent.ACTION_VIEW) {
-            val number = intent.data?.takeIf { it.scheme == "tel" }?.schemeSpecificPart
-            vm.openKeypad(number.orEmpty())
+        val tel = intent?.data?.takeIf { it.scheme == "tel" }?.schemeSpecificPart
+        when {
+            intent?.action == Intent.ACTION_DIAL -> vm.openKeypad(tel.orEmpty())
+            intent?.action == Intent.ACTION_VIEW && tel != null -> vm.openKeypad(tel)
+            // «Пропущенные» из системного уведомления: на главную, там они наверху
+            intent?.action == Intent.ACTION_VIEW -> vm.goHome()
         }
     }
 }

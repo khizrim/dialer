@@ -77,4 +77,28 @@ data class CallState(
     val dtmf: String? = null,
     val endText: String = "",
     val onHold: Boolean = false,
-)
+    /** Можно ли поставить звонок на удержание. */
+    val canHold: Boolean = false,
+    /** Второй звонок: на удержании или входящий поверх текущего. */
+    val other: OtherLine? = null,
+    /** Куда сейчас идёт звук и какие варианты есть (маска CallAudioState.ROUTE_*). */
+    val route: Int = 0,
+    val routes: Int = 0,
+    val bluetoothName: String? = null,
+    /** Подписи SIM-карт, когда система спрашивает, с какой звонить. */
+    val simChoice: List<String>? = null,
+) {
+    /** Кроме телефона и динамика есть наушники или Bluetooth: показываем выбор. */
+    val hasRouteChoice: Boolean get() = routes and (ROUTE_BLUETOOTH or ROUTE_WIRED) != 0
+
+    companion object {
+        // значения как в android.telecom.CallAudioState, чтобы модель не зависела от Android
+        const val ROUTE_EARPIECE = 1
+        const val ROUTE_BLUETOOTH = 2
+        const val ROUTE_WIRED = 4
+        const val ROUTE_SPEAKER = 8
+    }
+}
+
+/** Вторая линия: имя или номер и что с ней происходит. */
+data class OtherLine(val title: String, val ringing: Boolean, val onHold: Boolean)
