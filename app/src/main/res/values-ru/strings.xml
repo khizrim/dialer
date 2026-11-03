@@ -265,4 +265,12 @@
     <string name="edit_more">Фото, почта и остальное в Контактах</string>
     <string name="edit_saved">Контакт сохранён</string>
     <string name="edit_failed">Не получилось сохранить контакт</string>
+    <string name="delete">Удалить</string>
+    <string name="edit_delete">Удалить контакт</string>
+    <string name="edit_delete_title">Удалить «%1$s»?</string>
+    <string name="edit_delete_text">Контакт исчезнет с телефона и из аккаунта, если он синхронизируется.</string>
+    <string name="edit_deleted">«%1$s» удалён</string>
+    <string name="edit_discard_title">Выйти без сохранения?</string>
+    <string name="edit_discard_text">Изменения в контакте пропадут.</string>
+    <string name="edit_discard">Выйти</string>
 </resources>

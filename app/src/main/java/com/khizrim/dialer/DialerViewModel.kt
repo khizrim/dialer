@@ -287,7 +287,7 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
 
     fun back(): Boolean = when {
         confirm != null -> { confirm = null; true }
-        screen == Screen.EDIT -> { cancelEdit(); true }
+        screen == Screen.EDIT -> { leaveEdit(); true }
         syncHelp != null -> { syncHelp = null; true }
         sheet != null -> { sheet = null; true }
         menu != null -> { menu = null; true }
@@ -470,17 +470,40 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
         menu = null; sheet = null; closeKeypad()
         editPerson = null
         val d = com.khizrim.dialer.data.ContactEditor.blank(number)
-        editBefore = null; editDraft = d; editReturn = if (screen == Screen.EDIT) Screen.HOME else screen; screen = Screen.EDIT
+        editBefore = d; editDraft = d; editReturn = if (screen == Screen.EDIT) Screen.HOME else screen; screen = Screen.EDIT
     }
 
     fun updateDraft(d: com.khizrim.dialer.data.EditDraft) { editDraft = d }
 
     fun cancelEdit() { editDraft = null; screen = editReturn }
 
+    /** Назад из редактора: если что-то поменяли, спрашиваем, чтобы не потерять. */
+    fun leaveEdit() {
+        val d = editDraft ?: return cancelEdit()
+        if (d == editBefore) return cancelEdit()
+        confirm = ConfirmState(str(R.string.edit_discard_title), str(R.string.edit_discard_text), str(R.string.edit_discard)) { cancelEdit() }
+    }
+
+    fun askDeleteContact() {
+        val p = editPerson ?: return
+        confirm = ConfirmState(str(R.string.edit_delete_title, p.name), str(R.string.edit_delete_text), str(R.string.delete)) {
+            viewModelScope.launch {
+                val ok = withContext(Dispatchers.IO) {
+                    runCatching { ctx.contentResolver.delete(android.provider.ContactsContract.Contacts.getLookupUri(p.id, p.lookupKey), null, null) > 0 }.getOrDefault(false)
+                }
+                if (!ok) { say(str(R.string.edit_failed)); return@launch }
+                editDraft = null
+                screen = if (editReturn == Screen.PERSON) from else editReturn
+                say(str(R.string.edit_deleted, p.name))
+                reload()
+            }
+        }
+    }
+
     fun saveEdit() {
         val d = editDraft ?: return
         if (d.name.isBlank() && d.phones.all { it.number.isBlank() }) { cancelEdit(); return }
-        val before = editBefore
+        val before = editBefore?.takeIf { it.contactId != null }
         viewModelScope.launch {
             val ok = withContext(Dispatchers.IO) { com.khizrim.dialer.data.ContactEditor.save(ctx, before, d) }
             if (!ok) { say(str(R.string.edit_failed)); return@launch }

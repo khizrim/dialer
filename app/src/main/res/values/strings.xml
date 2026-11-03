@@ -260,4 +260,12 @@
     <string name="edit_more">Photo, email and the rest in Contacts</string>
     <string name="edit_saved">Contact saved</string>
     <string name="edit_failed">Couldn’t save the contact</string>
+    <string name="delete">Delete</string>
+    <string name="edit_delete">Delete contact</string>
+    <string name="edit_delete_title">Delete %1$s?</string>
+    <string name="edit_delete_text">The contact disappears from the phone and from your account, if it is synced.</string>
+    <string name="edit_deleted">%1$s deleted</string>
+    <string name="edit_discard_title">Leave without saving?</string>
+    <string name="edit_discard_text">Your changes to this contact will be lost.</string>
+    <string name="edit_discard">Leave</string>
 </resources>

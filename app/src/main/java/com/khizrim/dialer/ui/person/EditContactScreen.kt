@@ -1,6 +1,17 @@
 package com.khizrim.dialer.ui.person
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -16,7 +27,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -56,6 +66,8 @@ fun EditContactScreen(vm: DialerViewModel) {
     val d = vm.editDraft ?: return
     val isNew = d.contactId == null
     val cursor = SolidColor(oz.accent)
+    val nameFocus = remember { FocusRequester() }
+    if (isNew) LaunchedEffect(Unit) { runCatching { nameFocus.requestFocus() } }
 
     Column(Modifier.fillMaxSize().imePadding()) {
         Column(
@@ -63,8 +75,8 @@ fun EditContactScreen(vm: DialerViewModel) {
             verticalArrangement = Arrangement.Bottom,
         ) {
             Text(
-                stringResource(if (isNew) R.string.edit_new_title else R.string.edit_title), style = OzType.small, color = oz.fg3,
-                modifier = Modifier.padding(top = 24.dp, bottom = 8.dp).semantics { heading() },
+                stringResource(if (isNew) R.string.edit_new_title else R.string.edit_title), style = OzType.nameHome, color = oz.fg,
+                modifier = Modifier.padding(top = 24.dp, bottom = 16.dp).semantics { heading() },
             )
             // имя крупно, как в карточке
             val nameHint = stringResource(R.string.edit_name)
@@ -72,11 +84,11 @@ fun EditContactScreen(vm: DialerViewModel) {
                 value = d.name,
                 onChange = { vm.updateDraft(d.copy(name = it)) },
                 hint = nameHint,
-                style = OzType.nameSearch.copy(color = oz.fg),
+                style = OzType.nameHome.copy(color = oz.fg),
+                focus = if (isNew) nameFocus else null,
                 keyboard = KeyboardOptions(capitalization = KeyboardCapitalization.Words, imeAction = ImeAction.Next),
                 cursor = cursor,
             )
-            HorizontalDivider(thickness = 1.dp, color = oz.line)
 
             d.phones.forEachIndexed { i, ph ->
                 Row(Modifier.fillMaxWidth().heightIn(min = 56.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -96,7 +108,7 @@ fun EditContactScreen(vm: DialerViewModel) {
                             value = ph.number,
                             onChange = { v -> vm.updateDraft(d.copy(phones = d.phones.toMutableList().also { it[i] = ph.copy(number = v) })) },
                             hint = stringResource(R.string.edit_number),
-                            style = OzType.list.copy(color = oz.fg),
+                            style = OzType.list.copy(color = oz.fg, fontSize = 20.sp),
                             keyboard = KeyboardOptions(keyboardType = KeyboardType.Phone, imeAction = ImeAction.Next),
                             cursor = cursor,
                         )
@@ -105,14 +117,16 @@ fun EditContactScreen(vm: DialerViewModel) {
                         vm.updateDraft(d.copy(phones = d.phones.toMutableList().also { it.removeAt(i) }))
                     })
                 }
-                HorizontalDivider(thickness = 1.dp, color = oz.line)
             }
 
             Column(Modifier.padding(top = 8.dp).offset(x = (-12).dp)) {
                 TextAction(stringResource(R.string.edit_add_number), oz.accent, {
                     vm.updateDraft(d.copy(phones = d.phones + EditPhone(null, "")))
                 })
-                if (!isNew) TextAction(stringResource(R.string.edit_more), oz.fg3, vm::editInSystem, style = OzType.small)
+                if (!isNew) {
+                    TextAction(stringResource(R.string.edit_more), oz.fg3, vm::editInSystem, style = OzType.small)
+                    TextAction(stringResource(R.string.edit_delete), oz.danger, vm::askDeleteContact, style = OzType.small)
+                }
             }
         }
         Row(
@@ -120,10 +134,12 @@ fun EditContactScreen(vm: DialerViewModel) {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            TextAction(stringResource(R.string.cancel), oz.fg2, vm::cancelEdit)
+            TextAction(stringResource(R.string.cancel), oz.fg2, vm::leaveEdit)
+            // без имени сохранять нечего: таблетка гаснет до .38
+            val canSave = d.name.isNotBlank()
             Box(
-                Modifier.height(48.dp).raisedFill(oz.accentFill, OzShape.text)
-                    .press(vm::saveEdit, shape = OzShape.text, pressColor = Color.White.copy(alpha = .12f))
+                Modifier.height(48.dp).alpha(if (canSave) 1f else .38f).raisedFill(oz.accentFill, OzShape.text)
+                    .press({ if (canSave) vm.saveEdit() }, shape = OzShape.text, pressColor = Color.White.copy(alpha = .12f))
                     .padding(horizontal = 24.dp),
                 contentAlignment = Alignment.Center,
             ) { Text(stringResource(R.string.save), style = OzType.strong, color = Color.White) }
@@ -139,8 +155,10 @@ private fun Field(
     style: TextStyle,
     keyboard: KeyboardOptions,
     cursor: SolidColor,
+    focus: FocusRequester? = null,
 ) {
     val oz = LocalOz.current
+    var focused by remember { mutableStateOf(false) }
     BasicTextField(
         value = value,
         onValueChange = onChange,
@@ -148,11 +166,18 @@ private fun Field(
         textStyle = style,
         keyboardOptions = keyboard,
         cursorBrush = cursor,
-        modifier = Modifier.fillMaxWidth().padding(vertical = 14.dp).semantics { contentDescription = hint },
+        modifier = Modifier.fillMaxWidth()
+            .let { if (focus != null) it.focusRequester(focus) else it }
+            .onFocusChanged { focused = it.isFocused }
+            .semantics { contentDescription = hint },
         decorationBox = { inner ->
-            Box {
-                if (value.isEmpty()) Text(hint, style = style.copy(color = oz.fg3))
-                inner()
+            // без рамки: волосяная линия снизу, у активного поля 2dp accent
+            Column {
+                Box(Modifier.padding(vertical = 14.dp)) {
+                    if (value.isEmpty()) Text(hint, style = style.copy(color = oz.fg3))
+                    inner()
+                }
+                Box(Modifier.fillMaxWidth().height(if (focused) 2.dp else 1.dp).background(if (focused) oz.accent else oz.line))
             }
         },
     )
