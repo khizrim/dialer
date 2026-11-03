@@ -25,4 +25,5 @@
     <string name="ext_cid_text">Yandex, Kaspersky Who Calls and others show their own card over the call. Pick one under «Caller ID &amp; spam app».</string>
     <string name="ext_cid_text_none">Want Yandex caller ID too? Install the Yandex app, then pick it under «Caller ID &amp; spam app». Both protections work together.</string>
     <string name="ext_cid_blocked_by">Blocked by %1$s</string>
+    <string name="spam_db_stale">The number database is over 3 months old, so numbers missing from it are only labelled: they may simply be new. It updates with the app.</string>
 </resources>

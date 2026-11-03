@@ -113,3 +113,24 @@ class CallerIdTest {
         assertEquals("МТС", facts("+7 916 999-99-99").operator)
     }
 }
+
+class SpamPolicyTest {
+    @Test fun strongSignalsAlwaysAct() {
+        assertTrue(SpamPolicy.acts(Suspicion.SPOOFED, explicitChoice = false, dbAgeDays = 500))
+        assertTrue(SpamPolicy.acts(Suspicion.RISKY_COUNTRY, explicitChoice = false, dbAgeDays = null))
+    }
+
+    @Test fun unallocatedOnlyLabelsByDefault() {
+        assertFalse(SpamPolicy.acts(Suspicion.UNALLOCATED, explicitChoice = false, dbAgeDays = 10))
+    }
+
+    @Test fun unallocatedActsOnlyWhenChosenAndFresh() {
+        assertTrue(SpamPolicy.acts(Suspicion.UNALLOCATED, explicitChoice = true, dbAgeDays = 30))
+        assertFalse(SpamPolicy.acts(Suspicion.UNALLOCATED, explicitChoice = true, dbAgeDays = 120))
+        assertFalse(SpamPolicy.acts(Suspicion.UNALLOCATED, explicitChoice = true, dbAgeDays = null))
+    }
+
+    @Test fun nothingToActOn() {
+        assertFalse(SpamPolicy.acts(null, explicitChoice = true, dbAgeDays = 1))
+    }
+}
