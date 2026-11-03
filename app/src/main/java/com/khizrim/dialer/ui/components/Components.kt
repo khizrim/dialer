@@ -129,7 +129,10 @@ private suspend fun androidx.compose.ui.input.pointer.PointerInputScope.trackTou
             val c = ev.changes.firstOrNull { it.id == down.id } ?: break
             if (!c.pressed) break
             dx += c.position.x - c.previousPosition.x; dy += c.position.y - c.previousPosition.y
-            if (c.isConsumed || dx * dx + dy * dy > slop * slop) t.moved = true
+            // первое событие здесь — тот же down в Final pass, его кнопка уже поглотила сама;
+            // считаем «забранным» только движение, которое поглотил кто-то другой
+            val shifted = c.position != c.previousPosition
+            if ((shifted && c.isConsumed) || dx * dx + dy * dy > slop * slop) t.moved = true
         } } finally { t.active = false }
     }
 }
