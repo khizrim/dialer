@@ -161,4 +161,8 @@
     <string name="recents">Недавние звонки</string>
     <string name="recents_empty">Звонков пока нет.</string>
     <string name="alert_contacts_silence">Тихому режиму нужен доступ к контактам, иначе он заглушит всех</string>
+    <string name="merge">Объединить</string>
+    <string name="add_call">Добавить</string>
+    <string name="write">Написать</string>
+    <string name="back_to_call">Звонок: %1$s · Вернуться</string>
 </resources>

@@ -79,6 +79,8 @@ data class CallState(
     val onHold: Boolean = false,
     /** Можно ли поставить звонок на удержание. */
     val canHold: Boolean = false,
+    /** Две линии можно объединить в конференцию. */
+    val canMerge: Boolean = false,
     /** Второй звонок: на удержании или входящий поверх текущего. */
     val other: OtherLine? = null,
     /** Куда сейчас идёт звук и какие варианты есть (маска CallAudioState.ROUTE_*). */

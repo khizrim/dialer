@@ -75,6 +75,15 @@ class CallActivity : ComponentActivity() {
             override fun swap() = CallManager.swap()
             override fun chooseSim(index: Int) = CallManager.chooseSim(index)
             override fun setRoute(route: Int) = CallManager.setRoute(route)
+            override fun merge() = CallManager.merge()
+            // «Добавить»: клавиатура-поиск поверх, текущий звонок система удержит при наборе
+            override fun addCall() {
+                startActivity(Intent(this@CallActivity, com.khizrim.dialer.MainActivity::class.java).setAction(Intent.ACTION_DIAL).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            }
+            override fun message() {
+                val number = CallManager.currentNumber() ?: return
+                Launcher.sms(applicationContext, number)
+            }
         }
 
         setContent {

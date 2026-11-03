@@ -162,4 +162,8 @@
     <string name="recents">Recent calls</string>
     <string name="recents_empty">No calls yet.</string>
     <string name="alert_contacts_silence">Silencing unknown callers needs contacts access, otherwise everyone would be silenced</string>
+    <string name="merge">Merge</string>
+    <string name="add_call">Add</string>
+    <string name="write">Message</string>
+    <string name="back_to_call">Call with %1$s · Return</string>
 </resources>

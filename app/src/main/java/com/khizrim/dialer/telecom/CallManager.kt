@@ -203,6 +203,7 @@ object CallManager {
             endText = endText.orEmpty(),
             onHold = call.state == Call.STATE_HOLDING,
             canHold = call.details?.can(Call.Details.CAPABILITY_HOLD) == true || call.details?.can(Call.Details.CAPABILITY_SUPPORT_HOLD) == true,
+            canMerge = call.details?.can(Call.Details.CAPABILITY_MERGE_CONFERENCE) == true || secondary(call)?.details?.can(Call.Details.CAPABILITY_MERGE_CONFERENCE) == true,
             other = secondary(call)?.let { o ->
                 OtherLine(title(o), ringing = o.state == Call.STATE_RINGING, onHold = o.state == Call.STATE_HOLDING)
             },
@@ -250,6 +251,14 @@ object CallManager {
         val call = primary ?: return
         val other = secondary(call) ?: return
         if (other.state == Call.STATE_HOLDING) other.unhold() else if (call.state == Call.STATE_HOLDING) call.unhold()
+    }
+
+    /** Объединить две линии в конференцию. */
+    fun merge() {
+        val call = primary ?: return
+        val other = secondary(call) ?: return
+        if (call.details?.can(Call.Details.CAPABILITY_MERGE_CONFERENCE) == true) call.conference(other)
+        else if (other.details?.can(Call.Details.CAPABILITY_MERGE_CONFERENCE) == true) other.conference(call)
     }
 
     fun chooseSim(index: Int) {

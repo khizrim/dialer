@@ -1,5 +1,9 @@
 package com.khizrim.dialer.ui.call
 
+import androidx.compose.ui.semantics.disabled
+
+import androidx.compose.ui.graphics.graphicsLayer
+
 import com.khizrim.dialer.ui.theme.raisedFill
 import com.khizrim.dialer.ui.theme.well
 import com.khizrim.dialer.ui.theme.lift
@@ -78,6 +82,9 @@ interface CallActions {
     fun swap()
     fun chooseSim(index: Int)
     fun setRoute(route: Int)
+    fun merge()
+    fun addCall()
+    fun message()
 }
 
 /** Входящий, исходящий и идущий звонок. Без подсказки про канал. */
@@ -203,14 +210,10 @@ private fun LabeledRound(icon: Int, label: String, fill: Color, onClick: () -> U
 @Composable
 private fun Active(c: CallState, actions: CallActions, onRoutes: () -> Unit) {
     val oz = LocalOz.current
-    Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-        if (c.canHold && c.other == null && c.phase == CallPhase.ACTIVE) {
-            TextAction(
-                stringResource(if (c.onHold) R.string.resume else R.string.hold), if (c.onHold) oz.accent else oz.fg2,
-                actions::toggleHold, style = OzType.small, modifier = Modifier.padding(bottom = 16.dp),
-            )
-        }
-        Row(Modifier.fillMaxWidth().padding(bottom = 32.dp), horizontalArrangement = Arrangement.SpaceAround) {
+    val two = c.other != null && !c.other.ringing
+    Column(Modifier.fillMaxWidth().padding(horizontal = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        // сетка 3×2: звук и микрофон сверху, линии и сообщение снизу
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceAround) {
             // микрофон: мгновенная смена иконки и цвета, без анимации формы
             Toggle(if (c.muted) R.drawable.ic_oz_mic_off else R.drawable.ic_oz_mic, stringResource(R.string.mute), c.muted, actions::toggleMute)
             if (c.hasRouteChoice) {
@@ -220,6 +223,16 @@ private fun Active(c: CallState, actions: CallActions, onRoutes: () -> Unit) {
                 Toggle(R.drawable.ic_oz_speaker, stringResource(R.string.speaker), c.speaker, actions::toggleSpeaker)
             }
             Toggle(R.drawable.ic_oz_grid, stringResource(R.string.keypad), c.dtmf != null, actions::toggleDtmf)
+        }
+        Row(Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 28.dp), horizontalArrangement = Arrangement.SpaceAround) {
+            if (two) {
+                Toggle(R.drawable.ic_oz_swap, stringResource(R.string.swap), false, actions::swap, switch = false)
+                Toggle(R.drawable.ic_oz_users, stringResource(R.string.merge), false, actions::merge, enabled = c.canMerge, switch = false)
+            } else {
+                Toggle(R.drawable.ic_oz_pause, stringResource(if (c.onHold) R.string.resume else R.string.hold), c.onHold, actions::toggleHold, enabled = c.canHold && c.phase == CallPhase.ACTIVE)
+                Toggle(R.drawable.ic_oz_plus, stringResource(R.string.add_call), false, actions::addCall, enabled = !c.onHold && c.phase == CallPhase.ACTIVE, switch = false)
+            }
+            Toggle(R.drawable.ic_oz_sms, stringResource(R.string.write), false, actions::message, enabled = c.number.isNotEmpty(), switch = false)
         }
         Box(
             Modifier
@@ -232,22 +245,24 @@ private fun Active(c: CallState, actions: CallActions, onRoutes: () -> Unit) {
     }
 }
 
+/** Кнопка звонка: круг 64dp без заливки, включённая — в «лунке» и цветом. Недоступная — бледная. */
 @Composable
-private fun Toggle(icon: Int, label: String, on: Boolean, onClick: () -> Unit) {
+private fun Toggle(icon: Int, label: String, on: Boolean, onClick: () -> Unit, enabled: Boolean = true, switch: Boolean = true) {
     val oz = LocalOz.current
     val color = if (on) oz.accent else oz.fg
     val stateText = stringResource(if (on) R.string.state_on else R.string.state_off)
     Column(
         Modifier
             .width(96.dp)
-            .well(OzShape.row, on)
-            .press(onClick, shape = OzShape.row, role = Role.Switch)
-            .semantics { stateDescription = stateText }
-            .padding(vertical = 10.dp),
+            .graphicsLayer { alpha = if (enabled) 1f else .38f }
+            .press(if (enabled) onClick else ({}), shape = OzShape.row, role = if (switch) Role.Switch else Role.Button, label = label)
+            .let { m -> if (switch) m.semantics { stateDescription = stateText } else m }
+            .let { m -> if (!enabled) m.semantics { disabled() } else m }
+            .padding(vertical = 6.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        OzIcon(icon, color, 26.dp)
+        Box(Modifier.size(64.dp).well(CircleShape, on), contentAlignment = Alignment.Center) { OzIcon(icon, color, 26.dp) }
         Text(label, style = OzType.label, color = color, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
     }
 }

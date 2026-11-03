@@ -12,6 +12,8 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -95,6 +97,25 @@ fun DialerApp(vm: DialerViewModel = viewModel()) {
                             ),
                         ) { KeypadPanel(vm) }
                     }
+                }
+            }
+
+            // идёт звонок, а человек в приложении (например, нажал «Добавить»): тихая плашка сверху
+            val live = com.khizrim.dialer.telecom.CallManager.state
+            if (live != null && live.phase != com.khizrim.dialer.model.CallPhase.ENDED) {
+                val context = androidx.compose.ui.platform.LocalContext.current
+                Box(Modifier.fillMaxWidth().safeDrawingPadding().padding(horizontal = 12.dp, vertical = 4.dp)) {
+                    androidx.compose.material3.Text(
+                        androidx.compose.ui.res.stringResource(com.khizrim.dialer.R.string.back_to_call, live.name ?: com.khizrim.dialer.data.PhoneFormat.pretty(live.number)),
+                        style = com.khizrim.dialer.ui.theme.OzType.small,
+                        color = oz.accent,
+                        maxLines = 1,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(oz.soft, com.khizrim.dialer.ui.theme.OzShape.text)
+                            .clickable { context.startActivity(com.khizrim.dialer.telecom.CallActivity.intent(context)) }
+                            .padding(horizontal = 16.dp, vertical = 10.dp),
+                    )
                 }
             }
 
