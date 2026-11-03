@@ -97,7 +97,7 @@ fun RecentsScreen(vm: DialerViewModel) {
                     )
                     is Item -> {
                         val r = l.record
-                        val title = l.person?.name ?: PhoneFormat.pretty(r.number)
+                        val title = l.person?.shownName ?: PhoneFormat.pretty(r.number)
                         val method = l.person?.let { vm.defaultOf(it) } ?: if (l.person == null) com.khizrim.dialer.model.Method.PHONE else null
                         val label = listOf(title, r.text(res), time.format(Date(r.date)), stringResource(method?.title ?: R.string.choose_method)).joinToString(", ")
                         Row(
@@ -105,7 +105,8 @@ fun RecentsScreen(vm: DialerViewModel) {
                                 .fillMaxWidth()
                                 .heightIn(min = 56.dp)
                                 // смахнуть влево — удалить звонок с «Вернуть» (нужно разрешение на запись журнала)
-                                .swipeAway(vm.canClearLog) { vm.swipeDeleteRecord(r) }
+                                // вправо — перезвонить, влево — удалить с «Вернуть»
+                                .swipeAway(vm.canClearLog, onRight = { vm.callBack(r, l.person) }) { vm.swipeDeleteRecord(r) }
                                 .press({ vm.callBack(r, l.person) }, onLongClick = { vm.openRecentMenu(r, l.person) }, shape = RoundedCornerShape(16.dp), label = label)
                                 .padding(horizontal = 12.dp, vertical = 12.dp),
                             verticalAlignment = Alignment.CenterVertically,

@@ -36,6 +36,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import kotlinx.coroutines.launch
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -84,9 +88,32 @@ fun BoxScope.SheetLayer(visible: Boolean, title: String, onDismiss: () -> Unit, 
         enter = if (reduced) fadeIn(Motion.enter(Motion.FADE)) else slideInVertically(Motion.enter(Motion.SHEET)) { it },
         exit = if (reduced) fadeOut(Motion.exit(Motion.FADE)) else slideOutVertically(Motion.exit(Motion.MOVE)) { it },
     ) {
+        // лист тянут вниз — он идёт за пальцем; дальше 96 dp или быстрым движением закрывается, иначе пружинит назад
+        val drag = remember { androidx.compose.animation.core.Animatable(0f) }
+        val scope = androidx.compose.runtime.rememberCoroutineScope()
+        val density = androidx.compose.ui.platform.LocalDensity.current
+        val limit = with(density) { 96.dp.toPx() }
+        androidx.compose.runtime.LaunchedEffect(visible) { if (visible) drag.snapTo(0f) }
+        val tracker = remember { androidx.compose.ui.input.pointer.util.VelocityTracker() }
         Column(
             Modifier
                 .fillMaxWidth()
+                .graphicsLayer { translationY = drag.value }
+                .pointerInput(onDismiss) {
+                    detectVerticalDragGestures(
+                        onDragStart = { tracker.resetTracking() },
+                        onDragEnd = {
+                            val v = tracker.calculateVelocity().y
+                            if (drag.value > limit || v > 1200f) onDismiss()
+                            else scope.launch { drag.animateTo(0f, Motion.enter(Motion.MOVE)) }
+                        },
+                        onDragCancel = { scope.launch { drag.animateTo(0f) } },
+                    ) { change, amount ->
+                        change.consume()
+                        tracker.addPosition(change.uptimeMillis, change.position)
+                        scope.launch { drag.snapTo((drag.value + amount).coerceAtLeast(0f)) }
+                    }
+                }
                 .lift(OzShape.sheetTop)
                 .background(oz.sheet, OzShape.sheetTop)
                 .clickable(remember { MutableInteractionSource() }, null, onClick = {})
@@ -276,20 +303,20 @@ fun BoxScope.ConfirmLayer(vm: DialerViewModel) {
 
 /** Плавающий тост для всего, кроме «Вернуть» (тот живёт в нижней панели главной). */
 @Composable
-fun BoxScope.FloatToast(toast: ToastState?, bottom: androidx.compose.ui.unit.Dp, undoHere: Boolean = false, onUndo: () -> Unit = {}) {
+fun BoxScope.FloatToast(toast: ToastState?, bottom: androidx.compose.ui.unit.Dp, end: androidx.compose.ui.unit.Dp = 12.dp, undoHere: Boolean = false, onUndo: () -> Unit = {}) {
     val oz = LocalOz.current
     // «Вернуть» на главной живёт в нижней панели, на остальных экранах — в этом тосте
     val visible = toast != null && (!toast.undo || undoHere)
     val t = rememberLast(if (visible) toast else null)
     AnimatedVisibility(
         visible,
-        modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(start = 24.dp, end = 24.dp, bottom = bottom),
+        modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(start = 12.dp, end = end, bottom = bottom),
         enter = fadeIn(Motion.enter(Motion.MOVE)), exit = fadeOut(Motion.exit(Motion.FADE)),
     ) {
         Row(
             Modifier
                 .fillMaxWidth()
-                .heightIn(min = 48.dp)
+                .heightIn(min = 52.dp)
                 .lift(OzShape.row).background(oz.fg, OzShape.row)
                 .semantics { liveRegion = LiveRegionMode.Polite }
                 .padding(start = 16.dp, end = if (t?.undo == true) 6.dp else 16.dp),

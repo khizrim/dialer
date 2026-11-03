@@ -38,6 +38,12 @@ class CallActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         readLock()
+        shown = true; CallManager.screenShown()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        shown = false; CallManager.screenShown()
     }
 
     // слушатель блокировки требует системного разрешения, поэтому перечитываем её,
@@ -165,6 +171,8 @@ class CallActivity : ComponentActivity() {
 
     companion object {
         const val EXTRA_ANSWER = "answer"
+        /** Экран звонка на переднем плане: всплывающее уведомление поверх него не нужно. */
+        @Volatile var shown = false
         fun intent(context: Context): Intent = Intent(context, CallActivity::class.java)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
     }

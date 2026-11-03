@@ -129,7 +129,8 @@ object CallNotifications {
         val open = PendingIntent.getActivity(context, 10, CallActivity.intent(context), PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
         val who = state.name ?: state.number.takeIf { it.isNotEmpty() }?.let { com.khizrim.dialer.data.PhoneFormat.pretty(it) } ?: context.getString(R.string.hidden_number)
         val ringing = state.phase == CallPhase.RINGING
-        val b = Notification.Builder(context, if (ringing) CHANNEL_INCOMING else CHANNEL_ONGOING)
+        // наш экран входящего уже открыт — уведомление тихое, без всплывающей плашки поверх имени
+        val b = Notification.Builder(context, if (ringing && !CallActivity.shown) CHANNEL_INCOMING else CHANNEL_ONGOING)
             .setSmallIcon(R.drawable.ic_oz_phone)
             .setContentTitle(who)
             .setContentText(context.getString(if (ringing) R.string.incoming_call else if (state.phase == CallPhase.DIALING) R.string.calling else R.string.call_in_progress))

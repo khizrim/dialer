@@ -207,7 +207,7 @@ fun CallStrip(modifier: Modifier = Modifier) {
  * Строку смахивают влево: она идёт за пальцем и гаснет; дальше 96 dp — уходит совсем и вызывает onSwiped,
  * иначе пружинит обратно. Вправо не двигается: этот жест сознательно пустой.
  */
-fun Modifier.swipeAway(enabled: Boolean = true, onSwiped: () -> Unit): Modifier = if (!enabled) this else composed {
+fun Modifier.swipeAway(enabled: Boolean = true, onRight: (() -> Unit)? = null, onSwiped: () -> Unit): Modifier = if (!enabled && onRight == null) this else composed {
     val offset = remember { androidx.compose.animation.core.Animatable(0f) }
     val scope = androidx.compose.runtime.rememberCoroutineScope()
     val density = androidx.compose.ui.platform.LocalDensity.current
@@ -219,7 +219,11 @@ fun Modifier.swipeAway(enabled: Boolean = true, onSwiped: () -> Unit): Modifier 
             detectHorizontalDragGestures(
                 onDragEnd = {
                     scope.launch {
-                        if (offset.value < -threshold) {
+                        if (offset.value > threshold && onRight != null) {
+                            // вправо — действие без удаления: строка возвращается на место
+                            onRight()
+                            offset.animateTo(0f, com.khizrim.dialer.ui.theme.Motion.enter(com.khizrim.dialer.ui.theme.Motion.MOVE))
+                        } else if (enabled && offset.value < -threshold) {
                             if (!reduced) offset.animateTo(-far, com.khizrim.dialer.ui.theme.Motion.exit(com.khizrim.dialer.ui.theme.Motion.FADE))
                             onSwiped()
                             offset.snapTo(0f)
@@ -229,11 +233,13 @@ fun Modifier.swipeAway(enabled: Boolean = true, onSwiped: () -> Unit): Modifier 
                 onDragCancel = { scope.launch { offset.animateTo(0f) } },
             ) { change, amount ->
                 change.consume()
-                scope.launch { offset.snapTo((offset.value + amount).coerceAtMost(0f)) }
+                val max = if (onRight != null) threshold * 1.4f else 0f
+                val min = if (enabled) Float.NEGATIVE_INFINITY else 0f
+                scope.launch { offset.snapTo((offset.value + amount).coerceIn(min, max)) }
             }
         }
         .graphicsLayer {
             translationX = offset.value
-            alpha = 1f - (-offset.value / (threshold * 2.5f)).coerceIn(0f, 0.7f)
+            alpha = 1f - ((-offset.value).coerceAtLeast(0f) / (threshold * 2.5f)).coerceIn(0f, 0.7f)
         }
 }
