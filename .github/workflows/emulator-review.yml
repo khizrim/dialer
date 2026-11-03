@@ -42,7 +42,7 @@ jobs:
         run: |
           sudo apt-get -qq install -y ffmpeg >/dev/null || true
           cd shots || exit 0
-          for v in *.mp4; do [ -f "$v" ] || continue; ffmpeg -loglevel error -i "$v" -vf "fps=6,scale=270:-1,tile=8x3" -frames:v 1 "sheet-${v%.mp4}.png" || true; done
+          for v in *.mp4; do [ -f "$v" ] || continue; ffmpeg -loglevel error -i "$v" -vf "fps=10,scale=216:-1,tile=10x4" -frames:v 1 "sheet-${v%.mp4}.png" || true; done
       - name: Publish shots
         if: always()
         run: |

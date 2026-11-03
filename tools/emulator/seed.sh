@@ -2,10 +2,9 @@
 # Тестовые контакты и журнал звонков для обзора в эмуляторе.
 set -u
 A="adb shell"
-i=0
 add() { # имя номер starred
-  i=$((i+1))
   $A content insert --uri content://com.android.contacts/raw_contacts --bind account_type:s:local --bind account_name:s:local --bind starred:i:$3
+  i=$($A content query --uri content://com.android.contacts/raw_contacts --projection _id | sed -n 's/.*_id=\([0-9]*\).*/\1/p' | sort -n | tail -1)
   $A content insert --uri content://com.android.contacts/data --bind raw_contact_id:i:$i --bind mimetype:s:vnd.android.cursor.item/name --bind data1:s:"$1"
   $A content insert --uri content://com.android.contacts/data --bind raw_contact_id:i:$i --bind mimetype:s:vnd.android.cursor.item/phone_v2 --bind data1:s:"$2" --bind data2:i:2
 }
@@ -29,3 +28,5 @@ call "+74997001122" 3 300 0
 call "+79161112244" 1 1500 600
 call "+79997654321" 2 3000 30
 call "+79101112233" 3 4000 0
+
+$A content query --uri content://com.android.contacts/contacts --projection display_name:starred
