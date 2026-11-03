@@ -154,7 +154,7 @@ private fun KeypadLayer(vm: DialerViewModel, reduced: Boolean) {
                 .background(oz.bg)
                 .safeDrawingPadding(),
         ) {
-            SearchResults(vm, Modifier.weight(1f).fillMaxWidth())
+            SearchResults(vm, Modifier.weight(1f).fillMaxWidth(), drag)
             KeypadPanel(vm, drag)
         }
     }

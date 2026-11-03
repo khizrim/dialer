@@ -75,25 +75,34 @@ private val KEYS: List<Pair<Char, String>>
 
 /** Отфильтрованные люди над клавиатурой. Живут в верхней половине экрана. */
 @Composable
-fun SearchResults(vm: DialerViewModel, modifier: Modifier = Modifier) {
+fun SearchResults(vm: DialerViewModel, modifier: Modifier = Modifier, drag: PanelDrag? = null) {
     val oz = LocalOz.current
     val reduced = LocalReducedMotion.current
     // лучшее совпадение ближе к клавиатуре, под большим пальцем
     val results = vm.hits.asReversed()
     val showAdd = results.isEmpty() && PhoneFormat.digits(vm.keypad).length >= 3
-    // подсказки и клавиатура для пальца — один лист: тянут вниз дальше края списка — клавиатура закрывается (по отпусканию)
-    val limit = with(LocalDensity.current) { 96.dp.toPx() }
-    val pullDown = remember(vm) {
+    // подсказки и клавиатура — один лист: тянут вниз дальше края списка — весь слой идёт за пальцем 1:1,
+    // отпустили — доезжает со скоростью пальца или возвращается (MOTION-v2)
+    val pullDown = remember(vm, drag) {
         object : androidx.compose.ui.input.nestedscroll.NestedScrollConnection {
-            var pull = 0f
+            var pulled = 0f
+            override fun onPreScroll(available: androidx.compose.ui.geometry.Offset, source: androidx.compose.ui.input.nestedscroll.NestedScrollSource): androidx.compose.ui.geometry.Offset {
+                if (drag == null || pulled <= 0f || source != androidx.compose.ui.input.nestedscroll.NestedScrollSource.UserInput) return androidx.compose.ui.geometry.Offset.Zero
+                val step = available.y.coerceAtLeast(-pulled)
+                pulled += step; drag.by(step)
+                return androidx.compose.ui.geometry.Offset(0f, available.y)
+            }
             override fun onPostScroll(consumed: androidx.compose.ui.geometry.Offset, available: androidx.compose.ui.geometry.Offset, source: androidx.compose.ui.input.nestedscroll.NestedScrollSource): androidx.compose.ui.geometry.Offset {
-                if (source == androidx.compose.ui.input.nestedscroll.NestedScrollSource.UserInput) pull = if (available.y > 0f) pull + available.y else 0f
-                return androidx.compose.ui.geometry.Offset.Zero
+                if (drag == null || source != androidx.compose.ui.input.nestedscroll.NestedScrollSource.UserInput || available.y <= 0f) return androidx.compose.ui.geometry.Offset.Zero
+                if (pulled <= 0f) drag.start()
+                pulled += available.y; drag.by(available.y)
+                return androidx.compose.ui.geometry.Offset(0f, available.y)
             }
             override suspend fun onPreFling(available: androidx.compose.ui.unit.Velocity): androidx.compose.ui.unit.Velocity {
-                if (pull > limit) vm.closeKeypad()
-                pull = 0f
-                return androidx.compose.ui.unit.Velocity.Zero
+                if (drag == null || pulled <= 0f) return androidx.compose.ui.unit.Velocity.Zero
+                pulled = 0f
+                drag.end(available.y)
+                return available
             }
         }
     }
