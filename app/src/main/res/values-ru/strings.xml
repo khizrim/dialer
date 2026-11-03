@@ -182,9 +182,7 @@
     <string name="ch_missed">Пропущенные звонки</string>
     <string name="ch_silent">Незнакомые без звука</string>
     <string name="missed_from">Пропущенный от %1$s</string>
-    <string name="missed_many">Пропущенных: %1$d</string>
     <string name="call_back">Перезвонить</string>
-    <string name="silenced_summary">Без звука: незнакомых %1$d</string>
     <string name="silenced_text">Они не звонили вслух. Список в «Незнакомых номерах».</string>
     <string name="look">Посмотреть</string>
     <string name="call_failed">Не удалось позвонить</string>
@@ -205,4 +203,16 @@
     <string name="ob_denied_title">Без контактов здесь пусто</string>
     <string name="ob_denied_text">Откройте Настройки → Разрешения → Контакты и разрешите доступ. Звонить можно и без этого.</string>
     <string name="ob_without_contacts">Звонить без контактов</string>
+    <plurals name="missed_many">
+        <item quantity="one">%1$d пропущенный</item>
+        <item quantity="few">%1$d пропущенных</item>
+        <item quantity="many">%1$d пропущенных</item>
+        <item quantity="other">%1$d пропущенного</item>
+    </plurals>
+    <plurals name="silenced_summary">
+        <item quantity="one">Без звука: %1$d незнакомый</item>
+        <item quantity="few">Без звука: %1$d незнакомых</item>
+        <item quantity="many">Без звука: %1$d незнакомых</item>
+        <item quantity="other">Без звука: %1$d незнакомого</item>
+    </plurals>
 </resources>
