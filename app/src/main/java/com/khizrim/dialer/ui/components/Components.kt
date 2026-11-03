@@ -30,6 +30,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import kotlinx.coroutines.launch
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.composed
@@ -215,7 +216,7 @@ fun Modifier.swipeAway(enabled: Boolean = true, onSwiped: () -> Unit): Modifier 
     val reduced = com.khizrim.dialer.ui.theme.LocalReducedMotion.current
     this
         .pointerInput(Unit) {
-            androidx.compose.foundation.gestures.detectHorizontalDragGestures(
+            detectHorizontalDragGestures(
                 onDragEnd = {
                     scope.launch {
                         if (offset.value < -threshold) {

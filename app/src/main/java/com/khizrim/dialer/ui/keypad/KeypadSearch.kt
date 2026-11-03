@@ -26,6 +26,7 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import kotlinx.coroutines.launch
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
@@ -141,7 +142,7 @@ fun KeypadPanel(vm: DialerViewModel) {
     Column(
         Modifier.fillMaxWidth()
             .pointerInput(vm) {
-                androidx.compose.foundation.gestures.detectVerticalDragGestures(
+                detectVerticalDragGestures(
                     onDragEnd = { if (pull.value > limit) vm.closeKeypad(); scope.launch { pull.animateTo(0f, Motion.enter(Motion.MOVE)) } },
                     onDragCancel = { scope.launch { pull.animateTo(0f) } },
                 ) { change, amount -> change.consume(); scope.launch { pull.snapTo((pull.value + amount).coerceAtLeast(0f)) } }
