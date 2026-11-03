@@ -39,6 +39,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import kotlinx.coroutines.launch
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -65,7 +68,20 @@ fun PersonScreen(vm: DialerViewModel, id: Long) {
     val fav = p.starred
     val history = remember(p, vm.ready) { vm.history(p).take(5) }
 
-    Column(Modifier.fillMaxSize()) {
+    // карточку тянут вниз — она закрывается, как лист; идёт за пальцем
+    val pull = remember { androidx.compose.animation.core.Animatable(0f) }
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    val limit = with(androidx.compose.ui.platform.LocalDensity.current) { 96.dp.toPx() }
+    Column(
+        Modifier.fillMaxSize()
+            .pointerInput(vm) {
+                detectVerticalDragGestures(
+                    onDragEnd = { if (pull.value > limit) vm.back(); scope.launch { pull.animateTo(0f, Motion.enter(Motion.MOVE)) } },
+                    onDragCancel = { scope.launch { pull.animateTo(0f) } },
+                ) { change, amount -> change.consume(); scope.launch { pull.snapTo((pull.value + amount * 0.6f).coerceAtLeast(0f)) } }
+            }
+            .graphicsLayer { translationY = pull.value },
+    ) {
         Column(
             Modifier.weight(1f).fillMaxWidth().padding(horizontal = 24.dp),
             verticalArrangement = Arrangement.Bottom,
@@ -125,7 +141,9 @@ fun PersonScreen(vm: DialerViewModel, id: Long) {
                 )
             }
         }
-        Spacer(Modifier.height(16.dp))
+        // пока виден тост, карточка приподнимается, чтобы он ничего не закрыл
+        val room by androidx.compose.animation.core.animateDpAsState(if (vm.toast != null) 76.dp else 16.dp, Motion.enter(Motion.MOVE), label = "toast")
+        Spacer(Modifier.height(room))
     }
 }
 

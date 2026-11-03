@@ -105,7 +105,8 @@ fun RecentsScreen(vm: DialerViewModel) {
                                 .fillMaxWidth()
                                 .heightIn(min = 56.dp)
                                 // смахнуть влево — удалить звонок с «Вернуть» (нужно разрешение на запись журнала)
-                                .swipeAway(vm.canClearLog) { vm.swipeDeleteRecord(r) }
+                                // вправо — перезвонить, влево — удалить с «Вернуть»
+                                .swipeAway(vm.canClearLog, onRight = { vm.callBack(r, l.person) }) { vm.swipeDeleteRecord(r) }
                                 .press({ vm.callBack(r, l.person) }, onLongClick = { vm.openRecentMenu(r, l.person) }, shape = RoundedCornerShape(16.dp), label = label)
                                 .padding(horizontal = 12.dp, vertical = 12.dp),
                             verticalAlignment = Alignment.CenterVertically,

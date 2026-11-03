@@ -125,14 +125,24 @@ fun DialerApp(vm: DialerViewModel = viewModel()) {
             SyncHelpSheet(vm)
             ConfirmLayer(vm)
             // тост встаёт над плашкой звонка, а не на неё
-            FloatToast(vm.toast, bottom = floatBottom(vm) + if (hasLive) 60.dp else 0.dp, undoHere = vm.screen != Screen.HOME || vm.keypadOpen, onUndo = vm::undo)
+            // тост не перекрывает содержимое: в панели слева от кнопки набора, над клавиатурой или в самом низу
+            FloatToast(
+                vm.toast,
+                bottom = when { vm.keypadOpen -> 380.dp; barScreen(vm) -> 18.dp; else -> 16.dp },
+                end = if (barScreen(vm)) 84.dp else 12.dp,
+                undoHere = vm.screen != Screen.HOME || vm.keypadOpen,
+                onUndo = vm::undo,
+            )
         }
     }
 }
 
-/** Где висят тост и плашка звонка: над клавиатурой, над рядом избранных и подсказкой или над нижней панелью. */
+/** Где висит плашка звонка: над клавиатурой или над нижней панелью. */
 private fun floatBottom(vm: DialerViewModel): androidx.compose.ui.unit.Dp = when {
     vm.keypadOpen -> 380.dp
     vm.screen == Screen.HOME && (vm.favorites.isNotEmpty() || vm.showSearchHint) -> 156.dp
     else -> 96.dp
 }
+
+/** Экраны с нижней панелью и кнопкой набора: тост ложится в панель слева от кнопки и не закрывает содержимое. */
+private fun barScreen(vm: DialerViewModel) = !vm.keypadOpen && vm.screen in setOf(Screen.HOME, Screen.RECENTS, Screen.CONTACTS)

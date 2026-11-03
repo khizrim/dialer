@@ -26,6 +26,7 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import kotlinx.coroutines.launch
 import androidx.compose.ui.input.pointer.pointerInput
@@ -204,6 +205,15 @@ private fun TypedNumber(vm: DialerViewModel) {
             .fillMaxWidth()
             .height(56.dp)
             .padding(start = 24.dp, end = 24.dp, top = 4.dp)
+            // смахнуть номер влево — стереть цифру, как на калькуляторе
+            .pointerInput(vm) {
+                var dx = 0f
+                val step = 48.dp.toPx()
+                detectHorizontalDragGestures(onDragStart = { dx = 0f }) { change, amount ->
+                    change.consume(); dx += amount
+                    if (dx < -step) { vm.backspace(); dx = 0f }
+                }
+            }
             // долгое нажатие на поле вставляет номер из буфера
             .combinedClickable(interactionSource = null, indication = null, onClick = {}, onLongClick = { vm.paste(clipboard.getText()?.text) })
             .semantics { liveRegion = LiveRegionMode.Polite; contentDescription = formatted.ifEmpty { noNumber } },
