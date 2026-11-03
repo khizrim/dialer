@@ -72,3 +72,20 @@ object Classifier {
     /** Так в базе записаны диапазоны на всю страну. */
     const val COUNTRY_WIDE = "Россия"
 }
+
+/** Когда подозрение достаточно сильное, чтобы глушить или сбрасывать звонок, а не только подписывать. */
+object SpamPolicy {
+    /** База в APK стареет: после этого срока невыданный номер может оказаться просто новым. */
+    const val FRESH_DAYS = 90
+
+    /**
+     * @param explicitChoice человек сам выбрал «Глушить» или «Сбрасывать» в настройках
+     * @param dbAgeDays возраст базы номеров в днях, null — неизвестен
+     */
+    fun acts(suspicion: CallerFacts.Suspicion?, explicitChoice: Boolean, dbAgeDays: Long?): Boolean = when (suspicion) {
+        null -> false
+        CallerFacts.Suspicion.SPOOFED, CallerFacts.Suspicion.RISKY_COUNTRY -> true
+        // курьер, банк или новая SIM могут звонить с номера, которого в старой базе ещё нет
+        CallerFacts.Suspicion.UNALLOCATED -> explicitChoice && dbAgeDays != null && dbAgeDays in 0..FRESH_DAYS
+    }
+}

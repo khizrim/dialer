@@ -40,13 +40,18 @@ class OzScreeningService : CallScreeningService() {
         val verificationFailed = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R &&
             details.callerNumberVerificationStatus == Connection.VERIFICATION_STATUS_FAILED
         val facts = CallerId.facts(this, number, verificationFailed)
-        if (facts.suspicious) {
-            when (CallerIdPrefs(this).action) {
-                SpamAction.REJECT -> return response
-                    .setDisallowCall(true)
-                    .setRejectCall(true)
-                    .setSkipNotification(true)
-                    .build()
+        val prefs = CallerIdPrefs(this)
+        if (facts.suspicious && CallerId.actsOn(this, facts, prefs)) {
+            when (prefs.action) {
+                SpamAction.REJECT -> {
+                    // без звонка и без системного уведомления, но в тихой сводке «Незнакомые номера»
+                    runCatching { CallNotifications.showSilenced(this) }
+                    return response
+                        .setDisallowCall(true)
+                        .setRejectCall(true)
+                        .setSkipNotification(true)
+                        .build()
+                }
                 SpamAction.SILENCE -> if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) response.setSilenceCall(true)
                 SpamAction.LABEL -> {}
             }

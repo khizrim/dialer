@@ -33,6 +33,9 @@ fun SuspiciousCallsSetting(modifier: Modifier = Modifier) {
     val prefs = remember { CallerIdPrefs(context) }
     var action by remember { mutableStateOf(prefs.action) }
     val date by produceState<String?>(null) { value = withContext(Dispatchers.IO) { CallerId.registryDate(context) } }
+    val stale by produceState(false) {
+        value = withContext(Dispatchers.IO) { (CallerId.dbAgeDays(context) ?: 0L) > SpamPolicy.FRESH_DAYS }
+    }
     val title = stringResource(R.string.spam_action_title)
     val value = stringResource(
         when (action) {
@@ -69,6 +72,9 @@ fun SuspiciousCallsSetting(modifier: Modifier = Modifier) {
             date?.let { stringResource(R.string.spam_about, it) } ?: stringResource(R.string.spam_about_nodate),
             style = OzType.small, color = oz.fg3, modifier = Modifier.padding(top = 8.dp),
         )
+        if (stale && action != SpamAction.LABEL) {
+            Text(stringResource(R.string.spam_db_stale), style = OzType.small, color = oz.fg3, modifier = Modifier.padding(top = 8.dp))
+        }
     }
 }
 
