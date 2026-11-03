@@ -22,4 +22,6 @@
     <string name="not_default_dialer">Ozero Phone не звонилка по умолчанию</string>
     <string name="fix_it">Исправить</string>
     <string name="paste_number">Вставить %1$s</string>
+    <string name="create_named">Создать контакт «%1$s»</string>
+    <string name="create_with_number">Создать контакт с этим номером</string>
 </resources>

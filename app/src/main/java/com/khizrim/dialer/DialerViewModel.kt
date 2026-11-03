@@ -665,6 +665,7 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Изменение и добавление — системным редактором Контактов (решение пользователя). */
     fun editContact(p: Person) { menu = null; sheet = null; Launcher.editContact(ctx, p)?.let { say(it) } }
+    fun addNamedContact(name: String) { menu = null; sheet = null; Launcher.addContactNamed(ctx, name.trim())?.let { say(it) } }
     fun addToContacts(number: String) { menu = null; sheet = null; closeKeypad(); Launcher.addContact(ctx, number)?.let { say(it) } }
 
     private fun editContactInApp(p: Person) {

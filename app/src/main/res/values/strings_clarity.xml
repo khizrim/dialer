@@ -18,4 +18,6 @@
     <string name="not_default_dialer">Ozero Phone is not the default phone app</string>
     <string name="fix_it">Fix</string>
     <string name="paste_number">Paste %1$s</string>
+    <string name="create_named">Create contact “%1$s”</string>
+    <string name="create_with_number">Create contact with this number</string>
 </resources>

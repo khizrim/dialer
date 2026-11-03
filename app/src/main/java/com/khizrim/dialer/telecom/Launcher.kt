@@ -96,6 +96,15 @@ object Launcher {
         return start(context, intent, context.getString(R.string.err_no_contacts_app))
     }
 
+    /** Новый контакт с уже набранным именем — системным редактором. */
+    fun addContactNamed(context: Context, name: String): String? {
+        val intent = Intent(ContactsContract.Intents.Insert.ACTION)
+            .setType(ContactsContract.RawContacts.CONTENT_TYPE)
+            .putExtra(ContactsContract.Intents.Insert.NAME, name)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        return start(context, intent, context.getString(R.string.err_no_contacts_app))
+    }
+
     fun editContact(context: Context, person: Person): String? {
         val uri = ContactsContract.Contacts.getLookupUri(person.id, person.lookupKey)
         val intent = Intent(Intent.ACTION_EDIT).setDataAndType(uri, ContactsContract.Contacts.CONTENT_ITEM_TYPE)
