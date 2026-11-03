@@ -13,6 +13,7 @@ import com.khizrim.dialer.R
 enum class CallAlert(@StringRes val text: Int, @StringRes val action: Int, val dismissable: Boolean = false) {
     NOT_DEFAULT(R.string.alert_not_default, R.string.alert_fix),
     NOTIFICATIONS(R.string.alert_notifications, R.string.alert_fix),
+    CONTACTS_FOR_SILENCE(R.string.alert_contacts_silence, R.string.alert_fix),
     FULL_SCREEN(R.string.alert_full_screen, R.string.alert_fix),
     XIAOMI(R.string.alert_xiaomi, R.string.alert_open, dismissable = true),
 }
@@ -21,10 +22,11 @@ object CallReadiness {
     private val xiaomi = setOf("xiaomi", "redmi", "poco")
 
     /** Самая важная проблема или null. */
-    fun check(context: Context, isDefault: Boolean, xiaomiDismissed: Boolean): CallAlert? {
+    fun check(context: Context, isDefault: Boolean, xiaomiDismissed: Boolean, silenceUnknown: Boolean = false): CallAlert? {
         if (!isDefault) return CallAlert.NOT_DEFAULT
         val nm = context.getSystemService(NotificationManager::class.java) ?: return null
         if (!nm.areNotificationsEnabled()) return CallAlert.NOTIFICATIONS
+        if (silenceUnknown && context.checkSelfPermission(android.Manifest.permission.READ_CONTACTS) != android.content.pm.PackageManager.PERMISSION_GRANTED) return CallAlert.CONTACTS_FOR_SILENCE
         if (Build.VERSION.SDK_INT >= 34 && !nm.canUseFullScreenIntent()) return CallAlert.FULL_SCREEN
         if (!xiaomiDismissed && Build.MANUFACTURER.lowercase() in xiaomi) return CallAlert.XIAOMI
         return null
@@ -36,6 +38,7 @@ object CallReadiness {
         return when (alert) {
             CallAlert.NOT_DEFAULT -> Launcher.defaultDialerRequest(context)
             CallAlert.NOTIFICATIONS -> Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, pkg)
+            CallAlert.CONTACTS_FOR_SILENCE -> details
             CallAlert.FULL_SCREEN -> if (Build.VERSION.SDK_INT >= 34)
                 Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT, Uri.fromParts("package", pkg, null)) else details
             // экран разрешений MIUI: «Экран блокировки», «Всплывающие окна», «Запуск в фоне»

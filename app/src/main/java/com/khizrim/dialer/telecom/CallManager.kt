@@ -41,6 +41,8 @@ object CallManager {
     private val callback = object : Call.Callback() {
         override fun onStateChanged(call: Call, newState: Int) {
             if (newState == Call.STATE_SELECT_PHONE_ACCOUNT) autoPickSim(call)
+            // входящий перестал звонить: ответ «после завершения текущего» больше не нужен
+            if (call.state != Call.STATE_RINGING && call != endingForAnswer && pendingAnswer != null && visible.none { it.state == Call.STATE_RINGING }) { pendingAnswer = null; endingForAnswer = null }
             if (newState == Call.STATE_DISCONNECTED) pendingAnswer?.let { r -> if (call == endingForAnswer) { pendingAnswer = null; endingForAnswer = null; main.post(r) } }
             refresh()
         }

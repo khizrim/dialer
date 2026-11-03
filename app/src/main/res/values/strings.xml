@@ -159,4 +159,7 @@
     <string name="alert_open">Open</string>
     <string name="err_call_permission">Allow calls in settings to dial from Ozero Phone</string>
     <string name="hold_to_answer">Hold to answer</string>
+    <string name="recents">Recent calls</string>
+    <string name="recents_empty">No calls yet.</string>
+    <string name="alert_contacts_silence">Silencing unknown callers needs contacts access, otherwise everyone would be silenced</string>
 </resources>

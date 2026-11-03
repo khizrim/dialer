@@ -1,6 +1,8 @@
 package com.khizrim.dialer.telecom
 
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 
 import android.app.KeyguardManager
 import android.content.Context
@@ -28,10 +30,28 @@ import com.khizrim.dialer.ui.theme.rememberReducedMotion
 class CallActivity : ComponentActivity() {
     private var proximity: PowerManager.WakeLock? = null
 
+    /** Экран заблокирован: на входящем отвечаем удержанием. Не снимаем блокировку сами. */
+    private var locked by androidx.compose.runtime.mutableStateOf(false)
+    private var lockListener: Any? = null
+
+    private fun readLock() { locked = getSystemService(KeyguardManager::class.java)?.isKeyguardLocked == true }
+
+    override fun onResume() {
+        super.onResume()
+        readLock()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         showOverLockScreen()
+        readLock()
+        if (Build.VERSION.SDK_INT >= 33) {
+            val km = getSystemService(KeyguardManager::class.java)
+            val l = KeyguardManager.KeyguardLockedStateListener { locked = it }
+            // слушателю может не хватить прав: тогда достаточно проверки в onResume
+            if (runCatching { km?.addKeyguardLockedStateListener(mainExecutor, l) }.isSuccess) lockListener = l
+        }
         // ответ из уведомления: только при первом создании, не после поворота
         if (savedInstanceState == null) consumeAnswer(intent)
 
@@ -69,8 +89,7 @@ class CallActivity : ComponentActivity() {
                             proximity(s != null && s.phase != CallPhase.RINGING && s.phase != CallPhase.ENDED && s.route == com.khizrim.dialer.model.CallState.ROUTE_EARPIECE)
                         }
                     }
-                    val keyguard = remember { getSystemService(KeyguardManager::class.java) }
-                    if (shown != null) CallScreen(shown, actions, locked = keyguard?.isKeyguardLocked == true)
+                    if (shown != null) CallScreen(shown, actions, locked = locked)
                 }
             }
         }
@@ -90,6 +109,9 @@ class CallActivity : ComponentActivity() {
 
     override fun onDestroy() {
         proximity(false)
+        if (Build.VERSION.SDK_INT >= 33) (lockListener as? KeyguardManager.KeyguardLockedStateListener)?.let {
+            runCatching { getSystemService(KeyguardManager::class.java)?.removeKeyguardLockedStateListener(it) }
+        }
         super.onDestroy()
     }
 
@@ -97,12 +119,10 @@ class CallActivity : ComponentActivity() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
             setShowWhenLocked(true)
             setTurnScreenOn(true)
-            getSystemService(KeyguardManager::class.java)?.requestDismissKeyguard(this, null)
         } else {
             @Suppress("DEPRECATION")
             window.addFlags(
-                WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON or
-                    WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD,
+                WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON,
             )
         }
     }

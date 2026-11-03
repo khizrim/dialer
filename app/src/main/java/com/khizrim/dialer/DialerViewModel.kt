@@ -35,7 +35,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.Locale
 
-enum class Screen { HOME, CONTACTS, PERSON, BLOCKED, UNKNOWN }
+enum class Screen { HOME, CONTACTS, PERSON, BLOCKED, UNKNOWN, RECENTS }
 enum class SheetMode { OTHER, DEFAULT }
 enum class MenuContext { HOME, SEARCH }
 
@@ -77,7 +77,7 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     var people by mutableStateOf<List<Person>>(emptyList()); private set
     private var byNumber: Map<String, Person> = emptyMap()
     private var byId: Map<Long, Person> = emptyMap()
-    private var calls: List<CallRecord> = emptyList()
+    private var calls: List<CallRecord> by mutableStateOf(emptyList())
     private var interactions: List<Interaction> = emptyList()
     var blocked by mutableStateOf<List<String>>(emptyList()); private set
 
@@ -123,7 +123,7 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
         isDefaultDialer = Launcher.isDefaultDialer(ctx)
         hasContacts = granted(Manifest.permission.READ_CONTACTS)
         hasCallLog = granted(Manifest.permission.READ_CALL_LOG)
-        callAlert = com.khizrim.dialer.telecom.CallReadiness.check(ctx, isDefaultDialer, prefs.xiaomiHintSeen)
+        callAlert = com.khizrim.dialer.telecom.CallReadiness.check(ctx, isDefaultDialer, prefs.xiaomiHintSeen, prefs.silenceUnknown)
         if (isDefaultDialer) com.khizrim.dialer.telecom.CallReadiness.clearMissed(ctx)
         loadJob?.cancel()
         loadJob = viewModelScope.launch {
@@ -193,6 +193,17 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     fun openContacts() { closeKeypad(); screen = Screen.CONTACTS }
     fun openBlocked() { screen = Screen.BLOCKED }
     fun openUnknown() { screen = Screen.UNKNOWN }
+    fun openRecents() { screen = Screen.RECENTS }
+
+    /** Полный журнал: каждая строка — звонок, с именем, если номер есть в контактах. */
+    val recentCalls: List<Pair<CallRecord, Person?>> get() = calls.map { it to byNumber[Numbers.key(it.number)] }
+
+    /** Тап в журнале: перезвонить на тот же номер. */
+    fun callBack(r: CallRecord) { closeKeypad(); Launcher.call(ctx, r.number)?.let { say(it) } }
+
+    fun openRecentMenu(r: CallRecord, p: Person?) {
+        menu = MenuState(if (p != null) HomeEntry(p.key, p, null, r.date, null) else HomeEntry("n:" + Numbers.key(r.number), null, r.number, r.date, null), MenuContext.SEARCH)
+    }
 
     fun toggleSilenceUnknown() {
         silenceUnknown = !silenceUnknown
@@ -230,7 +241,7 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
         menu != null -> { menu = null; true }
         keypadOpen -> { closeKeypad(); true }
         screen == Screen.PERSON -> { leavePerson(); true }
-        screen == Screen.BLOCKED || screen == Screen.UNKNOWN -> { screen = Screen.CONTACTS; true }
+        screen == Screen.BLOCKED || screen == Screen.UNKNOWN || screen == Screen.RECENTS -> { screen = Screen.CONTACTS; true }
         screen == Screen.CONTACTS -> { screen = Screen.HOME; true }
         else -> false
     }

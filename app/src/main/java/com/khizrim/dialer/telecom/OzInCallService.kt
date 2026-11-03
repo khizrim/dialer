@@ -38,7 +38,7 @@ class OzInCallService : InCallService() {
     private val main = android.os.Handler(android.os.Looper.getMainLooper())
 
     override fun onCallAdded(call: Call) {
-        if (call.state == Call.STATE_RINGING && Prefs(this).silenceUnknown) {
+        if (call.state == Call.STATE_RINGING && Prefs(this).silenceUnknownActive(this)) {
             // поиск в контактах не на главном потоке: большая книга не задержит входящий
             val number = call.details?.handle?.schemeSpecificPart.orEmpty()
             io.execute {

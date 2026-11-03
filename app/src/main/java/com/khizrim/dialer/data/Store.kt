@@ -84,6 +84,10 @@ class Prefs(context: Context) {
         get() = sp.getBoolean("xiaomiHint", false)
         set(v) { sp.edit().putBoolean("xiaomiHint", v).apply() }
 
+    /** Глушим незнакомых, только если можем отличить знакомых: без доступа к контактам глушили бы всех. */
+    fun silenceUnknownActive(context: Context): Boolean =
+        silenceUnknown && context.checkSelfPermission(android.Manifest.permission.READ_CONTACTS) == android.content.pm.PackageManager.PERMISSION_GRANTED
+
     var silenceUnknown: Boolean
         get() = sp.getBoolean("silenceUnknown", false)
         set(v) { sp.edit().putBoolean("silenceUnknown", v).apply() }

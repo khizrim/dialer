@@ -14,7 +14,7 @@ class OzScreeningService : CallScreeningService() {
     override fun onScreenCall(details: Call.Details) {
         val incoming = Build.VERSION.SDK_INT < Build.VERSION_CODES.Q || details.callDirection == Call.Details.DIRECTION_INCOMING
         val response = CallResponse.Builder()
-        if (incoming && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && Prefs(this).silenceUnknown) {
+        if (incoming && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && Prefs(this).silenceUnknownActive(this)) {
             val number = details.handle?.schemeSpecificPart.orEmpty()
             if (number.isBlank() || ContactsSource.nameFor(this, number) == null) response.setSilenceCall(true)
         }

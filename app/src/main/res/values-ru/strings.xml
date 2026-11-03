@@ -158,4 +158,7 @@
     <string name="alert_open">Открыть</string>
     <string name="err_call_permission">Разрешите звонки в настройках, чтобы звонить из Ozero Phone</string>
     <string name="hold_to_answer">Удерживайте, чтобы ответить</string>
+    <string name="recents">Недавние звонки</string>
+    <string name="recents_empty">Звонков пока нет.</string>
+    <string name="alert_contacts_silence">Тихому режиму нужен доступ к контактам, иначе он заглушит всех</string>
 </resources>
