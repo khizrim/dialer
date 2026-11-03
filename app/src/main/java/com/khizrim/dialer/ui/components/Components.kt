@@ -83,6 +83,7 @@ private fun Modifier.ozPressImpl(
     val source = remember { MutableInteractionSource() }
     val pressed by source.collectIsPressedAsState()
     val guard = remember { TapGuard.Touch() }
+    val guardOn = LocalTapGuard.current
     val scale by animateFloatAsState(
         targetValue = if (pressed && !reduced) 0.98f else 1f,
         animationSpec = Motion.enter(Motion.PRESS),
@@ -99,8 +100,8 @@ private fun Modifier.ozPressImpl(
             role = role,
             onClickLabel = null,
             onLongClickLabel = if (onLongClick != null) stringResource(R.string.menu) else null,
-            onLongClick = onLongClick?.let { l -> { if (guard.sameScreen()) l() } },
-            onClick = { if (guard.isTap()) onClick() },
+            onLongClick = onLongClick?.let { l -> { if (!guardOn || guard.sameScreen()) l() } },
+            onClick = { if (!guardOn || guard.isTap()) onClick() },
         )
         .let { if (label != null) it.semantics { contentDescription = label } else it }
 }
@@ -110,6 +111,9 @@ private fun Modifier.ozPressImpl(
  * никто выше (список, свайп стопки, шторка) не забрал движение и экран не сменился,
  * пока палец был на стекле. Любой жест с движением вызовом не заканчивается.
  */
+/** false на экране звонка: «Ответить» и «Сбросить» нажимаются всегда, их не глушит смена экрана в основном окне. */
+val LocalTapGuard = androidx.compose.runtime.staticCompositionLocalOf { true }
+
 object TapGuard {
     /** Растёт при каждой смене экрана; касание, начатое на прошлом экране, не нажимает. */
     @Volatile var gen = 0

@@ -26,6 +26,8 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.positionInWindow
+import androidx.compose.ui.composed
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -180,44 +182,47 @@ interface PanelDrag {
     fun end(velocityPx: Float)
 }
 
+/**
+ * Тяга клавиатуры вниз с панели (и с клавиши тоже). Висит на слое, который сам не двигается,
+ * поэтому сдвиг пальца берётся как есть, 1:1. Начинается, только если палец опустился ниже [panelTop]
+ * (в координатах окна). Слушаем раньше клавиш (Initial): после вертикального порога движение наше.
+ */
+fun Modifier.keypadPull(drag: PanelDrag, panelTop: () -> Float): Modifier = composed {
+    val origin = remember { floatArrayOf(0f) }
+    this.onGloballyPositioned { origin[0] = it.positionInWindow().y }.pointerInput(drag) {
+        val slop = viewConfiguration.touchSlop
+        val tracker = androidx.compose.ui.input.pointer.util.VelocityTracker()
+        awaitEachGesture {
+            val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+            if (down.position.y + origin[0] < panelTop()) return@awaitEachGesture
+            var dx = 0f; var dy = 0f; var dragging = false
+            var last = down.position
+            while (true) {
+                val ev = awaitPointerEvent(PointerEventPass.Initial)
+                val ch = ev.changes.firstOrNull { it.id == down.id } ?: run { if (dragging) drag.end(0f); null } ?: break
+                if (!ch.pressed) {
+                    if (dragging) { ch.consume(); drag.end(tracker.calculateVelocity().y) }
+                    break
+                }
+                val step = ch.position.y - last.y
+                dx += ch.position.x - last.x; dy += step; last = ch.position
+                // горизонтальный жест — стирание номера, его не трогаем
+                if (!dragging && kotlin.math.abs(dx) > slop && kotlin.math.abs(dx) > kotlin.math.abs(dy)) break
+                if (!dragging && dy > slop) { dragging = true; tracker.resetTracking(); drag.start() }
+                if (dragging) { ch.consume(); tracker.addPosition(ch.uptimeMillis, ch.position); drag.by(step) }
+            }
+        }
+    }
+}
+
 /** Нижняя половина: номер с маской, клавиши без заливки, вызов. */
 @Composable
-fun KeypadPanel(vm: DialerViewModel, drag: PanelDrag? = null) {
+fun KeypadPanel(vm: DialerViewModel, onTop: (Float) -> Unit = {}) {
     val oz = LocalOz.current
-    // панель тянут вниз — весь слой клавиатуры идёт за пальцем 1:1, отпустили — доезжает со скоростью пальца
-    val tracker = remember { androidx.compose.ui.input.pointer.util.VelocityTracker() }
-    // слой едет за пальцем, поэтому свои координаты касания почти не меняются — считаем путь в координатах окна
-    val coords = remember { arrayOfNulls<androidx.compose.ui.layout.LayoutCoordinates>(1) }
-    fun windowOf(p: androidx.compose.ui.geometry.Offset) = coords[0]?.takeIf { it.isAttached }?.localToWindow(p) ?: p
+    // тягу вниз ловит неподвижный слой снаружи (keypadPull): так шаг пальца не искажает сдвиг самой панели
     Column(
         Modifier.fillMaxWidth()
-            .onGloballyPositioned { coords[0] = it }
-            .pointerInput(drag) {
-                if (drag == null) return@pointerInput
-                // слушаем раньше клавиш (Initial): тянуть можно с любой точки панели, и с клавиши тоже;
-                // после вертикального порога движение наше, нажатие клавиши отменяется
-                val slop = viewConfiguration.touchSlop
-                awaitEachGesture {
-                    val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
-                    var dx = 0f; var dy = 0f; var dragging = false
-                    var last = windowOf(down.position)
-                    while (true) {
-                        val ev = awaitPointerEvent(PointerEventPass.Initial)
-                        val ch = ev.changes.firstOrNull { it.id == down.id } ?: run { if (dragging) drag.end(0f); null } ?: break
-                        if (!ch.pressed) {
-                            if (dragging) { ch.consume(); drag.end(tracker.calculateVelocity().y) }
-                            break
-                        }
-                        val w = windowOf(ch.position)
-                        val step = w.y - last.y
-                        dx += w.x - last.x; dy += step; last = w
-                        // горизонтальный жест — стирание номера, его не трогаем
-                        if (!dragging && kotlin.math.abs(dx) > slop && kotlin.math.abs(dx) > kotlin.math.abs(dy)) break
-                        if (!dragging && dy > slop) { dragging = true; tracker.resetTracking(); drag.start() }
-                        if (dragging) { ch.consume(); tracker.addPosition(ch.uptimeMillis, w); drag.by(step) }
-                    }
-                }
-            },
+            .onGloballyPositioned { onTop(it.positionInWindow().y) }
     ) {
         TypedNumber(vm)
         Column(Modifier.padding(start = 12.dp, end = 12.dp, top = 4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {

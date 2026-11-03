@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.safeDrawingPadding
+import com.khizrim.dialer.ui.keypad.keypadPull
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
@@ -126,6 +127,7 @@ private fun KeypadLayer(vm: DialerViewModel, reduced: Boolean) {
         shown.animateTo(if (vm.keypadOpen) 1f else 0f, spec, v)
     }
     if (!vm.keypadOpen && shown.value == 0f) return
+    val panel = remember { floatArrayOf(Float.MAX_VALUE, 0f) } // верх панели в окне и её высота
     androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize()) {
         val h = with(LocalDensity.current) { maxHeight.toPx() }
         val drag = remember(h) {
@@ -138,7 +140,8 @@ private fun KeypadLayer(vm: DialerViewModel, reduced: Boolean) {
                 }
                 override fun end(velocityPx: Float) {
                     dragging[0] = false
-                    if (Motion.commits(total / h, velocityPx, h)) { velocity[0] = -velocityPx / h; vm.closeKeypad() }
+                    // доля считается от высоты панели клавиш: протянул треть панели — закрылась
+                    if (Motion.commits(total / panel[1].coerceAtLeast(1f), velocityPx, h)) { velocity[0] = -velocityPx / h; vm.closeKeypad() }
                     else scope.launch { shown.animateTo(1f, Motion.settle(), -velocityPx / h) }
                 }
             }
@@ -146,12 +149,14 @@ private fun KeypadLayer(vm: DialerViewModel, reduced: Boolean) {
         Column(
             Modifier
                 .fillMaxSize()
+                .keypadPull(drag) { panel[0] }
                 .graphicsLayer { if (reduced) alpha = shown.value else translationY = (1f - shown.value) * h }
                 .background(oz.bg)
                 .safeDrawingPadding(),
         ) {
             SearchResults(vm, Modifier.weight(1f).fillMaxWidth(), drag)
-            KeypadPanel(vm, drag)
+            // верх панели в покое: вычитаем текущий сдвиг слоя, чтобы граница не ехала вместе с ним
+            KeypadPanel(vm, onTop = { y -> val top = y - (if (reduced) 0f else (1f - shown.value) * h); panel[0] = top; panel[1] = h - top })
         }
     }
 }

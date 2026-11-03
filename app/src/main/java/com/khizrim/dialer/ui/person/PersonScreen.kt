@@ -55,6 +55,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.khizrim.dialer.DialerViewModel
 import com.khizrim.dialer.R
+import com.khizrim.dialer.model.Method
+import androidx.compose.ui.unit.sp
 import com.khizrim.dialer.SheetMode
 import com.khizrim.dialer.ui.components.GhostIconButton
 import com.khizrim.dialer.ui.components.OzIcon
@@ -79,22 +81,25 @@ fun PersonScreen(vm: DialerViewModel, id: Long) {
     Column(
         Modifier.fillMaxSize().dismissOnDrag { vm.back() },
     ) {
+        // вёрстка шагом 8: у всех блоков общий левый и правый край (поля 20dp), всё прижато к низу
         Column(
-            Modifier.weight(1f).fillMaxWidth().padding(horizontal = 24.dp),
+            Modifier.weight(1f).fillMaxWidth().padding(horizontal = 20.dp),
             verticalArrangement = Arrangement.Bottom,
         ) {
             if (history.isNotEmpty()) {
-                // все звонки с человеком — здесь, с прокруткой: отдельного журнала больше нет
-                Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState(), reverseScrolling = true).padding(bottom = 40.dp)) {
+                // все звонки с человеком — тихая таблица: день, что было, длительность; смахнуть влево — удалить с «Вернуть»
+                Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState(), reverseScrolling = true).padding(bottom = 32.dp)) {
                     val canDelete = vm.canClearLog
                     val deleteWord = stringResource(R.string.delete)
-                    history.forEach { e ->
-                        // звонок смахивают влево — он удаляется из журнала, пока виден тост, его можно вернуть
+                    history.forEachIndexed { i, e ->
                         androidx.compose.runtime.key(e.record ?: e) {
-                            Row(Modifier.fillMaxWidth().swipeAway(enabled = canDelete && e.record != null, hint = deleteWord) { e.record?.let(vm::swipeDeleteRecord) }.padding(vertical = 6.dp)) {
-                                Text(e.day, style = OzType.time, color = oz.fg3, modifier = Modifier.width(56.dp))
-                                Spacer(Modifier.width(16.dp))
-                                Text(e.text, style = OzType.small, color = if (e.missed) oz.danger else oz.fg2)
+                            Column(Modifier.fillMaxWidth().swipeAway(enabled = canDelete && e.record != null, hint = deleteWord) { e.record?.let(vm::swipeDeleteRecord) }) {
+                                if (i > 0) Box(Modifier.fillMaxWidth().height(1.dp).background(oz.line))
+                                Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    Text(e.day, style = OzType.time.copy(fontSize = 13.sp), color = oz.fg3, maxLines = 1, modifier = Modifier.width(52.dp))
+                                    Text(e.text, style = OzType.small.copy(fontSize = 13.sp), color = if (e.missed) oz.danger else oz.fg3, maxLines = 1, modifier = Modifier.weight(1f))
+                                    if (e.duration.isNotEmpty()) Text(e.duration, style = OzType.time.copy(fontSize = 13.sp), color = oz.fg3, maxLines = 1)
+                                }
                             }
                         }
                     }
@@ -102,25 +107,38 @@ fun PersonScreen(vm: DialerViewModel, id: Long) {
             }
             // фото только если оно есть, без кружков с буквами
             p.photo?.let { ContactPhoto(it, Modifier.padding(bottom = 16.dp)) }
-            Text(p.shownName, style = if (p.nameIsNumber) OzType.numberHome else OzType.namePerson, color = oz.fg, modifier = Modifier.padding(bottom = 12.dp).semantics { heading() })
-            // номера под именем: тип и номер серым, чтобы было видно, куда звоним
-            // тип номера нужен, только чтобы различать несколько номеров
-            if (!p.nameIsNumber || p.phones.size > 1) {
-                val many = p.phones.size > 1
-                // номеров несколько: тот, на который звонит кнопка, помечен «основной»; номера темнее — по ним нажимают
-                val main = if (many) vm.numberFor(p) else null
-                // тап по номеру — звонок именно на него, долгое нажатие копирует
-                p.phones.take(3).forEach { ph ->
-                    Text(
-                        (if (many) ph.label.replaceFirstChar { it.uppercase() } + "  " else "") + com.khizrim.dialer.data.PhoneFormat.pretty(ph.number) +
-                            (if (main != null && com.khizrim.dialer.data.PhoneFormat.digits(main) == com.khizrim.dialer.data.PhoneFormat.digits(ph.number)) "  · " + stringResource(R.string.main_number) else ""),
-                        style = OzType.body.copy(fontFeatureSettings = "cv11, tnum"), color = if (many) oz.fg2 else oz.fg3, maxLines = 1,
-                        modifier = Modifier
-                            .offset(x = (-8).dp)
-                            .press({ vm.callNumberOf(p, ph.number) }, onLongClick = { vm.copyNumber(ph.number) }, shape = OzShape.text,
-                                label = stringResource(R.string.call_to, com.khizrim.dialer.data.PhoneFormat.pretty(ph.number)))
-                            .padding(horizontal = 8.dp, vertical = 3.dp),
+            // имя и справа звезда избранного по верху первой строки: залита, когда человек в избранном
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
+                Text(
+                    p.shownName, style = if (p.nameIsNumber) OzType.numberHome else OzType.namePerson.copy(fontSize = 30.sp, lineHeight = 36.sp), color = oz.fg,
+                    modifier = Modifier.weight(1f).padding(top = 4.dp).semantics { heading() },
+                )
+                Box(Modifier.offset(x = 10.dp)) {
+                    GhostIconButton(
+                        if (fav) R.drawable.ic_oz_star_on else R.drawable.ic_oz_star,
+                        stringResource(if (fav) R.string.remove_favorite else R.string.add_favorite),
+                        { vm.toggleFavorite(p) }, tint = if (fav) oz.accent else oz.fg3, size = 44.dp, iconSize = 22.dp,
                     )
+                }
+            }
+            // номера: номер слева, тип справа; нажатие звонит на этот номер, долгое нажатие копирует
+            if (!p.nameIsNumber || p.phones.size > 1) {
+                Column(Modifier.padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    p.phones.take(3).forEach { ph ->
+                        Row(
+                            Modifier.fillMaxWidth()
+                                .press({ vm.callNumberOf(p, ph.number) }, onLongClick = { vm.copyNumber(ph.number) }, shape = OzShape.text,
+                                    label = stringResource(R.string.call_to, com.khizrim.dialer.data.PhoneFormat.pretty(ph.number)))
+                                .padding(vertical = 2.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                com.khizrim.dialer.data.PhoneFormat.pretty(ph.number),
+                                style = OzType.body.copy(fontSize = 15.sp, fontFeatureSettings = "cv11, tnum"), color = oz.fg2, maxLines = 1, modifier = Modifier.weight(1f),
+                            )
+                            if (ph.label.isNotBlank()) Text(ph.label, style = OzType.small.copy(fontSize = 12.sp), color = oz.fg3, maxLines = 1)
+                        }
+                    }
                 }
             }
             Spacer(Modifier.height(24.dp))
@@ -146,41 +164,51 @@ fun PersonScreen(vm: DialerViewModel, id: Long) {
                     contentAlignment = Alignment.Center,
                 ) { OzIcon(R.drawable.ic_oz_chevron_down, Color.White, 20.dp) }
             }
-            // две SIM и для человека запомнена не основная: тихая подпись под кнопкой, нажатие переключает или забывает
-            val simNumber = vm.numberFor(p)
-            vm.personSim(simNumber)?.let { id ->
-                Text(
-                    vm.simLabel(id).orEmpty(), style = OzType.small, color = oz.fg3, maxLines = 1,
-                    modifier = Modifier.padding(top = 4.dp).offset(x = (-12).dp)
-                        .press({ simNumber?.let(vm::cyclePersonSim) }, shape = OzShape.text, label = stringResource(R.string.sim_switch))
-                        .padding(horizontal = 12.dp, vertical = 10.dp),
-                )
+            // под кнопкой одна тихая строка: куда звоним и, при двух SIM, с какой (нажатие переключает)
+            val target = vm.numberFor(p)
+            val sim = vm.personSim(target)
+            if (target != null || sim != null) {
+                Row(Modifier.fillMaxWidth().padding(top = 8.dp).heightIn(min = 20.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        target?.let { stringResource(R.string.card_to_number, com.khizrim.dialer.data.PhoneFormat.pretty(it)) }.orEmpty(),
+                        style = OzType.small.copy(fontSize = 12.sp), color = oz.fg3, maxLines = 1, modifier = Modifier.weight(1f),
+                    )
+                    if (sim != null) Text(
+                        vm.simLabel(sim).orEmpty(), style = OzType.small.copy(fontSize = 12.sp), color = oz.fg3, maxLines = 1,
+                        modifier = Modifier.press({ target?.let(vm::cyclePersonSim) }, shape = OzShape.text, label = stringResource(R.string.sim_switch)),
+                    )
+                }
             }
-            // остальные способы — строкой: значок и подпись, нажатие связывает сразу
+            // остальные способы — между двумя линиями, от левого края до правого: значок над подписью, нажатие связывает сразу
             val others = p.methods.filter { it != method }
             if (others.isNotEmpty()) {
+                Spacer(Modifier.height(16.dp))
+                Box(Modifier.fillMaxWidth().height(1.dp).background(oz.line))
+                val short = others.map { stringResource(it.short) }
+                val labels = others.mapIndexed { i, m -> if (short.count { it == short[i] } > 1 && m.brand != null && m != Method.SMS) m.brand else short[i] }
+                val few = others.size <= 4
                 Row(
-                    Modifier.padding(top = 8.dp).offset(x = (-12).dp).horizontalScroll(rememberScrollState()),
+                    Modifier.fillMaxWidth().then(if (few) Modifier else Modifier.horizontalScroll(rememberScrollState())),
+                    horizontalArrangement = if (few && others.size > 1) Arrangement.SpaceBetween else Arrangement.spacedBy(24.dp),
                 ) {
-                    others.forEach { m ->
-                        Row(
-                            Modifier.heightIn(min = 48.dp).press({ vm.performOther(p, m) }, shape = OzShape.text).padding(horizontal = 12.dp),
-                            verticalAlignment = Alignment.CenterVertically,
+                    others.forEachIndexed { i, m ->
+                        Column(
+                            Modifier.press({ vm.performOther(p, m) }, shape = OzShape.text, label = stringResource(m.title)).padding(vertical = 12.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
-                            OzIcon(m.icon, oz.fg2, 18.dp)
-                            Spacer(Modifier.width(8.dp))
-                            Text(stringResource(m.title), style = OzType.small, color = oz.fg2, maxLines = 1)
+                            OzIcon(m.icon, oz.fg2, 22.dp)
+                            Spacer(Modifier.height(4.dp))
+                            Text(labels[i], style = OzType.small.copy(fontSize = 12.sp), color = oz.fg2, maxLines = 1)
                         }
                     }
                 }
+                Box(Modifier.fillMaxWidth().height(1.dp).background(oz.line))
             }
-            Row(Modifier.padding(top = 4.dp).offset(x = (-12).dp)) {
-                TextAction(stringResource(R.string.edit_contact), oz.fg3, { vm.editContact(p) })
-                TextAction(
-                    stringResource(if (fav) R.string.remove_favorite else R.string.add_favorite),
-                    if (fav) oz.accent else oz.fg3, { vm.toggleFavorite(p) },
-                )
-            }
+            // «Изменить контакт» — тихим словом ровно по левому краю, открывает системный редактор
+            Text(
+                stringResource(R.string.edit_contact), style = OzType.small, color = oz.fg3,
+                modifier = Modifier.padding(top = 8.dp).press({ vm.editContact(p) }, shape = OzShape.text).padding(vertical = 8.dp),
+            )
         }
         // пока виден тост, карточка приподнимается, чтобы он ничего не закрыл
         val room by androidx.compose.animation.core.animateDpAsState(if (vm.toast != null) 76.dp else 16.dp, Motion.enter(Motion.MOVE), label = "toast")

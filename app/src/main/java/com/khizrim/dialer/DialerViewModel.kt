@@ -342,8 +342,7 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     fun personSim(number: String?): String? {
         simVersion
         if (sims.size < 2 || number == null) return null
-        val id = prefs.simFor(number)?.takeIf { s -> sims.any { it.first == s } } ?: return null
-        return id.takeIf { it != (simForCalls ?: sims.first().first) }
+        return prefs.simFor(number)?.takeIf { s -> sims.any { it.first == s } } ?: simForCalls ?: sims.first().first
     }
     /** Нажатие на подпись SIM в карточке: следующая SIM; дошли до основной — забываем выбор. */
     fun cyclePersonSim(number: String) {
@@ -687,7 +686,9 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
         val tf = java.text.DateFormat.getTimeInstance(java.text.DateFormat.SHORT)
         // из recentCalls: смахнутый в карточке звонок пропадает сразу, «Вернуть» его возвращает
         recentCalls.asSequence().map { it.first }.filter { Numbers.key(it.number) in keys }.take(300).forEach {
-            events += it.date to HistoryEntry(Dates.day(res, it.date), it.note(res) ?: tf.format(java.util.Date(it.date)), it.missed, it)
+            val what = if (it.ordinary) str(if (it.type == android.provider.CallLog.Calls.OUTGOING_TYPE) R.string.h_outgoing else R.string.h_incoming) else it.note(res) ?: tf.format(java.util.Date(it.date))
+            val dur = when { it.duration <= 0 -> ""; it.duration < 60 -> res.getString(R.string.card_dur_sec, it.duration.toInt()); else -> res.getString(R.string.card_dur_min, ((it.duration + 30) / 60).toInt()) }
+            events += it.date to HistoryEntry(Dates.day(res, it.date), what, it.missed, it, dur)
         }
         interactions.filter { it.key == p.key }.takeLast(300).forEach { events += it.at to HistoryEntry(Dates.day(res, it.at), it.method.label(ctx)) }
         // старые сверху, свежие у имени; карточка открывается у свежих

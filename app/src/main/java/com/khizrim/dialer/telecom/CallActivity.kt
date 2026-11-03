@@ -105,7 +105,7 @@ class CallActivity : ComponentActivity() {
 
         setContent {
             DialerTheme {
-                CompositionLocalProvider(LocalReducedMotion provides rememberReducedMotion()) {
+                CompositionLocalProvider(LocalReducedMotion provides rememberReducedMotion(), com.khizrim.dialer.ui.components.LocalTapGuard provides false) {
                     val live = CallManager.state
                     val shown = rememberLast(live)
                     BackHandler { /* во время звонка «назад» ничего не закрывает */ }

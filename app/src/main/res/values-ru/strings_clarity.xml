@@ -26,4 +26,11 @@
     <string name="create_with_number">Создать контакт с этим номером</string>
     <string name="sim_ask">SIM: спросить</string>
     <string name="sim_switch">Сменить SIM</string>
+    <string name="way_call">Звонок</string>
+    <string name="way_video">Видео</string>
+    <string name="way_write">Написать</string>
+    <string name="way_sms">SMS</string>
+    <string name="card_dur_sec">%1$d с</string>
+    <string name="card_dur_min">%1$d мин</string>
+    <string name="card_to_number">на %1$s</string>
 </resources>
