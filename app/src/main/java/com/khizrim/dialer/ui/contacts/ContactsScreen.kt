@@ -219,7 +219,12 @@ fun UnknownScreen(vm: DialerViewModel) {
                 ) {
                     Column(Modifier.weight(1f)) {
                         Text(com.khizrim.dialer.data.PhoneFormat.pretty(c.number), style = OzType.list, color = oz.fg, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        Text(c.text(res), style = OzType.small, color = if (c.missed) oz.danger else oz.fg3)
+                        val tag = com.khizrim.dialer.callerid.rememberCallerTag(c.number)
+                        Text(
+                            if (tag == null) c.text(res) else stringResource(R.string.cid_join, c.text(res), tag),
+                            style = OzType.small, color = if (c.missed) oz.danger else oz.fg3,
+                            maxLines = 1, overflow = TextOverflow.Ellipsis,
+                        )
                     }
                     Text(com.khizrim.dialer.data.Dates.day(res, c.date), style = OzType.small, color = oz.fg3)
                 }
@@ -240,6 +245,7 @@ fun UnknownScreen(vm: DialerViewModel) {
                         if (vm.isDefaultDialer) stringResource(R.string.silence_unknown_text) else stringResource(R.string.silence_need_role),
                         style = OzType.small, color = oz.fg3,
                     )
+                    com.khizrim.dialer.callerid.SuspiciousCallsSetting(Modifier.padding(top = 16.dp))
                 }
             }
         }
