@@ -9,6 +9,8 @@ android {
     compileSdk = 35
 
     defaultConfig {
+        // только языки, которые мы переводим
+        resourceConfigurations += listOf("en", "ru")
         applicationId = "com.khizrim.dialer"
         minSdk = 26
         targetSdk = 35
@@ -27,10 +29,6 @@ android {
     }
     kotlinOptions {
         jvmTarget = "17"
-    }
-    androidResources {
-        // только языки, которые мы переводим
-        localeFilters += listOf("en", "ru")
     }
     buildFeatures {
         compose = true
