@@ -60,12 +60,37 @@ fun DialerApp(vm: DialerViewModel = viewModel()) {
         Box(Modifier.fillMaxSize().background(oz.bg)) {
             Box(Modifier.fillMaxSize().safeDrawingPadding()) {
                 // экраны: старый гаснет за 150 мс, новый проявляется с подъёмом 8 px за 200 мс
+                // касание, начатое до смены экрана, на новом (и на уходящем) уже ничего не нажимает
+                androidx.compose.runtime.LaunchedEffect(vm.screen, vm.personId, vm.keypadOpen) { com.khizrim.dialer.ui.components.TapGuard.gen++ }
                 AnimatedContent(
                     targetState = Route(vm.screen, vm.personId),
                     transitionSpec = {
                         // спокойная смена экранов: перекрёстное растворение без паузы и без подпрыгивания
                         // «через фон»: старый уходит за 90 мс, новый проявляется после — без двойной экспозиции
-                        (fadeIn(androidx.compose.animation.core.tween(210, 90, Motion.EnterEasing)) togetherWith fadeOut(androidx.compose.animation.core.tween(90, 0, Motion.ExitEasing)))
+                        val from = initialState.screen; val to = targetState.screen
+                        // журнал живёт над главной (его стягивают вниз), контакты — под ней (их вытягивают вверх):
+                        // такие переходы — сдвигом по той же оси, что и жест; новый экран въезжает целиком,
+                        // старый отъезжает на четверть и гаснет, чтобы тексты не накладывались
+                        val dir = when {
+                            reduced -> 0
+                            from == Screen.HOME && to == Screen.RECENTS -> -1   // журнал сверху
+                            from == Screen.RECENTS && to == Screen.HOME -> 1
+                            from == Screen.HOME && to == Screen.SEARCH -> 1     // контакты снизу
+                            from == Screen.SEARCH && to == Screen.HOME -> -1
+                            else -> 0
+                        }
+                        val move = androidx.compose.animation.core.tween<androidx.compose.ui.unit.IntOffset>(Motion.SHEET, 0, Motion.EnterEasing)
+                        when {
+                            dir == -1 && to != Screen.HOME -> slideInVertically(move) { -it } togetherWith
+                                (slideOutVertically(move) { it / 4 } + fadeOut(androidx.compose.animation.core.tween(Motion.FADE, 0, Motion.ExitEasing)))
+                            dir == 1 && to == Screen.HOME -> (slideInVertically(move) { it / 4 } + fadeIn(androidx.compose.animation.core.tween(Motion.MOVE, 60, Motion.EnterEasing))) togetherWith
+                                (slideOutVertically(move) { -it } + fadeOut(androidx.compose.animation.core.tween(Motion.MOVE, 0, Motion.ExitEasing)))
+                            dir == 1 -> slideInVertically(move) { it } togetherWith
+                                (slideOutVertically(move) { -it / 4 } + fadeOut(androidx.compose.animation.core.tween(Motion.FADE, 0, Motion.ExitEasing)))
+                            dir == -1 -> (slideInVertically(move) { -it / 4 } + fadeIn(androidx.compose.animation.core.tween(Motion.MOVE, 60, Motion.EnterEasing))) togetherWith
+                                (slideOutVertically(move) { it } + fadeOut(androidx.compose.animation.core.tween(Motion.MOVE, 0, Motion.ExitEasing)))
+                            else -> fadeIn(androidx.compose.animation.core.tween(210, 90, Motion.EnterEasing)) togetherWith fadeOut(androidx.compose.animation.core.tween(90, 0, Motion.ExitEasing))
+                        }
                             .using(androidx.compose.animation.SizeTransform(clip = false) { _, _ -> androidx.compose.animation.core.snap() })
                     },
                     label = "screen",
