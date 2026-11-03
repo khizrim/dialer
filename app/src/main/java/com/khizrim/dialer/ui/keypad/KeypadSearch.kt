@@ -30,6 +30,7 @@ import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import kotlinx.coroutines.launch
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
@@ -80,7 +81,23 @@ fun SearchResults(vm: DialerViewModel, modifier: Modifier = Modifier) {
     // лучшее совпадение ближе к клавиатуре, под большим пальцем
     val results = vm.hits.asReversed()
     val showAdd = results.isEmpty() && PhoneFormat.digits(vm.keypad).length >= 3
-    LazyColumn(modifier.padding(horizontal = 12.dp), verticalArrangement = Arrangement.Bottom) {
+    // подсказки и клавиатура для пальца — один лист: тянут вниз дальше края списка — клавиатура закрывается (по отпусканию)
+    val limit = with(LocalDensity.current) { 96.dp.toPx() }
+    val pullDown = remember(vm) {
+        object : androidx.compose.ui.input.nestedscroll.NestedScrollConnection {
+            var pull = 0f
+            override fun onPostScroll(consumed: androidx.compose.ui.geometry.Offset, available: androidx.compose.ui.geometry.Offset, source: androidx.compose.ui.input.nestedscroll.NestedScrollSource): androidx.compose.ui.geometry.Offset {
+                if (source == androidx.compose.ui.input.nestedscroll.NestedScrollSource.UserInput) pull = if (available.y > 0f) pull + available.y else 0f
+                return androidx.compose.ui.geometry.Offset.Zero
+            }
+            override suspend fun onPreFling(available: androidx.compose.ui.unit.Velocity): androidx.compose.ui.unit.Velocity {
+                if (pull > limit) vm.closeKeypad()
+                pull = 0f
+                return androidx.compose.ui.unit.Velocity.Zero
+            }
+        }
+    }
+    LazyColumn(modifier.nestedScroll(pullDown).padding(horizontal = 12.dp), verticalArrangement = Arrangement.Bottom) {
         items(results, key = { it.person.id }) { hit ->
             val p = hit.person
             val method = vm.defaultOf(p)
