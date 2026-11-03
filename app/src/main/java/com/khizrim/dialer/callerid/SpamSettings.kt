@@ -81,3 +81,46 @@ fun rememberCallerTag(number: String): String? {
     }
     return tag
 }
+
+/** Строка «Внешний определитель: Яндекс». Открывает системный выбор приложения-определителя. */
+@Composable
+fun ExternalCallerIdRow(modifier: Modifier = Modifier) {
+    val oz = LocalOz.current
+    val context = LocalContext.current
+    val apps by produceState<List<String>?>(null) { value = withContext(Dispatchers.IO) { ExternalCallerId.installed(context) } }
+    val title = stringResource(R.string.ext_cid_title)
+    val value = when {
+        apps == null -> ""
+        apps!!.isEmpty() -> stringResource(R.string.ext_cid_none)
+        else -> apps!!.take(2).joinToString(", ")
+    }
+    Column(modifier) {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .height(56.dp)
+                .press({
+                    runCatching { context.startActivity(ExternalCallerId.chooseIntent(context)) }
+                        .onFailure { runCatching { context.startActivity(ExternalCallerId.storeFallback()) } }
+                }, shape = RoundedCornerShape(14.dp), label = "$title: $value"),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(title, style = OzType.list, color = oz.fg, modifier = Modifier.weight(1f))
+            Text(value, style = OzType.small, color = oz.fg3, maxLines = 1)
+        }
+        Text(
+            stringResource(if (apps.isNullOrEmpty()) R.string.ext_cid_text_none else R.string.ext_cid_text),
+            style = OzType.small, color = oz.fg3,
+        )
+    }
+}
+
+/** Кто из внешних определителей что заблокировал: время звонка → название приложения. */
+@Composable
+fun rememberExternalBlocks(key: Any?): Map<Long, String> {
+    val context = LocalContext.current
+    val map by produceState<Map<Long, String>>(emptyMap(), key) {
+        value = withContext(Dispatchers.IO) { ExternalCallerId.blockedBy(context) }
+    }
+    return map
+}

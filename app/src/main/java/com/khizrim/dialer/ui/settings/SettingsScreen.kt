@@ -77,6 +77,8 @@ fun SettingsScreen(vm: DialerViewModel) {
 
             Group(stringResource(R.string.set_blocking))
             ValueRow(stringResource(R.string.blocked_numbers), null, vm::openBlocked)
+            com.khizrim.dialer.callerid.SuspiciousCallsSetting(Modifier.padding(horizontal = 12.dp))
+            com.khizrim.dialer.callerid.ExternalCallerIdRow(Modifier.padding(start = 12.dp, end = 12.dp, top = 16.dp))
 
             Group(stringResource(R.string.set_appearance))
             ValueRow(stringResource(R.string.set_language), stringResource(R.string.set_language_system)) {
