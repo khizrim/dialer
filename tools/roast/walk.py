@@ -47,14 +47,21 @@ def find(label):
     for t, d, x, y, b in nodes():
         if label == t or label == d or (len(label) > 3 and (label in t or label in d)): return x, y
     return None
+BAR = {"Recents": (143, 2211), "Журнал": (143, 2211), "Contacts": (376, 2211), "Контакты": (376, 2211),
+       "Settings": (754, 2211), "Настройки": (754, 2211), "Open keypad": (933, 2211), "Открыть клавиатуру": (933, 2211)}
 def tap(label, long=False, wait=1.5):
     p = find(label)
+    if not p: time.sleep(1.5); p = find(label)
+    if not p and label in BAR: p = BAR[label]; note(f"fallback coords: {label}")
     if not p: note(f"MISSING: {label}"); return False
     x, y = p
     sh("shell", "input", "swipe", str(x), str(y), str(x), str(y), "900") if long else sh("shell", "input", "tap", str(x), str(y))
     note(f"tap {label}"); time.sleep(wait); return True
 def back(wait=1.5): sh("shell", "input", "keyevent", "KEYCODE_BACK"); time.sleep(wait)
 def swipe(y1, y2, ms=350, wait=1.5): sh("shell", "input", "swipe", "540", str(y1), "540", str(y2), str(ms)); time.sleep(wait)
+def hswipe(y, x1=950, x2=120, ms=300, wait=1.5): sh("shell", "input", "swipe", str(x1), str(y), str(x2), str(y), str(ms)); time.sleep(wait)
+def drag(x, y1, y2, ms=400, wait=1.5): sh("shell", "input", "swipe", str(x), str(y1), str(x), str(y2), str(ms)); time.sleep(wait)
+def calls(tag): note(f"telecom {tag}: " + subprocess.run(["adb", "shell", "dumpsys telecom | grep -c 'Call id='"], capture_output=True, text=True).stdout.strip())
 def keys(s):
     for c in s: sh("shell", "input", "keyevent", f"KEYCODE_{c}"); time.sleep(0.25)
 def record(name, seconds, actions):
@@ -103,6 +110,32 @@ record("card-back-home", 5, lambda: back(2)); shot("back-home")
 start(); tap("+7 (926) 777-88-99", long=True, wait=2)
 record("remove-from-home", 8, lambda: tap(T["remove"], wait=4)); shot("after-remove")
 time.sleep(5); shot("after-toast")
+# жесты
+calls("before-stack-swipes")
+start()
+for y1, y2 in [(1500, 1700), (1800, 1500), (1400, 1650), (1650, 1350)]: swipe(y1, y2, 250, 0.8)
+shot("stack-after-vertical-swipes"); calls("after-stack-swipes")
+start(); p = find("Мама")
+if p: record("home-swipe-row-left", 7, lambda: hswipe(p[1], wait=3)); shot("home-after-row-swipe")
+start(); tap(T["journal"], wait=2.5); shot("journal-2")
+rows = [b for t, d, x, y, b in nodes() if t and y > 400 and y < 2050]
+note(f"journal rows: {len(rows)}")
+record("journal-swipe-row-left", 8, lambda: hswipe(1900, wait=3)); shot("journal-after-row-swipe")
+time.sleep(1); shot("journal-undo-toast")
+record("journal-pull-up-home", 6, lambda: swipe(1700, 800, 300, 2.5)); shot("journal-after-pull-up")
+start(); record("contacts-sheet-drag-down", 9, lambda: (swipe(1700, 900, 300, 2.5), shot("sheet-open"), drag(540, 1350, 2250, 400, 2.5)))
+shot("after-sheet-drag-down")
+start(); record("keypad-drag-down", 8, lambda: (tap(T["keypad"], wait=2), shot("keypad-before-drag"), drag(540, 1150, 2250, 400, 2.5)))
+shot("after-keypad-drag-down")
+start(); tap("Мама", long=True, wait=2); tap(T["card"], wait=2.5); shot("person-2")
+num = [(x, y, t) for t, d, x, y, b in nodes() if t.startswith("+7")]
+note(f"card numbers: {num}")
+if num:
+    x, y, _ = num[0]
+    record("card-number-long", 6, lambda: sh("shell", "input", "swipe", str(x), str(y), str(x), str(y), "900")); shot("card-number-long")
+    back(); calls("before-card-tap")
+    sh("shell", "input", "tap", str(x), str(y)); time.sleep(3); shot("card-number-tap"); calls("after-card-tap")
+    subprocess.run(["adb", "shell", "input", "keyevent", "KEYCODE_ENDCALL"]); time.sleep(2)
 # звонки
 start(); record("incoming-contact", 14, lambda: (subprocess.run(["adb", "emu", "gsm", "call", "+79161112233"]), time.sleep(4), tap(T["answer"], wait=4)))
 shot("in-call")
