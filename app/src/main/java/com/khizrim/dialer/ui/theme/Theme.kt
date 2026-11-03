@@ -68,25 +68,40 @@ val Literata = FontFamily(
     Font(R.font.literata_medium, FontWeight.Medium),
 )
 
+/**
+ * Шесть размеров с шагом около 1,25: 14 · 16 · 20 · 28 · 32 · 40 (и 32 для клавиш).
+ * Имя человека всегда Literata, служебное Inter, моноширинные цифры только во времени и номерах.
+ */
 object OzType {
-    private const val CV11 = "cv11, tnum"
-    val body = TextStyle(fontFamily = Inter, fontSize = 16.sp, lineHeight = 24.sp, fontFeatureSettings = CV11)
-    val small = TextStyle(fontFamily = Inter, fontSize = 14.sp, lineHeight = 20.sp, fontFeatureSettings = CV11)
-    val tiny = TextStyle(fontFamily = Inter, fontSize = 12.sp, lineHeight = 14.sp, fontWeight = FontWeight.Medium, letterSpacing = 1.4.sp)
-    val list = TextStyle(fontFamily = Inter, fontSize = 17.sp, lineHeight = 24.sp, fontFeatureSettings = CV11)
-    val digit = TextStyle(fontFamily = Inter, fontSize = 32.sp, lineHeight = 36.sp, fontFeatureSettings = CV11)
-    val title = TextStyle(fontFamily = Inter, fontSize = 20.sp, lineHeight = 28.sp, fontWeight = FontWeight.SemiBold)
-    val strong = body.copy(fontWeight = FontWeight.SemiBold)
-    /** Подписи кнопок звонка. */
-    val label = TextStyle(fontFamily = Inter, fontSize = 13.sp, lineHeight = 16.sp)
+    private const val TEXT = "cv11"
+    private const val NUM = "cv11, tnum"
+    val body = TextStyle(fontFamily = Inter, fontSize = 16.sp, lineHeight = 24.sp, fontFeatureSettings = TEXT)
+    val small = TextStyle(fontFamily = Inter, fontSize = 14.sp, lineHeight = 20.sp, letterSpacing = 0.1.sp, fontFeatureSettings = TEXT)
+    /** Время, длительность, номер в подписи: цифры одной ширины, столбец не пляшет. */
+    val time = small.copy(fontFeatureSettings = NUM)
+    val tiny = TextStyle(fontFamily = Inter, fontSize = 12.sp, lineHeight = 16.sp, fontWeight = FontWeight.Medium, letterSpacing = 1.2.sp)
+    /** Строка списка без имени (настройки, номер): тот же 16, что и текст, — 17 рядом с 16 читалось как ошибка. */
+    val list = body
+    /** Номер вместо имени в списке. */
+    val number = body.copy(fontFeatureSettings = NUM)
+    val digit = TextStyle(fontFamily = Inter, fontSize = 32.sp, lineHeight = 36.sp, fontFeatureSettings = NUM)
+    val strong = body.copy(fontWeight = FontWeight.Medium)
+    /** Подписи кнопок звонка и групп настроек. */
+    val label = small
     /** Номер на экране звонка: в одну строку. */
-    val callNumber = TextStyle(fontFamily = Inter, fontSize = 28.sp, lineHeight = 34.sp, fontFeatureSettings = CV11)
+    val callNumber = TextStyle(fontFamily = Inter, fontSize = 28.sp, lineHeight = 34.sp, letterSpacing = (-0.2).sp, fontFeatureSettings = NUM)
 
     private val name = TextStyle(fontFamily = Literata, fontWeight = FontWeight.Medium)
-    val nameHome = name.copy(fontSize = 28.sp, lineHeight = 34.sp)
-    val nameSearch = name.copy(fontSize = 24.sp, lineHeight = 30.sp)
-    val namePerson = name.copy(fontSize = 36.sp, lineHeight = 41.sp, letterSpacing = (-0.3).sp)
-    val nameCall = name.copy(fontSize = 42.sp, lineHeight = 46.sp, letterSpacing = (-0.4).sp)
+    /** Имя в списке: журнал, контакты, поиск, листы. */
+    val nameList = name.copy(fontSize = 20.sp, lineHeight = 26.sp)
+    val nameSearch = nameList
+    val nameHome = name.copy(fontSize = 28.sp, lineHeight = 34.sp, letterSpacing = (-0.2).sp)
+    /** Номер вместо имени на главной: у Inter глаз крупнее, поэтому на ступень меньше. */
+    val numberHome = TextStyle(fontFamily = Inter, fontSize = 26.sp, lineHeight = 34.sp, letterSpacing = (-0.2).sp, fontFeatureSettings = NUM)
+    val namePerson = name.copy(fontSize = 32.sp, lineHeight = 38.sp, letterSpacing = (-0.4).sp)
+    /** Заголовок диалога и экрана. */
+    val title = name.copy(fontSize = 20.sp, lineHeight = 26.sp)
+    val nameCall = name.copy(fontSize = 40.sp, lineHeight = 46.sp, letterSpacing = (-0.5).sp)
 }
 
 @Composable

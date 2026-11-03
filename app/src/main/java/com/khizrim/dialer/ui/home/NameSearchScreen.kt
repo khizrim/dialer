@@ -72,6 +72,10 @@ fun NameSearchScreen(vm: DialerViewModel) {
     val listState = androidx.compose.foundation.lazy.rememberLazyListState()
     val keyboard = androidx.compose.ui.platform.LocalSoftwareKeyboardController.current
     val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
+    // шторку закрыли (назад, жест, тап): клавиатура уходит вместе с ней, а не остаётся висеть над лаунчером
+    androidx.compose.runtime.DisposableEffect(Unit) {
+        onDispose { keyboard?.hide(); focusManager.clearFocus(force = true) }
+    }
     LaunchedEffect(listState.isScrollInProgress) {
         if (listState.isScrollInProgress) { keyboard?.hide(); focusManager.clearFocus() }
     }
@@ -151,12 +155,12 @@ private fun HitRow(vm: DialerViewModel, h: TextHit) {
     Row(
         Modifier.fillMaxWidth().heightIn(min = 60.dp)
             .press({ vm.tapHit(p) }, onLongClick = { vm.openMenu(p) }, label = p.name + (where?.let { ", $it" } ?: ""))
-            .padding(horizontal = 12.dp, vertical = 8.dp),
+            .padding(horizontal = 12.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Column(Modifier.weight(1f)) {
-            if (p.nameIsNumber) Text(p.shownName, style = OzType.list, color = oz.fg, maxLines = 1)
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            if (p.nameIsNumber) Text(p.shownName, style = OzType.number, color = oz.fg, maxLines = 1)
             else Text(name, style = OzType.nameSearch, color = oz.fg, maxLines = 1, overflow = TextOverflow.Ellipsis)
             if (where != null) Text(where, style = OzType.small, color = oz.fg3, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }

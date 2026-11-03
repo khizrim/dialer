@@ -56,7 +56,7 @@ fun SuspiciousCallsSetting(modifier: Modifier = Modifier) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(title, style = OzType.list, color = oz.fg, modifier = Modifier.weight(1f))
-            Text(value, style = OzType.small, color = if (action == SpamAction.LABEL) oz.fg3 else oz.accent)
+            Text(value, style = OzType.small, color = oz.fg3)
         }
         Text(
             stringResource(

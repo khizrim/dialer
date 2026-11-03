@@ -127,7 +127,7 @@ object CallNotifications {
         val nm = context.getSystemService(NotificationManager::class.java) ?: return
         if (state == null || state.phase == CallPhase.ENDED) return
         val open = PendingIntent.getActivity(context, 10, CallActivity.intent(context), PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
-        val who = state.name ?: state.number.ifEmpty { context.getString(R.string.hidden_number) }
+        val who = state.name ?: state.number.takeIf { it.isNotEmpty() }?.let { com.khizrim.dialer.data.PhoneFormat.pretty(it) } ?: context.getString(R.string.hidden_number)
         val ringing = state.phase == CallPhase.RINGING
         val b = Notification.Builder(context, if (ringing) CHANNEL_INCOMING else CHANNEL_ONGOING)
             .setSmallIcon(R.drawable.ic_oz_phone)

@@ -9,6 +9,7 @@ import androidx.annotation.DrawableRes
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -172,3 +173,27 @@ fun BottomBar(content: @Composable RowScope.() -> Unit) {
 fun KeypadFab(onClick: () -> Unit) {
     RoundButton(R.drawable.ic_oz_grid, stringResource(R.string.open_keypad), LocalOz.current.accentFill, onClick)
 }
+
+
+/** Плашка идущего звонка: «Звонок: X · Вернуться» или «Входящий: X · Ответить». Тап открывает экран звонка. */
+@androidx.compose.runtime.Composable
+fun CallStrip(modifier: Modifier = Modifier) {
+    val oz = com.khizrim.dialer.ui.theme.LocalOz.current
+    val live = com.khizrim.dialer.telecom.CallManager.state ?: return
+    if (live.phase == com.khizrim.dialer.model.CallPhase.ENDED) return
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val who = live.name ?: com.khizrim.dialer.data.PhoneFormat.pretty(live.number)
+    androidx.compose.material3.Text(
+        if (live.phase == com.khizrim.dialer.model.CallPhase.RINGING) androidx.compose.ui.res.stringResource(com.khizrim.dialer.R.string.incoming_strip, who)
+        else androidx.compose.ui.res.stringResource(com.khizrim.dialer.R.string.back_to_call, who),
+        style = com.khizrim.dialer.ui.theme.OzType.small,
+        color = oz.accent,
+        maxLines = 1,
+        modifier = modifier
+            .lift(OzShape.row)
+            .background(oz.sheet, com.khizrim.dialer.ui.theme.OzShape.row)
+            .clickable { context.startActivity(com.khizrim.dialer.telecom.CallActivity.intent(context)) }
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+    )
+}
+

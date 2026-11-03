@@ -106,33 +106,18 @@ fun DialerApp(vm: DialerViewModel = viewModel()) {
                 }
             }
 
-            // идёт звонок, а человек в приложении (например, нажал «Добавить»): тихая плашка внизу, под пальцем
+            // идёт звонок, а человек в приложении: на главной плашка встроена в разметку (над избранными),
+            // на остальных экранах — тихо внизу, над нижней панелью
             val live = com.khizrim.dialer.telecom.CallManager.state
-            if (live != null && live.phase != com.khizrim.dialer.model.CallPhase.ENDED) {
-                val context = androidx.compose.ui.platform.LocalContext.current
-                Box(
+            val hasLive = live != null && live.phase != com.khizrim.dialer.model.CallPhase.ENDED
+            if (hasLive && (vm.screen != Screen.HOME || vm.keypadOpen)) {
+                com.khizrim.dialer.ui.components.CallStrip(
                     Modifier
                         .align(androidx.compose.ui.Alignment.BottomCenter)
                         .fillMaxWidth()
                         .safeDrawingPadding()
                         .padding(start = 12.dp, end = 12.dp, bottom = floatBottom(vm)),
-                ) {
-                    val who = live.name ?: com.khizrim.dialer.data.PhoneFormat.pretty(live.number)
-                    androidx.compose.material3.Text(
-                        // неотвеченный входящий — не «вернуться», а «входящий»: тап открывает экран ответа
-                        if (live.phase == com.khizrim.dialer.model.CallPhase.RINGING) androidx.compose.ui.res.stringResource(com.khizrim.dialer.R.string.incoming_strip, who)
-                        else androidx.compose.ui.res.stringResource(com.khizrim.dialer.R.string.back_to_call, who),
-                        style = com.khizrim.dialer.ui.theme.OzType.small,
-                        color = oz.accent,
-                        maxLines = 1,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .lift(com.khizrim.dialer.ui.theme.OzShape.row)
-                        .background(oz.sheet, com.khizrim.dialer.ui.theme.OzShape.row)
-                            .clickable { context.startActivity(com.khizrim.dialer.telecom.CallActivity.intent(context)) }
-                            .padding(horizontal = 16.dp, vertical = 14.dp),
-                    )
-                }
+                )
             }
 
             PersonMenu(vm)
@@ -140,7 +125,7 @@ fun DialerApp(vm: DialerViewModel = viewModel()) {
             SyncHelpSheet(vm)
             ConfirmLayer(vm)
             // тост встаёт над плашкой звонка, а не на неё
-            FloatToast(vm.toast, bottom = floatBottom(vm) + if (live != null && live.phase != com.khizrim.dialer.model.CallPhase.ENDED) 60.dp else 0.dp)
+            FloatToast(vm.toast, bottom = floatBottom(vm) + if (hasLive) 60.dp else 0.dp)
         }
     }
 }
