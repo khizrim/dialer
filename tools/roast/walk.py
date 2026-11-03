@@ -120,7 +120,9 @@ if p: record("home-swipe-row-left", 7, lambda: hswipe(p[1], wait=3)); shot("home
 start(); tap(T["journal"], wait=2.5); shot("journal-2")
 rows = [b for t, d, x, y, b in nodes() if t and y > 400 and y < 2050]
 note(f"journal rows: {len(rows)}")
-record("journal-swipe-row-left", 8, lambda: hswipe(1900, wait=3)); shot("journal-after-row-swipe")
+jr = [y for t, d, x, y, b in nodes() if t.startswith("+7") and 1300 < y < 2000]
+jy = jr[-1] if jr else 1900; note(f"journal swipe row y={jy}")
+record("journal-swipe-row-left", 8, lambda: (sh("shell", "input", "swipe", "950", str(jy), "120", str(jy), "900"), time.sleep(3))); shot("journal-after-row-swipe")
 time.sleep(1); shot("journal-undo-toast")
 record("journal-pull-up-home", 6, lambda: swipe(1700, 800, 300, 2.5)); shot("journal-after-pull-up")
 start(); record("contacts-sheet-drag-down", 9, lambda: (swipe(1700, 900, 300, 2.5), shot("sheet-open"), drag(540, 1350, 2250, 400, 2.5)))
@@ -148,7 +150,9 @@ if p2:
     record("keypad-number-swipe-left-2", 6, lambda: (sh("shell", "input", "swipe", "950", str(p2[1]), "120", str(p2[1]), "250"), time.sleep(2.5))); shot("keypad-after-erase")
 back(); back()
 start(); tap(T["journal"], wait=2.5); calls("before-journal-swipe-right")
-record("journal-swipe-row-right", 8, lambda: hswipe(1900, 120, 950, wait=4)); shot("journal-after-swipe-right"); calls("after-journal-swipe-right")
+jr = [y for t, d, x, y, b in nodes() if t.startswith("+7") and 1300 < y < 2000]
+jy2 = jr[-1] if jr else 1900; note(f"journal swipe-right row y={jy2}")
+record("journal-swipe-row-right", 8, lambda: (sh("shell", "input", "swipe", "120", str(jy2), "950", str(jy2), "900"), time.sleep(4))); shot("journal-after-swipe-right"); calls("after-journal-swipe-right")
 subprocess.run(["adb", "shell", "input", "keyevent", "KEYCODE_ENDCALL"]); time.sleep(3)
 # звонки
 start(); record("incoming-contact", 14, lambda: (subprocess.run(["adb", "emu", "gsm", "call", "+79161112233"]), time.sleep(4), tap(T["answer"], wait=4)))
