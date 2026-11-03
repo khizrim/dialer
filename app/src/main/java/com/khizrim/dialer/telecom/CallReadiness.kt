@@ -53,6 +53,8 @@ object CallReadiness {
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
 
     /** Снять системное уведомление о пропущенных, когда человек открыл приложение. */
+    // MODIFY_PHONE_STATE не нужен: звонилке по умолчанию система разрешает это сама
+    @android.annotation.SuppressLint("MissingPermission")
     fun clearMissed(context: Context) {
         runCatching { context.getSystemService(android.telecom.TelecomManager::class.java)?.cancelMissedCallsNotification() }
     }

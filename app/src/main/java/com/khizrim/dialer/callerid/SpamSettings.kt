@@ -83,7 +83,8 @@ fun SuspiciousCallsSetting(modifier: Modifier = Modifier) {
 fun rememberCallerTag(number: String): String? {
     val context = LocalContext.current
     val tag by produceState<String?>(null, number) {
-        value = withContext(Dispatchers.IO) { runCatching { CallerId.shortLabelFor(context, number) }.getOrNull() }
+        val label = withContext(Dispatchers.IO) { runCatching { CallerId.shortLabelFor(context, number) }.getOrNull() }
+        value = label
     }
     return tag
 }
@@ -126,7 +127,8 @@ fun ExternalCallerIdRow(modifier: Modifier = Modifier) {
 fun rememberExternalBlocks(key: Any?): Map<Long, String> {
     val context = LocalContext.current
     val map by produceState<Map<Long, String>>(emptyMap(), key) {
-        value = withContext(Dispatchers.IO) { ExternalCallerId.blockedBy(context) }
+        val blocks = withContext(Dispatchers.IO) { ExternalCallerId.blockedBy(context) }
+        value = blocks
     }
     return map
 }

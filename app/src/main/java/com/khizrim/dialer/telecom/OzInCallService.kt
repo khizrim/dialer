@@ -59,6 +59,8 @@ class OzInCallService : InCallService() {
     }
 
     /** «Не беспокоить незнакомым»: без звонка, без уведомления; звонок останется в журнале. */
+    // silenceRinger доступен звонилке по умолчанию без MODIFY_PHONE_STATE
+    @android.annotation.SuppressLint("MissingPermission")
     private fun addSilenced(call: Call) {
         CallManager.silence(call)
         CallNotifications.showSilenced(this)

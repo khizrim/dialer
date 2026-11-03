@@ -32,7 +32,6 @@ class CallActivity : ComponentActivity() {
 
     /** Экран заблокирован: на входящем отвечаем удержанием. Не снимаем блокировку сами. */
     private var locked by androidx.compose.runtime.mutableStateOf(false)
-    private var lockListener: Any? = null
 
     private fun readLock() { locked = getSystemService(KeyguardManager::class.java)?.isKeyguardLocked == true }
 
@@ -41,17 +40,18 @@ class CallActivity : ComponentActivity() {
         readLock()
     }
 
+    // слушатель блокировки требует системного разрешения, поэтому перечитываем её,
+    // когда окно получает фокус: после разблокировки поверх звонка это происходит всегда
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) readLock()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         showOverLockScreen()
         readLock()
-        if (Build.VERSION.SDK_INT >= 33) {
-            val km = getSystemService(KeyguardManager::class.java)
-            val l = KeyguardManager.KeyguardLockedStateListener { locked = it }
-            // слушателю может не хватить прав: тогда достаточно проверки в onResume
-            if (runCatching { km?.addKeyguardLockedStateListener(mainExecutor, l) }.isSuccess) lockListener = l
-        }
         // ответ из уведомления: только при первом создании, не после поворота
         if (savedInstanceState == null) consumeAnswer(intent)
 
@@ -135,9 +135,6 @@ class CallActivity : ComponentActivity() {
 
     override fun onDestroy() {
         proximity(false)
-        if (Build.VERSION.SDK_INT >= 33) (lockListener as? KeyguardManager.KeyguardLockedStateListener)?.let {
-            runCatching { getSystemService(KeyguardManager::class.java)?.removeKeyguardLockedStateListener(it) }
-        }
         super.onDestroy()
     }
 
