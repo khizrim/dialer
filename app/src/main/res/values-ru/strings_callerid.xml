@@ -14,18 +14,18 @@
     <string name="spam_action_silence">Глушить</string>
     <string name="spam_action_reject">Сбрасывать</string>
     <string name="spam_action_label">Только подпись</string>
-    <string name="spam_action_silence_text">Не звонят и остаются в журнале с подписью «Похоже на спам».</string>
-    <string name="spam_action_reject_text">Сбрасываются сразу и остаются в журнале.</string>
-    <string name="spam_action_label_text">Звонят как обычно, но с подписью.</string>
-    <string name="spam_about">Подозрительные — это подменённые номера и звонки-сбросы из-за границы. Оператор и регион определяются на телефоне по реестру нумерации Минцифры от %1$s. Номера никуда не отправляются.</string>
-    <string name="spam_about_nodate">Подозрительные — это подменённые номера и звонки-сбросы из-за границы. Оператор и регион определяются на телефоне. Номера никуда не отправляются.</string>
+    <string name="spam_action_silence_text">Без звонка, с подписью в журнале.</string>
+    <string name="spam_action_reject_text">Сбрасываются, остаются в журнале.</string>
+    <string name="spam_action_label_text">Звонят как обычно, с подписью.</string>
+    <string name="spam_about">Реестр номеров от %1$s, всё на телефоне.</string>
+    <string name="spam_about_nodate">Реестр номеров на телефоне, номера никуда не уходят.</string>
 
     <string name="ext_cid_title">Внешний определитель</string>
     <string name="ext_cid_none">Нет</string>
-    <string name="ext_cid_text">Яндекс, Kaspersky Who Calls и другие показывают свою плашку поверх звонка. Выберите приложение в разделе «Определитель номера и спам».</string>
-    <string name="ext_cid_text_none">Хотите ещё и определитель Яндекса? Установите приложение «Яндекс с Алисой» и выберите его в разделе «Определитель номера и спам». Защиты работают вместе.</string>
+    <string name="ext_cid_text">Показывает свою плашку поверх звонка.</string>
+    <string name="ext_cid_text_none">Можно добавить Яндекс или Kaspersky Who Calls.</string>
     <string name="ext_cid_blocked_by">Заблокировал %1$s</string>
-    <string name="spam_db_stale">Базе номеров больше 3 месяцев, поэтому номера, которых в ней нет, только подписываются: они могут быть просто новыми. База обновится вместе с приложением.</string>
+    <string name="spam_db_stale">База старше 3 месяцев: незнакомые номера только подписываются.</string>
     <string name="ext_cid_off">%1$s · выключен</string>
-    <string name="ext_cid_text_off">Включите определитель номера в настройках приложения «%1$s», затем вернитесь сюда, нажмите ещё раз и выберите его в «Определитель номера и спам».</string>
+    <string name="ext_cid_text_off">Включите определитель в «%1$s» и выберите его здесь.</string>
 </resources>

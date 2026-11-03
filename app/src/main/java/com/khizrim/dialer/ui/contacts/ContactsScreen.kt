@@ -127,7 +127,7 @@ fun ContactsScreen(vm: DialerViewModel) {
                                         .padding(horizontal = 12.dp),
                                     contentAlignment = Alignment.CenterStart,
                                 ) {
-                                    Text(p.shownName, style = OzType.list, color = oz.fg, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    Text(p.shownName, style = if (p.nameIsNumber) OzType.number else OzType.nameList, color = oz.fg, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                 }
                                 GhostIconButton(
                                     method?.icon ?: R.drawable.ic_oz_help,

@@ -11,6 +11,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -130,9 +131,9 @@ private fun ValueRow(title: String, value: String?, sub: String? = null, onClick
             .padding(horizontal = 12.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column(Modifier.weight(1f)) {
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(title, style = OzType.list, color = oz.fg)
-            if (sub != null) Text(sub, style = OzType.small, color = oz.fg3)
+            if (sub != null) Text(sub, style = OzType.small, color = oz.fg3, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
         }
         if (value != null) Text(value, style = OzType.small, color = oz.fg3, modifier = Modifier.padding(start = 12.dp))
         else if (onClick != null) OzIcon(R.drawable.ic_oz_chevron, oz.fg3, 18.dp)

@@ -78,7 +78,7 @@ fun RecentsScreen(vm: DialerViewModel) {
                 when (l) {
                     is Day -> Text(
                         l.text, style = OzType.small.copy(fontWeight = FontWeight.Medium), color = oz.fg3,
-                        modifier = Modifier.padding(start = 12.dp, top = 16.dp, bottom = 4.dp).semantics { heading() },
+                        modifier = Modifier.padding(start = 12.dp, top = 24.dp, bottom = 4.dp).semantics { heading() },
                     )
                     is Item -> {
                         val r = l.record
@@ -90,17 +90,17 @@ fun RecentsScreen(vm: DialerViewModel) {
                                 .fillMaxWidth()
                                 .heightIn(min = 56.dp)
                                 .press({ vm.callBack(r, l.person) }, onLongClick = { vm.openRecentMenu(r, l.person) }, shape = RoundedCornerShape(16.dp), label = label)
-                                .padding(horizontal = 12.dp, vertical = 8.dp),
+                                .padding(horizontal = 12.dp, vertical = 12.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Column(Modifier.weight(1f)) {
-                                Text(title, style = OzType.list, color = oz.fg, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Column(Modifier.weight(1f), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(4.dp)) {
+                                Text(title, style = if (l.person != null && !l.person.nameIsNumber) OzType.nameList else OzType.number, color = oz.fg, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                 // SIM в конце второй строки, только когда их две
                                 val simIdx = if (vm.sims.size > 1) vm.sims.indexOfFirst { it.first == r.account } else -1
                                 val second = if (simIdx >= 0) r.text(res) + "  " + stringResource(R.string.sim_n, simIdx + 1) else r.text(res)
                                 Text(second, style = OzType.small, color = if (r.missed) oz.danger else oz.fg3)
                             }
-                            Text(time.format(Date(r.date)), style = OzType.small, color = oz.fg3)
+                            Text(time.format(Date(r.date)), style = OzType.time, color = oz.fg3, modifier = Modifier.padding(start = 12.dp))
                         }
                     }
                 }

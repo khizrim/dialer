@@ -74,7 +74,7 @@ fun PersonScreen(vm: DialerViewModel, id: Long) {
                 Column(Modifier.padding(bottom = 40.dp)) {
                     history.forEach { e ->
                         Row(Modifier.padding(vertical = 6.dp)) {
-                            Text(e.day, style = OzType.small, color = oz.fg3, modifier = Modifier.width(48.dp))
+                            Text(e.day, style = OzType.time, color = oz.fg3, modifier = Modifier.width(56.dp))
                             Spacer(Modifier.width(16.dp))
                             Text(e.text, style = OzType.small, color = if (e.missed) oz.danger else oz.fg2)
                         }
@@ -83,13 +83,15 @@ fun PersonScreen(vm: DialerViewModel, id: Long) {
             }
             // фото только если оно есть, без кружков с буквами
             p.photo?.let { ContactPhoto(it, Modifier.padding(bottom = 16.dp)) }
-            Text(p.shownName, style = if (p.nameIsNumber) OzType.list.copy(fontSize = OzType.nameHome.fontSize) else OzType.namePerson, color = oz.fg, modifier = Modifier.padding(bottom = 8.dp).semantics { heading() })
+            Text(p.shownName, style = if (p.nameIsNumber) OzType.numberHome else OzType.namePerson, color = oz.fg, modifier = Modifier.padding(bottom = 12.dp).semantics { heading() })
             // номера под именем: тип и номер серым, чтобы было видно, куда звоним
             if (!p.nameIsNumber || p.phones.size > 1) {
+                val many = true
                 p.phones.take(3).forEach { ph ->
                     Text(
-                        ph.label.replaceFirstChar { it.uppercase() } + "  " + com.khizrim.dialer.data.PhoneFormat.pretty(ph.number),
-                        style = OzType.body, color = oz.fg3, maxLines = 1,
+                        (if (many) ph.label.replaceFirstChar { it.uppercase() } + "  " else "") + com.khizrim.dialer.data.PhoneFormat.pretty(ph.number),
+                        style = OzType.body.copy(fontFeatureSettings = "cv11, tnum"), color = oz.fg3, maxLines = 1,
+                        modifier = Modifier.padding(bottom = 6.dp),
                     )
                 }
             }

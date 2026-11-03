@@ -150,11 +150,11 @@ fun HomeScreen(vm: DialerViewModel) {
                         Column(Modifier.weight(1f)) {
                             Text(
                                 e.title,
-                                style = if (p != null && !p.nameIsNumber) OzType.nameHome else OzType.nameHome.copy(fontFamily = Inter, fontWeight = FontWeight.Normal),
+                                style = if (p != null && !p.nameIsNumber) OzType.nameHome else OzType.numberHome,
                                 color = oz.fg, maxLines = 1, overflow = TextOverflow.Ellipsis,
                             )
                             if (note != null) {
-                                Text(note, style = OzType.small, color = oz.danger, modifier = Modifier.padding(top = 2.dp))
+                                Text(note, style = OzType.small, color = oz.danger, modifier = Modifier.padding(top = 4.dp))
                             }
                         }
                         // значок только когда тап делает не обычный звонок: одинаковая трубка у всех ничего не сообщает
@@ -162,6 +162,8 @@ fun HomeScreen(vm: DialerViewModel) {
                     }
                 }
             }
+            // идёт звонок: плашка встроена в разметку, стопка поднимается над ней, ничего не перекрыто
+            com.khizrim.dialer.ui.components.CallStrip(Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 4.dp))
             // избранные: один тихий ряд имён со значком способа, без заголовка и без заливок
             val favs = vm.favorites
             if (favs.isNotEmpty()) {
@@ -178,8 +180,8 @@ fun HomeScreen(vm: DialerViewModel) {
                                 .padding(horizontal = 12.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            OzIcon(m?.icon ?: R.drawable.ic_oz_help, oz.fg3, 16.dp)
-                            Text(p.name.substringBefore(' '), style = OzType.body, color = oz.fg2, maxLines = 1, modifier = Modifier.padding(start = 6.dp))
+                            OzIcon(m?.icon ?: R.drawable.ic_oz_help, oz.fg3, 16.dp, modifier = Modifier.padding(end = 6.dp))
+                            Text(p.name.substringBefore(' '), style = OzType.body.copy(fontFamily = com.khizrim.dialer.ui.theme.Literata), color = oz.fg, maxLines = 1)
                         }
                     }
                 }

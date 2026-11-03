@@ -132,7 +132,7 @@ fun CallScreen(c: CallState, actions: CallActions, locked: Boolean = false) {
                 textAlign = TextAlign.Center,
                 modifier = Modifier.semantics { heading() },
             )
-            Text(sub, style = OzType.small, color = if (c.suspicious && c.phase == CallPhase.RINGING) oz.warn else oz.fg3, modifier = Modifier.padding(top = 8.dp).semantics { liveRegion = LiveRegionMode.Polite })
+            Text(sub, style = OzType.time, color = if (c.suspicious && c.phase == CallPhase.RINGING) oz.warn else oz.fg3, modifier = Modifier.padding(top = 12.dp).semantics { liveRegion = LiveRegionMode.Polite })
             c.other?.let { OtherLineRow(it, c.phase, actions) }
             Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                 if (c.simChoice != null) SimChoice(c.simChoice, actions)

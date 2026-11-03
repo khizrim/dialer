@@ -118,7 +118,7 @@ fun BoxScope.MethodSheet(vm: DialerViewModel) {
             Text(reach, style = OzType.strong, color = oz.fg, modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 4.dp, bottom = 8.dp))
         } else {
             Text(p.name, style = OzType.nameSearch, color = oz.fg, modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 4.dp))
-            Text(title, style = OzType.small, color = oz.fg3, modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 2.dp, bottom = 8.dp))
+            Text(title, style = OzType.small, color = oz.fg3, modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 4.dp, bottom = 12.dp))
         }
         // у телефона и SMS по строке на каждый номер: «Позвонить» и под ним «мобильный  +7 …»
         val chosen = vm.numberFor(p)
@@ -169,7 +169,7 @@ private fun MethodRow(m: Method, label: String, selected: Boolean, sub: String? 
         horizontalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         OzIcon(m.icon, oz.fg2)
-        Column(Modifier.weight(1f).padding(vertical = 8.dp)) {
+        Column(Modifier.weight(1f).padding(vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(label, style = OzType.body, color = oz.fg)
             if (sub != null) Text(sub, style = OzType.small, color = oz.fg3, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
         }
@@ -204,7 +204,7 @@ fun BoxScope.PersonMenu(vm: DialerViewModel) {
         if (e == null) return@SheetLayer
         Text(
             e.title,
-            style = if (p != null) OzType.nameSearch else OzType.nameSearch.copy(fontFamily = com.khizrim.dialer.ui.theme.Inter, fontWeight = FontWeight.Normal),
+            style = if (p != null) OzType.nameSearch else OzType.number,
             color = oz.fg,
             modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 4.dp, bottom = 8.dp),
         )
