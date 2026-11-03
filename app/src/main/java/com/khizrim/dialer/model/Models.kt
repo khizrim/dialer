@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import com.khizrim.dialer.R
+import com.khizrim.dialer.data.CallRecord
 
 enum class MethodKind { CALL, CHAT }
 
@@ -55,7 +56,7 @@ data class Person(
     val key: String get() = "c:$lookupKey"
 }
 
-data class HistoryEntry(val day: String, val text: String, val missed: Boolean = false)
+data class HistoryEntry(val day: String, val text: String, val missed: Boolean = false, val record: CallRecord? = null)
 
 /** Строка главной: человек из контактов или номер, которого нет в контактах. */
 data class HomeEntry(

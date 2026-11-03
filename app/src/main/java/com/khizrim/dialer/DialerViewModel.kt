@@ -35,7 +35,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.Locale
 
-enum class Screen { HOME, CONTACTS, PERSON, BLOCKED, UNKNOWN, RECENTS, SETTINGS, EDIT, SEARCH }
+enum class Screen { HOME, PERSON, BLOCKED, SETTINGS, EDIT, SEARCH }
 enum class SheetMode { OTHER, DEFAULT }
 enum class MenuContext { HOME, SEARCH }
 
@@ -245,14 +245,13 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     // ---------- навигация ----------
     fun person(id: Long): Person? = byId[id]
 
-    fun openContacts() { closeKeypad(); screen = Screen.CONTACTS }
     /** Незнакомые и заблокированные открываются из настроек или из уведомления: назад — туда, откуда пришли. */
     private var listFrom = Screen.HOME
     fun openBlocked() { if (screen != Screen.BLOCKED) listFrom = originFor(screen); screen = Screen.BLOCKED }
     /** Незнакомые без звука теперь живут в ленте: раскрываем их там. */
     fun openUnknown() { closeKeypad(); missedOnly = false; silentOpen = true; screen = Screen.HOME }
     // из «Всех контактов» по-прежнему возвращаемся в них; со всех прочих экранов — на главную или в настройки
-    private fun originFor(s: Screen) = if (s == Screen.SETTINGS || s == Screen.CONTACTS) s else Screen.HOME
+    private fun originFor(s: Screen) = if (s == Screen.SETTINGS) s else Screen.HOME
 
     /** «Найти в интернете»: открывает браузер, номер никуда больше не уходит. */
     fun searchWeb(number: String) {
@@ -457,12 +456,9 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
         menu != null -> { menu = null; true }
         keypadOpen -> { closeKeypad(); true }
         screen == Screen.PERSON -> { leavePerson(); true }
-        screen == Screen.RECENTS && recentsFromHome -> { screen = Screen.HOME; true }
         screen == Screen.SETTINGS -> { leaveSettings(); true }
-        screen == Screen.BLOCKED || screen == Screen.UNKNOWN -> { screen = listFrom; true }
+        screen == Screen.BLOCKED -> { screen = listFrom; true }
         // журнал из уведомления о пропущенном: назад — на главную, а не на экран, куда иначе не попасть
-        screen == Screen.RECENTS -> { screen = recentsFrom; true }
-        screen == Screen.CONTACTS -> { screen = Screen.HOME; true }
         else -> false
     }
 
@@ -686,13 +682,16 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
 
     fun history(p: Person): List<HistoryEntry> {
         val keys = p.phones.map { Numbers.key(it.number) }.toSet()
-        val events = ArrayList<Triple<Long, String, Boolean>>()
+        val events = ArrayList<Pair<Long, HistoryEntry>>()
         // у обычного разговора только время, подпись — у пропущенного и несостоявшегося
         val tf = java.text.DateFormat.getTimeInstance(java.text.DateFormat.SHORT)
-        calls.filter { Numbers.key(it.number) in keys }.take(300).forEach { events += Triple(it.date, it.note(res) ?: tf.format(java.util.Date(it.date)), it.missed) }
-        interactions.filter { it.key == p.key }.takeLast(300).forEach { events += Triple(it.at, it.method.label(ctx), false) }
+        // из recentCalls: смахнутый в карточке звонок пропадает сразу, «Вернуть» его возвращает
+        recentCalls.asSequence().map { it.first }.filter { Numbers.key(it.number) in keys }.take(300).forEach {
+            events += it.date to HistoryEntry(Dates.day(res, it.date), it.note(res) ?: tf.format(java.util.Date(it.date)), it.missed, it)
+        }
+        interactions.filter { it.key == p.key }.takeLast(300).forEach { events += it.at to HistoryEntry(Dates.day(res, it.at), it.method.label(ctx)) }
         // старые сверху, свежие у имени; карточка открывается у свежих
-        return events.sortedBy { it.first }.map { HistoryEntry(Dates.day(res, it.first), it.second, it.third) }
+        return events.sortedBy { it.first }.map { it.second }
     }
 
     fun smsTo(number: String) { Launcher.sms(ctx, number)?.let { say(it) } }
