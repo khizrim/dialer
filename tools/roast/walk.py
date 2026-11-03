@@ -17,7 +17,7 @@ log = open(os.path.join(OUT, "log.txt"), "w"); step = [0]
 
 def sh(*a): return subprocess.run(["adb", *a], capture_output=True, text=True).stdout
 def note(s): print(s); log.write(s + "\n"); log.flush()
-def nodes():
+def nodes(retry=True):
     sh("shell", "uiautomator", "dump", "/sdcard/ui.xml")
     try: root = ET.fromstring(sh("shell", "cat", "/sdcard/ui.xml"))
     except ET.ParseError: return []
@@ -27,6 +27,12 @@ def nodes():
         if len(b) == 4:
             x1, y1, x2, y2 = map(int, b)
             out.append((n.get("text", ""), n.get("content-desc", ""), (x1 + x2) // 2, (y1 + y2) // 2, (x1, y1, x2, y2)))
+    # системное окно «не отвечает» (лаунчер на медленном эмуляторе) закрываем и смотрим заново
+    if retry and any("isn't responding" in t or "не отвечает" in t for t, *_ in out):
+        for t, d, x, y, b in out:
+            if t in ("Wait", "Close app", "Подождать", "Закрыть приложение"):
+                sh("shell", "input", "tap", str(x), str(y)); time.sleep(2); break
+        return nodes(False)
     return out
 def shot(name):
     step[0] += 1; base = os.path.join(OUT, f"{step[0]:02d}-{name}")
