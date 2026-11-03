@@ -36,6 +36,10 @@ import com.khizrim.dialer.ui.components.GhostIconButton
 import com.khizrim.dialer.ui.components.KeypadFab
 import com.khizrim.dialer.ui.components.press
 import com.khizrim.dialer.ui.components.swipeAway
+import com.khizrim.dialer.ui.components.dismissOnOverscroll
+import com.khizrim.dialer.ui.theme.Motion
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import com.khizrim.dialer.ui.theme.LocalOz
 import com.khizrim.dialer.ui.theme.OzType
 import java.text.DateFormat
@@ -70,30 +74,20 @@ fun RecentsScreen(vm: DialerViewModel) {
         if (ok) vm.askClearLog()
     }
     Column(Modifier.fillMaxSize()) {
-        // у самого нового звонка тянут вверх — обратно на главную, зеркально жесту, которым журнал открыли
-        val density = androidx.compose.ui.platform.LocalDensity.current
-        val back = remember(vm) {
-            object : androidx.compose.ui.input.nestedscroll.NestedScrollConnection {
-                var pull = 0f
-                override fun onPostScroll(consumed: androidx.compose.ui.geometry.Offset, available: androidx.compose.ui.geometry.Offset, source: androidx.compose.ui.input.nestedscroll.NestedScrollSource): androidx.compose.ui.geometry.Offset {
-                    if (source == androidx.compose.ui.input.nestedscroll.NestedScrollSource.UserInput) pull = if (available.y < 0f) pull + available.y else 0f
-                    if (pull < -with(density) { 96.dp.toPx() }) { pull = 0f; vm.back() }
-                    return androidx.compose.ui.geometry.Offset.Zero
-                }
-                override suspend fun onPreFling(available: androidx.compose.ui.unit.Velocity): androidx.compose.ui.unit.Velocity { pull = 0f; return androidx.compose.ui.unit.Velocity.Zero }
-            }
-        }
-        LazyColumn(Modifier.weight(1f).fillMaxWidth().nestedScroll(back).padding(horizontal = 12.dp), state = rememberLazyListState(), reverseLayout = true) {
+        // у самого нового звонка тянут вверх — журнал за пальцем уезжает наверх и открывает главную,
+        // зеркально жесту, которым его открыли; отпустили раньше — возвращается на место
+        LazyColumn(Modifier.weight(1f).fillMaxWidth().then(if (vm.recentsFromHome) Modifier.dismissOnOverscroll { vm.back() } else Modifier).padding(horizontal = 12.dp), state = rememberLazyListState(), reverseLayout = true) {
             if (lines.isEmpty()) {
                 item(key = "empty") {
-                    Text(stringResource(if (missedOnly) R.string.recents_no_missed else R.string.recents_empty), style = OzType.body, color = oz.fg2, modifier = Modifier.padding(12.dp))
+                    Text(stringResource(if (missedOnly) R.string.recents_no_missed else R.string.recents_empty), style = OzType.body, color = oz.fg2, modifier = Modifier.padding(12.dp).animateItem(fadeInSpec = Motion.enter(Motion.MOVE), placementSpec = null, fadeOutSpec = Motion.exit(Motion.PRESS)))
                 }
             }
             items(lines, key = { l -> when (l) { is Day -> "d" + l.text; is Item -> "c" + l.record.date + l.record.number } }) { l ->
                 when (l) {
                     is Day -> Text(
                         l.text, style = OzType.small.copy(fontWeight = FontWeight.Medium), color = oz.fg3,
-                        modifier = Modifier.padding(start = 12.dp, top = 24.dp, bottom = 4.dp).semantics { heading() },
+                        modifier = Modifier.animateItem(fadeInSpec = Motion.enter(Motion.MOVE), placementSpec = Motion.move(Motion.MOVE), fadeOutSpec = Motion.exit(Motion.PRESS))
+                            .padding(start = 12.dp, top = 24.dp, bottom = 4.dp).semantics { heading() },
                     )
                     is Item -> {
                         val r = l.record
@@ -102,6 +96,8 @@ fun RecentsScreen(vm: DialerViewModel) {
                         val label = listOf(title, r.text(res), time.format(Date(r.date)), stringResource(method?.title ?: R.string.choose_method)).joinToString(", ")
                         Row(
                             Modifier
+                                // фильтр и удаление: лишние строки гаснут, оставшиеся съезжают на место, а не перескакивают
+                                .animateItem(fadeInSpec = Motion.enter(Motion.MOVE), placementSpec = Motion.move(Motion.MOVE), fadeOutSpec = Motion.exit(Motion.PRESS))
                                 .fillMaxWidth()
                                 .heightIn(min = 56.dp)
                                 // смахнуть влево — удалить звонок с «Вернуть» (нужно разрешение на запись журнала)
@@ -129,27 +125,31 @@ fun RecentsScreen(vm: DialerViewModel) {
             }
             item(key = "title") {
                 // «Очистить» — тихой ссылкой у заголовка, подальше от большого пальца и кнопки набора
-                Row(Modifier.fillMaxWidth().padding(top = 24.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Row(Modifier.animateItem(fadeInSpec = null, placementSpec = Motion.move(Motion.MOVE), fadeOutSpec = null).fillMaxWidth().padding(top = 24.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         stringResource(R.string.journal), style = OzType.namePerson, color = oz.fg,
                         modifier = Modifier.weight(1f).padding(start = 12.dp).semantics { heading() },
                     )
-                    if (lines.isNotEmpty()) TextAction(stringResource(R.string.clear_log), oz.fg3, {
-                        if (vm.canClearLog) vm.askClearLog() else askWrite.launch(android.Manifest.permission.WRITE_CALL_LOG)
-                    })
+                    androidx.compose.animation.AnimatedVisibility(lines.isNotEmpty(), enter = fadeIn(Motion.enter(Motion.MOVE)), exit = fadeOut(Motion.exit(Motion.FADE))) {
+                        TextAction(stringResource(R.string.clear_log), oz.fg3, {
+                            if (vm.canClearLog) vm.askClearLog() else askWrite.launch(android.Manifest.permission.WRITE_CALL_LOG)
+                        })
+                    }
                 }
             }
         }
         BottomBar {
             // фильтр двумя словами, и только когда есть что фильтровать
             Row(Modifier.weight(1f)) {
-              if (vm.hasMissed || missedOnly) {
+              androidx.compose.animation.AnimatedVisibility(vm.hasMissed || missedOnly, enter = fadeIn(Motion.enter(Motion.MOVE)), exit = fadeOut(Motion.exit(Motion.FADE))) {
+               Row {
                 // активное слово подчёркнуто тонкой линией — видно и без цвета
                 val underline = androidx.compose.ui.text.style.TextDecoration.Underline
                 TextAction(stringResource(R.string.filter_all), if (missedOnly) oz.fg3 else oz.fg, { vm.showMissedOnly(false) },
                     style = OzType.body.copy(fontWeight = if (missedOnly) FontWeight.Normal else FontWeight.Medium, textDecoration = if (missedOnly) null else underline))
                 TextAction(stringResource(R.string.filter_missed), if (missedOnly) oz.fg else oz.fg3, { vm.showMissedOnly(true) },
                     style = OzType.body.copy(fontWeight = if (missedOnly) FontWeight.Medium else FontWeight.Normal, textDecoration = if (missedOnly) underline else null))
+               }
               }
             }
             Row(verticalAlignment = Alignment.CenterVertically) {

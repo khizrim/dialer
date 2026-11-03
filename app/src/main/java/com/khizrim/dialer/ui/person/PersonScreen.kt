@@ -55,6 +55,7 @@ import com.khizrim.dialer.ui.components.GhostIconButton
 import com.khizrim.dialer.ui.components.OzIcon
 import com.khizrim.dialer.ui.components.TextAction
 import com.khizrim.dialer.ui.components.press
+import com.khizrim.dialer.ui.components.dismissOnDrag
 import com.khizrim.dialer.ui.theme.LocalOz
 import com.khizrim.dialer.ui.theme.Motion
 import com.khizrim.dialer.ui.theme.OzType
@@ -68,19 +69,9 @@ fun PersonScreen(vm: DialerViewModel, id: Long) {
     val fav = p.starred
     val history = remember(p, vm.ready) { vm.history(p).take(5) }
 
-    // карточку тянут вниз — она закрывается, как лист; идёт за пальцем
-    val pull = remember { androidx.compose.animation.core.Animatable(0f) }
-    val scope = androidx.compose.runtime.rememberCoroutineScope()
-    val limit = with(androidx.compose.ui.platform.LocalDensity.current) { 96.dp.toPx() }
+    // карточку тянут вниз — весь экран идёт за пальцем 1:1 и открывает тот, что под ним; отпустили — доезжает или возвращается
     Column(
-        Modifier.fillMaxSize()
-            .pointerInput(vm) {
-                detectVerticalDragGestures(
-                    onDragEnd = { if (pull.value > limit) vm.back(); scope.launch { pull.animateTo(0f, Motion.enter(Motion.MOVE)) } },
-                    onDragCancel = { scope.launch { pull.animateTo(0f) } },
-                ) { change, amount -> change.consume(); scope.launch { pull.snapTo((pull.value + amount * 0.6f).coerceAtLeast(0f)) } }
-            }
-            .graphicsLayer { translationY = pull.value },
+        Modifier.fillMaxSize().dismissOnDrag { vm.back() },
     ) {
         Column(
             Modifier.weight(1f).fillMaxWidth().padding(horizontal = 24.dp),
@@ -160,7 +151,9 @@ private fun ContactPhoto(uri: String, modifier: Modifier = Modifier) {
             }.getOrNull()
         }
     }
-    bitmap?.let {
-        Image(it, contentDescription = null, contentScale = ContentScale.Crop, modifier = modifier.size(72.dp).clip(CircleShape))
+    // место под фото занято сразу, а само фото проявляется, когда загрузится: имя под ним не подпрыгивает
+    val alpha by androidx.compose.animation.core.animateFloatAsState(if (bitmap != null) 1f else 0f, Motion.enter(Motion.MOVE), label = "photo")
+    Box(modifier.size(72.dp).graphicsLayer { this.alpha = alpha }) {
+        bitmap?.let { Image(it, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.size(72.dp).clip(CircleShape)) }
     }
 }

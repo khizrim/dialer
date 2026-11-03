@@ -122,7 +122,12 @@ fun CallScreen(c: CallState, actions: CallActions, locked: Boolean = false) {
             Modifier.fillMaxSize().safeDrawingPadding().padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Spacer(Modifier.height(if (c.phase == CallPhase.RINGING) 72.dp else 160.dp))
+            // после «Ответить» имя спокойно опускается на место разговора, а не перескакивает на 88 dp
+            val top by androidx.compose.animation.core.animateDpAsState(
+                if (c.phase == CallPhase.RINGING) 72.dp else 160.dp,
+                if (LocalReducedMotion.current) androidx.compose.animation.core.snap() else Motion.move(Motion.SHEET), label = "call-top",
+            )
+            Spacer(Modifier.height(top))
             Text(
                 title,
                 style = if (known) OzType.nameCall else OzType.callNumber,
@@ -142,8 +147,12 @@ fun CallScreen(c: CallState, actions: CallActions, locked: Boolean = false) {
             AnimatedContent(
                 targetState = when (c.phase) { CallPhase.RINGING -> 0; CallPhase.ENDED -> 2; else -> 1 },
                 transitionSpec = {
-                    fadeIn(androidx.compose.animation.core.tween(210, 90, Motion.EnterEasing)) togetherWith fadeOut(androidx.compose.animation.core.tween(90, 0, Motion.ExitEasing))
+                    // кнопки гаснут за 100 мс, новое управление проявляется с подъёмом 8 dp; пустой паузы между ними нет
+                    (fadeIn(Motion.enter(Motion.MOVE, delay = 60)) + slideInVertically(Motion.move(Motion.MOVE)) { it / 12 }) togetherWith
+                        fadeOut(Motion.exit(Motion.PRESS)) using
+                        androidx.compose.animation.SizeTransform(clip = false) { _, _ -> Motion.move(Motion.MOVE) }
                 },
+                contentAlignment = Alignment.BottomCenter,
                 label = "call-phase",
             ) { phase ->
                 when (phase) {

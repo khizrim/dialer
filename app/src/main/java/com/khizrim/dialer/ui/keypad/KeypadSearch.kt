@@ -151,17 +151,23 @@ private fun highlight(text: String, range: IntRange?, color: androidx.compose.ui
         append(text.substring(end))
     }
 
+/** Жест «тянуть вниз» для слоя, в котором лежит панель. */
+interface PanelDrag {
+    fun start()
+    fun by(dy: Float)
+    fun end(velocityPx: Float)
+}
+
 /** Нижняя половина: номер с маской, клавиши без заливки, вызов. */
 @Composable
-fun KeypadPanel(vm: DialerViewModel) {
+fun KeypadPanel(vm: DialerViewModel, drag: PanelDrag? = null) {
     val oz = LocalOz.current
-    // панель тянут вниз — клавиатура закрывается; панель идёт за пальцем
-    val pull = remember { androidx.compose.animation.core.Animatable(0f) }
-    val scope = androidx.compose.runtime.rememberCoroutineScope()
-    val limit = with(LocalDensity.current) { 72.dp.toPx() }
+    // панель тянут вниз — весь слой клавиатуры идёт за пальцем 1:1, отпустили — доезжает со скоростью пальца
+    val tracker = remember { androidx.compose.ui.input.pointer.util.VelocityTracker() }
     Column(
         Modifier.fillMaxWidth()
-            .pointerInput(vm) {
+            .pointerInput(drag) {
+                if (drag == null) return@pointerInput
                 // слушаем раньше клавиш (Initial): тянуть можно с любой точки панели, и с клавиши тоже;
                 // после вертикального порога движение наше, нажатие клавиши отменяется
                 val slop = viewConfiguration.touchSlop
@@ -170,22 +176,20 @@ fun KeypadPanel(vm: DialerViewModel) {
                     var dx = 0f; var dy = 0f; var dragging = false
                     while (true) {
                         val ev = awaitPointerEvent(PointerEventPass.Initial)
-                        val ch = ev.changes.firstOrNull { it.id == down.id } ?: break
+                        val ch = ev.changes.firstOrNull { it.id == down.id } ?: run { if (dragging) drag.end(0f); null } ?: break
                         if (!ch.pressed) {
-                            if (dragging) { ch.consume(); if (pull.value > limit) vm.closeKeypad() }
-                            scope.launch { pull.animateTo(0f, Motion.enter(Motion.MOVE)) }
+                            if (dragging) { ch.consume(); drag.end(tracker.calculateVelocity().y) }
                             break
                         }
-                        dx += ch.position.x - ch.previousPosition.x; dy += ch.position.y - ch.previousPosition.y
+                        val step = ch.position.y - ch.previousPosition.y
+                        dx += ch.position.x - ch.previousPosition.x; dy += step
                         // горизонтальный жест — стирание номера, его не трогаем
                         if (!dragging && kotlin.math.abs(dx) > slop && kotlin.math.abs(dx) > kotlin.math.abs(dy)) break
-                        if (!dragging && dy > slop) dragging = true
-                        if (dragging) { ch.consume(); scope.launch { pull.snapTo(dy.coerceAtLeast(0f)) } }
+                        if (!dragging && dy > slop) { dragging = true; tracker.resetTracking(); drag.start() }
+                        if (dragging) { ch.consume(); tracker.addPosition(ch.uptimeMillis, ch.position); drag.by(step) }
                     }
                 }
-            }
-            .graphicsLayer { translationY = pull.value }
-            .background(oz.bg),
+            },
     ) {
         TypedNumber(vm)
         Column(Modifier.padding(start = 12.dp, end = 12.dp, top = 4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
