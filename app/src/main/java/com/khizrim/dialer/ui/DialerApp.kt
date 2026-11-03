@@ -61,6 +61,8 @@ fun DialerApp(vm: DialerViewModel = viewModel()) {
         if (vm.needsOnboarding) { Onboarding(vm); return@CompositionLocalProvider }
         Box(Modifier.fillMaxSize().background(oz.bg)) {
             // экраны: непрозрачные слои, новый приходит со своей стороны поверх неподвижного старого (ScreenStack)
+            // касание, начатое до смены экрана, на новом (и на уходящем) уже ничего не нажимает
+            androidx.compose.runtime.LaunchedEffect(vm.screen, vm.personId, vm.keypadOpen) { com.khizrim.dialer.ui.components.TapGuard.gen++ }
             val stack = rememberScreenStack()
             ScreenStackHost(stack, Route(vm.screen, vm.personId), reduced) { r ->
                 when (r.screen) {

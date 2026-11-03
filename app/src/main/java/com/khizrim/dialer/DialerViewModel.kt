@@ -173,6 +173,11 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     private fun keyOf(number: String): String = byNumber[Numbers.key(number)]?.key ?: "n:" + Numbers.key(number)
 
     /** Избранные для тихого ряда над нижней панелью главной. */
+    var favNickname by mutableStateOf(prefs.favNickname); private set
+    fun toggleFavNickname() { favNickname = !favNickname; prefs.favNickname = favNickname }
+    /** Как подписан избранный: никнейм, если выбран и есть, иначе имя без фамилии. */
+    fun favLabel(p: Person): String = p.nickname?.takeIf { favNickname && it.isNotBlank() } ?: if (p.nameIsNumber) p.shownName else p.name.substringBefore(' ')
+
     val favorites: List<Person> get() = people.filter { it.starred }.sortedByDescending { scores[it.key] ?: 0.0 }
     /** Стопка главной без тех, кто уже стоит в ряду избранных. */
     val homeStack: List<HomeEntry> get() = home.filter { it.person?.starred != true }

@@ -125,6 +125,11 @@ class Prefs(context: Context) {
     fun silenceUnknownActive(context: Context): Boolean =
         silenceUnknown && context.checkSelfPermission(android.Manifest.permission.READ_CONTACTS) == android.content.pm.PackageManager.PERMISSION_GRANTED
 
+    /** Избранные на главной подписаны никнеймом из контакта («Мама»), если он есть. */
+    var favNickname: Boolean
+        get() = sp.getBoolean("favNickname", true)
+        set(v) { sp.edit().putBoolean("favNickname", v).apply() }
+
     var silenceUnknown: Boolean
         get() = sp.getBoolean("silenceUnknown", false)
         set(v) { sp.edit().putBoolean("silenceUnknown", v).apply() }

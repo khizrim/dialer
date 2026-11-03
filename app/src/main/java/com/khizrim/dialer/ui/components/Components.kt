@@ -32,6 +32,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.ui.input.pointer.PointerEventPass
 import kotlinx.coroutines.launch
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.composed
@@ -76,6 +79,7 @@ private fun Modifier.ozPressImpl(
     val reduced = LocalReducedMotion.current
     val source = remember { MutableInteractionSource() }
     val pressed by source.collectIsPressedAsState()
+    val guard = remember { TapGuard.Touch() }
     val scale by animateFloatAsState(
         targetValue = if (pressed && !reduced) 0.98f else 1f,
         animationSpec = Motion.enter(Motion.PRESS),
@@ -85,16 +89,50 @@ private fun Modifier.ozPressImpl(
         .graphicsLayer { scaleX = scale; scaleY = scale }
         .clip(shape)
         .background(if (pressed) pressColor ?: oz.press else Color.Transparent)
+        .pointerInput(Unit) { trackTouch(guard) }
         .combinedClickable(
             interactionSource = source,
             indication = null,
             role = role,
             onClickLabel = null,
             onLongClickLabel = if (onLongClick != null) stringResource(R.string.menu) else null,
-            onLongClick = onLongClick,
-            onClick = onClick,
+            onLongClick = onLongClick?.let { l -> { if (guard.sameScreen()) l() } },
+            onClick = { if (guard.isTap()) onClick() },
         )
         .let { if (label != null) it.semantics { contentDescription = label } else it }
+}
+
+/**
+ * Нажатие считается только чистым касанием: палец не уехал дальше touch slop,
+ * никто выше (список, свайп стопки, шторка) не забрал движение и экран не сменился,
+ * пока палец был на стекле. Любой жест с движением вызовом не заканчивается.
+ */
+object TapGuard {
+    /** Растёт при каждой смене экрана; касание, начатое на прошлом экране, не нажимает. */
+    @Volatile var gen = 0
+    class Touch {
+        var gen = 0; var moved = false; var active = false
+        // нажатие из TalkBack приходит без касания (active = false) — его не трогаем
+        fun isTap() = !active || (!moved && gen == TapGuard.gen)
+        fun sameScreen() = !active || gen == TapGuard.gen
+    }
+}
+
+private suspend fun androidx.compose.ui.input.pointer.PointerInputScope.trackTouch(t: TapGuard.Touch) {
+    val slop = viewConfiguration.touchSlop
+    awaitEachGesture {
+        val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+        t.gen = TapGuard.gen; t.moved = false; t.active = true
+        var dx = 0f; var dy = 0f
+        try { while (true) {
+            // Final — после всех: видно, если список или родительский жест забрал движение
+            val ev = awaitPointerEvent(PointerEventPass.Final)
+            val c = ev.changes.firstOrNull { it.id == down.id } ?: break
+            if (!c.pressed) break
+            dx += c.position.x - c.previousPosition.x; dy += c.position.y - c.previousPosition.y
+            if (c.isConsumed || dx * dx + dy * dy > slop * slop) t.moved = true
+        } } finally { t.active = false }
+    }
 }
 
 /** Используйте этот модификатор внутри @Composable. */
