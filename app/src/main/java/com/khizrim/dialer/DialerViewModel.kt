@@ -755,7 +755,7 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
         if (toast?.undo == true && pendingRecord != null) commitPendingRecord()
         toast = ToastState(text, undo)
         toastJob = viewModelScope.launch {
-            delay(if (undo) 4000 else 2600)
+            delay(if (undo) 6000 else 2600)  // «Вернуть» живёт дольше: его надо успеть найти глазами
             toast = null
             if (undo) { tidy = false; removed = emptyList(); commitPendingRecord() }
         }

@@ -12,6 +12,7 @@ class PhoneFormatTest {
 
     @Test fun usMask() {
         assertEquals("(415) 555-0132", PhoneFormat.formatTyping("4155550132", "US"))
+        assertEquals("8 (916) 123-45-67", PhoneFormat.formatTyping("89161234567", "US"))
     }
 
     @Test fun t9() {

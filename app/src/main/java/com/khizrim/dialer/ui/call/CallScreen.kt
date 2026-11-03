@@ -104,7 +104,8 @@ fun CallScreen(c: CallState, actions: CallActions, locked: Boolean = false) {
         while (c.phase == CallPhase.ACTIVE) { now = System.currentTimeMillis(); delay(500) }
     }
     val known = c.name != null
-    val title = c.name ?: c.number.takeIf { it.isNotEmpty() }?.let { PhoneFormat.pretty(it) } ?: stringResource(R.string.hidden_number)
+    // имя-номер (контакт без имени, CNAP с цифрами) показываем с маской, как сам номер
+    val title = c.name?.let { n -> if (n.isNotBlank() && n.all { it.isDigit() || it in "+ ()-" }) PhoneFormat.pretty(n) else n } ?: c.number.takeIf { it.isNotEmpty() }?.let { PhoneFormat.pretty(it) } ?: stringResource(R.string.hidden_number)
     val subBase = when (c.phase) {
         CallPhase.RINGING -> if (known) (c.label ?: "").replaceFirstChar { it.uppercase() } else c.label ?: ""
         CallPhase.DIALING -> if (c.simChoice != null) stringResource(R.string.choose_sim) else stringResource(R.string.calling)

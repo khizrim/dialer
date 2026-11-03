@@ -42,7 +42,9 @@ object PhoneFormat {
             }
             return raw
         }
-        val rules = national[region] ?: return raw
+        // российская «8 …» узнаётся и при чужом регионе (SIM из роуминга, английский телефон)
+        val rules = (national[region] ?: emptyList()) + if (region != "RU") national.getValue("RU").filter { it.prefix == "8" } else emptyList()
+        if (rules.isEmpty()) return raw
         for (rule in rules) {
             if (rule.prefix != null && !raw.startsWith(rule.prefix)) continue
             if (raw.length < rule.min) continue
