@@ -14,14 +14,43 @@ android {
         applicationId = "com.khizrim.dialer"
         minSdk = 26
         targetSdk = 35
-        versionCode = 3
+        // каждая сборка CI получает новый номер, чтобы APK ставился поверх старого
+        versionCode = (System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 0) + 100
         versionName = "0.3.0-mvp"
     }
 
+    // Один постоянный ключ для всех сборок: иначе каждый APK из CI подписан новым
+    // ключом и не ставится поверх, а вместе с удалением пропадают настройки контактов.
+    // Ключ приходит из секретов GitHub (см. README); без них сборка подписывается как раньше.
+    val keystore = System.getenv("OZERO_KEYSTORE")?.let { file(it) }?.takeIf { it.exists() }
+    signingConfigs {
+        if (keystore != null) create("ozero") {
+            storeFile = keystore
+            storePassword = System.getenv("OZERO_KEYSTORE_PASSWORD")
+            keyAlias = System.getenv("OZERO_KEY_ALIAS")
+            keyPassword = System.getenv("OZERO_KEY_PASSWORD") ?: System.getenv("OZERO_KEYSTORE_PASSWORD")
+        }
+    }
+    val ozero = signingConfigs.findByName("ozero")
+
     buildTypes {
+        debug {
+            if (ozero != null) signingConfig = ozero
+        }
         release {
             isMinifyEnabled = false
+            // без своего ключа release подписываем debug-ключом, чтобы APK всё равно ставился
+            signingConfig = ozero ?: signingConfigs.getByName("debug")
         }
+    }
+
+    lint {
+        abortOnError = true
+        checkReleaseBuilds = true
+        // переводы проверяем, но отсутствующий перевод не валит сборку
+        warning += listOf("MissingTranslation")
+        htmlReport = true
+        sarifReport = true
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17

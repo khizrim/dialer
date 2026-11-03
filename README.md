@@ -21,6 +21,21 @@
 
 Собрать вручную: `./gradlew assembleDebug`.
 
+### Постоянный ключ подписи
+
+Чтобы новые APK ставились поверх старых и не стирали настройки, CI подписывает их одним ключом из секретов репозитория. Один раз создать ключ и добавить секреты (Settings → Secrets and variables → Actions):
+
+```sh
+keytool -genkeypair -keystore ozero.keystore -alias ozero -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Ozero Phone"
+base64 -w0 ozero.keystore   # на macOS: base64 -i ozero.keystore
+```
+
+- `OZERO_KEYSTORE_BASE64`: вывод base64;
+- `OZERO_KEYSTORE_PASSWORD`: пароль, заданный в keytool;
+- `OZERO_KEY_ALIAS`: `ozero`.
+
+Сам файл ключа в репозиторий не кладётся. Без секретов сборка подписывается временным debug-ключом, как раньше. Для основного телефона лучше брать артефакт `ozero-phone-release-apk`: в нём нет режима отладки.
+
 ## Дальше
 
 1. ~~Прототип~~
