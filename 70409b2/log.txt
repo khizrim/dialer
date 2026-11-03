@@ -1,0 +1,63 @@
+video light-01-home-pull-down-journal-fast
+video light-02-journal-back-home
+video light-03-home-pull-down-journal-slow
+video light-04-journal-pull-up-home
+video light-05-home-tap-journal
+video light-06-journal-back-again
+video light-07-home-pull-down-cancel
+video light-08-home-pull-up-contacts-fast
+video light-09-contacts-back-home
+video light-10-home-pull-up-contacts-slow
+video light-11-contacts-drag-down-close
+video light-12-home-tap-contacts
+video light-13-home-to-settings
+video light-14-settings-back
+MISSING: Мама
+video light-15-long-press-menu
+video light-16-menu-drag-down
+MISSING: Мама
+MISSING: Открыть карточку
+video light-17-menu-to-card
+MISSING: Другой способ
+video light-18-card-other-way-sheet
+video light-19-card-drag-down
+video light-20-keypad-open-type
+video light-21-keypad-erase-close
+video light-22-keypad-drag-down
+video light-23-home-row-swipe-away
+video light-24-journal-row-swipe-delete
+video light-25-journal-filter
+video light-26-incoming-answer-end
+video light-27-cold-start
+video dark-01-home-pull-down-journal-fast
+video dark-02-journal-back-home
+video dark-03-home-pull-down-journal-slow
+video dark-04-journal-pull-up-home
+video dark-05-home-tap-journal
+video dark-06-journal-back-again
+video dark-07-home-pull-down-cancel
+video dark-08-home-pull-up-contacts-fast
+video dark-09-contacts-back-home
+video dark-10-home-pull-up-contacts-slow
+video dark-11-contacts-drag-down-close
+video dark-12-home-tap-contacts
+video dark-13-home-to-settings
+video dark-14-settings-back
+MISSING: Мама
+video dark-15-long-press-menu
+video dark-16-menu-drag-down
+MISSING: Мама
+MISSING: Открыть карточку
+video dark-17-menu-to-card
+MISSING: Другой способ
+video dark-18-card-other-way-sheet
+video dark-19-card-drag-down
+video dark-20-keypad-open-type
+video dark-21-keypad-erase-close
+video dark-22-keypad-drag-down
+video dark-23-home-row-swipe-away
+video dark-24-journal-row-swipe-delete
+video dark-25-journal-filter
+video dark-26-incoming-answer-end
+video dark-27-cold-start
+done
