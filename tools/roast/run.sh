@@ -5,6 +5,8 @@ P=com.khizrim.dialer
 adb root; sleep 3; adb wait-for-device
 # лаунчер на эмуляторе без GPU падает в «не отвечает» и закрывает собой экран: выключаем его
 adb shell 'while [ "$(getprop sys.boot_completed)" != 1 ]; do sleep 2; done'; sleep 20
+adb shell svc power stayon true || true
+adb shell settings put system screen_off_timeout 1800000 || true
 adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS || true
 adb install -r app/build/outputs/apk/debug/*.apk
 adb shell settings put global window_animation_scale 1
