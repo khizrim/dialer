@@ -38,6 +38,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import kotlinx.coroutines.launch
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.ui.res.stringResource
@@ -71,43 +72,52 @@ fun <T : Any> rememberLast(value: T?): T? {
     return holder[0] as T?
 }
 
-/** Затемнение 200 мс и лист снизу: вход 300 мс, уход 200 мс. */
+/**
+ * Затемнение и лист снизу: вход 300 мс, уход 200 мс, оба с мягким торможением.
+ * Лист тянут вниз — он идёт за пальцем 1:1, затемнение светлеет вместе с ним; отпустили — лист доезжает
+ * с той же скоростью (или возвращается), и только потом закрывается: без рывка и без повторной анимации.
+ */
 @Composable
 fun BoxScope.SheetLayer(visible: Boolean, title: String, onDismiss: () -> Unit, content: @Composable ColumnScope.() -> Unit) {
     val oz = LocalOz.current
     val reduced = LocalReducedMotion.current
-    AnimatedVisibility(visible, enter = fadeIn(Motion.enter(Motion.MOVE)), exit = fadeOut(Motion.exit(Motion.MOVE))) {
+    val drag = remember { androidx.compose.animation.core.Animatable(0f) }
+    val sheetHeight = remember { floatArrayOf(1f) }
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    androidx.compose.runtime.LaunchedEffect(visible) { if (visible) drag.snapTo(0f) }
+    AnimatedVisibility(visible, enter = fadeIn(Motion.move(Motion.MOVE)), exit = fadeOut(Motion.move(Motion.MOVE))) {
         Box(
-            Modifier.fillMaxSize().background(oz.scrim)
+            Modifier.fillMaxSize()
+                .graphicsLayer { alpha = 1f - (drag.value / sheetHeight[0]).coerceIn(0f, 1f) }
+                .background(oz.scrim)
                 .clickable(remember { MutableInteractionSource() }, null, onClickLabel = stringResource(R.string.close), onClick = onDismiss),
         )
     }
     AnimatedVisibility(
         visible,
         modifier = Modifier.align(Alignment.BottomCenter),
-        enter = if (reduced) fadeIn(Motion.enter(Motion.FADE)) else slideInVertically(Motion.enter(Motion.SHEET)) { it },
-        exit = if (reduced) fadeOut(Motion.exit(Motion.FADE)) else slideOutVertically(Motion.exit(Motion.MOVE)) { it },
+        enter = if (reduced) fadeIn(Motion.enter(Motion.FADE)) else slideInVertically(Motion.move(Motion.SHEET)) { it },
+        exit = if (reduced) fadeOut(Motion.exit(Motion.FADE)) else slideOutVertically(Motion.move(Motion.MOVE)) { it },
     ) {
-        // лист тянут вниз — он идёт за пальцем; дальше 96 dp или быстрым движением закрывается, иначе пружинит назад
-        val drag = remember { androidx.compose.animation.core.Animatable(0f) }
-        val scope = androidx.compose.runtime.rememberCoroutineScope()
-        val density = androidx.compose.ui.platform.LocalDensity.current
-        val limit = with(density) { 96.dp.toPx() }
-        androidx.compose.runtime.LaunchedEffect(visible) { if (visible) drag.snapTo(0f) }
         val tracker = remember { androidx.compose.ui.input.pointer.util.VelocityTracker() }
         Column(
             Modifier
                 .fillMaxWidth()
+                .onSizeChanged { sheetHeight[0] = it.height.toFloat().coerceAtLeast(1f) }
                 .graphicsLayer { translationY = drag.value }
                 .pointerInput(onDismiss) {
                     detectVerticalDragGestures(
                         onDragStart = { tracker.resetTracking() },
                         onDragEnd = {
                             val v = tracker.calculateVelocity().y
-                            if (drag.value > limit || v > 1200f) onDismiss()
-                            else scope.launch { drag.animateTo(0f, Motion.enter(Motion.MOVE)) }
+                            val h = sheetHeight[0]
+                            if (Motion.commits(drag.value / h, v, h)) scope.launch {
+                                // доезжает за край со скоростью пальца, затем закрывается (уход уже за экраном)
+                                drag.animateTo(h, Motion.settle(), v)
+                                onDismiss()
+                            } else scope.launch { drag.animateTo(0f, Motion.settle(), v) }
                         },
-                        onDragCancel = { scope.launch { drag.animateTo(0f) } },
+                        onDragCancel = { scope.launch { drag.animateTo(0f, Motion.settle()) } },
                     ) { change, amount ->
                         change.consume()
                         tracker.addPosition(change.uptimeMillis, change.position)
@@ -263,13 +273,15 @@ fun BoxScope.PersonMenu(vm: DialerViewModel) {
 fun BoxScope.ConfirmLayer(vm: DialerViewModel) {
     val oz = LocalOz.current
     val c: ConfirmState? = rememberLast(vm.confirm)
+    val reduced = LocalReducedMotion.current
     AnimatedVisibility(vm.confirm != null, enter = fadeIn(Motion.enter(Motion.MOVE)), exit = fadeOut(Motion.exit(Motion.FADE))) {
         Box(Modifier.fillMaxSize().background(oz.scrim).clickable(remember { MutableInteractionSource() }, null, onClick = vm::cancelConfirm))
     }
     AnimatedVisibility(
         vm.confirm != null,
         modifier = Modifier.align(Alignment.BottomCenter),
-        enter = fadeIn(Motion.enter(Motion.MOVE)), exit = fadeOut(Motion.exit(Motion.FADE)),
+        enter = fadeIn(Motion.enter(Motion.MOVE)) + slideInVertically(Motion.move(Motion.MOVE)) { if (reduced) 0 else it / 8 },
+        exit = fadeOut(Motion.exit(Motion.FADE)),
     ) {
         if (c == null) return@AnimatedVisibility
         Column(

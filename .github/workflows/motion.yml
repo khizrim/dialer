@@ -8,7 +8,7 @@ on:
 permissions:
   contents: write
 
-concurrency: { group: motion, cancel-in-progress: true }
+concurrency: { group: motion-${{ github.sha }} }
 
 jobs:
   record:

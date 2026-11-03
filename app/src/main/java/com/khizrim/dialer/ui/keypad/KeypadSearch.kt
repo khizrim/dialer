@@ -132,24 +132,29 @@ private fun highlight(text: String, range: IntRange?, color: androidx.compose.ui
         append(text.substring(end))
     }
 
+/** Жест «тянуть вниз» для слоя, в котором лежит панель. */
+interface PanelDrag {
+    fun start()
+    fun by(dy: Float)
+    fun end(velocityPx: Float)
+}
+
 /** Нижняя половина: номер с маской, клавиши без заливки, вызов. */
 @Composable
-fun KeypadPanel(vm: DialerViewModel) {
+fun KeypadPanel(vm: DialerViewModel, drag: PanelDrag? = null) {
     val oz = LocalOz.current
-    // панель тянут вниз — клавиатура закрывается; панель идёт за пальцем
-    val pull = remember { androidx.compose.animation.core.Animatable(0f) }
-    val scope = androidx.compose.runtime.rememberCoroutineScope()
-    val limit = with(LocalDensity.current) { 72.dp.toPx() }
+    // панель тянут вниз — весь слой клавиатуры идёт за пальцем 1:1, отпустили — доезжает со скоростью пальца
+    val tracker = remember { androidx.compose.ui.input.pointer.util.VelocityTracker() }
     Column(
         Modifier.fillMaxWidth()
-            .pointerInput(vm) {
+            .pointerInput(drag) {
+                if (drag == null) return@pointerInput
                 detectVerticalDragGestures(
-                    onDragEnd = { if (pull.value > limit) vm.closeKeypad(); scope.launch { pull.animateTo(0f, Motion.enter(Motion.MOVE)) } },
-                    onDragCancel = { scope.launch { pull.animateTo(0f) } },
-                ) { change, amount -> change.consume(); scope.launch { pull.snapTo((pull.value + amount).coerceAtLeast(0f)) } }
-            }
-            .graphicsLayer { translationY = pull.value }
-            .background(oz.bg),
+                    onDragStart = { tracker.resetTracking(); drag.start() },
+                    onDragEnd = { drag.end(tracker.calculateVelocity().y) },
+                    onDragCancel = { drag.end(0f) },
+                ) { change, amount -> change.consume(); tracker.addPosition(change.uptimeMillis, change.position); drag.by(amount) }
+            },
     ) {
         TypedNumber(vm)
         Column(Modifier.padding(start = 12.dp, end = 12.dp, top = 4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
