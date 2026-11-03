@@ -176,16 +176,19 @@ object Dates {
         }
     }
 
-    /** «Пропущенный, вчера» для подписи на главной. */
-    fun missed(res: Resources, ts: Long): String {
+    /** «Пропущенный, вчера» для подписи на главной; несколько подряд — «3 пропущенных, последний в 14:15». */
+    fun missed(res: Resources, ts: Long, count: Int = 1): String =
+        if (count > 1) res.getQuantityString(R.plurals.missed_many, count, count, whenText(res, ts))
+        else res.getString(R.string.missed_when, whenText(res, ts))
+
+    fun whenText(res: Resources, ts: Long): String {
         val a = Calendar.getInstance().apply { timeInMillis = ts }
         val days = daysBetween(a, Calendar.getInstance())
-        val whenText = when {
+        return when {
             days <= 0 -> res.getString(R.string.at_time, DateFormat.getTimeInstance(DateFormat.SHORT, locale).format(Date(ts)))
             days == 1 -> res.getString(R.string.yesterday_lower)
             else -> day(res, ts)
         }
-        return res.getString(R.string.missed_when, whenText)
     }
 
     fun withDuration(res: Resources, base: String, seconds: Long): String = when {

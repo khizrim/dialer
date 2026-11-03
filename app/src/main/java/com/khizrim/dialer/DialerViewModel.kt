@@ -181,18 +181,39 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     fun favLabel(p: Person): String = p.nickname?.takeIf { favNickname && it.isNotBlank() } ?: if (p.nameIsNumber) p.shownName else p.name.substringBefore(' ')
 
     val favorites: List<Person> get() = people.filter { it.starred }.sortedByDescending { scores[it.key] ?: 0.0 }
-    /** Стопка главной без тех, кто уже стоит в ряду избранных. */
-    val homeStack: List<HomeEntry> get() = home.filter { it.person?.starred != true }
+
+    /** Незнакомые без звука в ленте свёрнуты в одну строку; нажатие раскрывает их прямо там. */
+    var silentOpen by mutableStateOf(false); private set
+    fun toggleSilent() { silentOpen = !silentOpen }
+
+    /**
+     * Лента главной — она же журнал: каждый человек или номер одной строкой на месте последнего контакта,
+     * свежие внизу. «Пропущенные» оставляет только тех, у кого последний звонок пропущен.
+     */
+    val homeStack: List<HomeEntry> get() {
+        val all = home.toList()
+        val silent = all.filter(::isSilenced)
+        val rest = all.filterNot(::isSilenced)
+        val list = if (silent.isEmpty() || silentOpen) all
+        else rest + HomeEntry("silent", null, null, silent.maxOf { it.lastAt }, null, silent = silent.size)
+        return (if (missedOnly) list.filter { it.missedNote != null } else list).sortedBy { it.lastAt }
+    }
+    /** Незнакомый, чей звонок прошёл без звука (включено «Не беспокоить незнакомым»). */
+    fun isSilenced(e: HomeEntry): Boolean = e.person == null && silenceUnknown && e.missedNote != null
+    val homeHasMissed: Boolean get() = home.any { it.missedNote != null }
 
     private fun rebuildHome() {
-        class Acc(var last: Long = 0L, var lastMissed: Long = 0L, var lastOther: Long = 0L, var number: String? = null)
+        class Acc(var last: Long = 0L, var lastMissed: Long = 0L, var lastOther: Long = 0L, var number: String? = null, var lastCall: CallRecord? = null) {
+            val missedAt = ArrayList<Long>()
+        }
         val acc = LinkedHashMap<String, Acc>()
         calls.forEach { r ->
             if (r.type == android.provider.CallLog.Calls.BLOCKED_TYPE || r.type == android.provider.CallLog.Calls.VOICEMAIL_TYPE) return@forEach
             val a = acc.getOrPut(keyOf(r.number)) { Acc() }
             if (a.number == null) a.number = r.number
+            if (r.date >= a.last) a.lastCall = r
             a.last = maxOf(a.last, r.date)
-            if (r.missed) a.lastMissed = maxOf(a.lastMissed, r.date) else a.lastOther = maxOf(a.lastOther, r.date)
+            if (r.missed) { a.lastMissed = maxOf(a.lastMissed, r.date); a.missedAt += r.date } else a.lastOther = maxOf(a.lastOther, r.date)
         }
         interactions.forEach { i ->
             val a = acc.getOrPut(i.key) { Acc() }
@@ -204,10 +225,12 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
             if (prefs.hiddenAt(key) >= a.last) return@mapNotNull null
             val person = personByKey[key]
             if (person == null && !key.startsWith("n:")) return@mapNotNull null
-            if (person == null && silenceUnknown) return@mapNotNull null
-            val missed = if (a.lastMissed > a.lastOther) Dates.missed(res, a.lastMissed) else null
-            HomeEntry(key, person, if (person == null) a.number else null, a.last, missed)
-        }.sortedBy { it.lastAt }.takeLast(HOME_SIZE).ifEmpty {
+            val missed = if (a.lastMissed > a.lastOther) Dates.missed(res, a.lastMissed, a.missedAt.count { it > a.lastOther }) else null
+            // исходящий без ответа — тоже стоит сказать; обычный звонок второй строки не получает
+            val lc = a.lastCall
+            val note = if (missed == null && lc != null && lc.date == a.last && lc.type == android.provider.CallLog.Calls.OUTGOING_TYPE && lc.duration <= 0) str(R.string.outgoing_no_answer) else null
+            HomeEntry(key, person, if (person == null) a.number else null, a.last, missed, note)
+        }.sortedBy { it.lastAt }.takeLast(FEED_SIZE).ifEmpty {
             // истории ещё нет: показываем избранных, чтобы главная не была пустой
             if (acc.isNotEmpty()) emptyList()
             else people.filter { it.starred && prefs.hiddenAt(it.key) == 0L }.take(HOME_SIZE).map { HomeEntry(it.key, it, null, 0L, null) }
@@ -239,9 +262,9 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     var recentsFromHome by mutableStateOf(false); private set
     var missedOnly by mutableStateOf(false); private set
     private var recentsFrom = Screen.HOME
+    /** Журнала отдельным экраном больше нет: лента главной и есть журнал, «пропущенные» — её фильтр. */
     fun openRecents(fromHome: Boolean = false, missed: Boolean = false) {
-        if (screen != Screen.RECENTS) recentsFrom = if (screen == Screen.CONTACTS) Screen.CONTACTS else Screen.HOME
-        closeKeypad(); recentsFromHome = fromHome; missedOnly = missed; screen = Screen.RECENTS
+        closeKeypad(); recentsFromHome = fromHome; missedOnly = missed; screen = Screen.HOME
     }
     fun showMissedOnly(v: Boolean) { missedOnly = v }
 
@@ -615,9 +638,10 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
         val events = ArrayList<Triple<Long, String, Boolean>>()
         // у обычного разговора только время, подпись — у пропущенного и несостоявшегося
         val tf = java.text.DateFormat.getTimeInstance(java.text.DateFormat.SHORT)
-        calls.filter { Numbers.key(it.number) in keys }.take(12).forEach { events += Triple(it.date, it.note(res) ?: tf.format(java.util.Date(it.date)), it.missed) }
-        interactions.filter { it.key == p.key }.takeLast(12).forEach { events += Triple(it.at, it.method.label(ctx), false) }
-        return events.sortedByDescending { it.first }.take(6).map { HistoryEntry(Dates.day(res, it.first), it.second, it.third) }
+        calls.filter { Numbers.key(it.number) in keys }.take(300).forEach { events += Triple(it.date, it.note(res) ?: tf.format(java.util.Date(it.date)), it.missed) }
+        interactions.filter { it.key == p.key }.takeLast(300).forEach { events += Triple(it.at, it.method.label(ctx), false) }
+        // старые сверху, свежие у имени; карточка открывается у свежих
+        return events.sortedBy { it.first }.map { HistoryEntry(Dates.day(res, it.first), it.second, it.third) }
     }
 
     fun smsTo(number: String) { Launcher.sms(ctx, number)?.let { say(it) } }
@@ -817,5 +841,7 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
 
     companion object {
         const val HOME_SIZE = 6
+        /** Сколько людей держит лента главной (это и есть журнал). */
+        const val FEED_SIZE = 400
     }
 }

@@ -1,5 +1,8 @@
 package com.khizrim.dialer.ui.home
 
+import androidx.compose.foundation.layout.height
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
@@ -62,10 +65,11 @@ import kotlinx.coroutines.launch
 fun HomeScreen(vm: DialerViewModel) {
     val oz = LocalOz.current
     val reduced = LocalReducedMotion.current
-    // стопку тянут вниз — сверху за пальцем 1:1 спускается журнал; вверх — снизу поднимаются контакты с поиском.
+    // лента — это и журнал: её листают вверх в прошлое. Тянут вверх у самого свежего — снизу поднимаются контакты с поиском.
     // Жест ловим раньше строк (Initial): после порога сдвига поглощаем касание, и нажатие на строку отменяется — свайп не звонит.
     val stack = com.khizrim.dialer.ui.LocalScreenStack.current
     val threshold = with(LocalDensity.current) { 72.dp.toPx() }
+    val list = androidx.compose.foundation.lazy.rememberLazyListState()
     val gestures = Modifier.pointerInput(vm, stack) {
         val slop = viewConfiguration.touchSlop
         awaitEachGesture {
@@ -76,32 +80,29 @@ fun HomeScreen(vm: DialerViewModel) {
             var dx = 0f
             var dragging = false
             var released = false
-            val journal = com.khizrim.dialer.ui.Route(com.khizrim.dialer.Screen.RECENTS)
             val contacts = com.khizrim.dialer.ui.Route(com.khizrim.dialer.Screen.SEARCH)
             while (true) {
                 val ev = awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Initial)
                 val ch = ev.changes.firstOrNull { it.id == down.id } ?: break
-                // медленный кадр (первая сборка журнала) может принести остаток пути вместе с отпусканием:
-                // сначала учитываем весь путь и историю точек, потом решаем
                 tracker.addPointerInputChange(ch)
                 dy += ch.position.y - ch.previousPosition.y
                 dx += ch.position.x - ch.previousPosition.x
-                // горизонтальный жест — это смахивание строки, его отдаём строке
-                if (!dragging && kotlin.math.abs(dx) > slop && kotlin.math.abs(dx) > kotlin.math.abs(dy)) break
-                if (!dragging && kotlin.math.abs(dy) > slop) dragging = true
+                if (!dragging) {
+                    // горизонтальный жест — смахивание строки; вниз — листать ленту в прошлое; вверх не у края — тоже листать
+                    if (kotlin.math.abs(dx) > slop && kotlin.math.abs(dx) > kotlin.math.abs(dy)) break
+                    if (dy > slop) break
+                    if (dy < -slop) { if (list.canScrollBackward) break else dragging = true }
+                }
                 if (dragging) {
                     ch.consume()
                     val h = stack?.height ?: 1f
-                    if (dy > 0f) stack?.previewTo(journal, com.khizrim.dialer.ui.Edge.TOP, dy / h)
-                    else stack?.previewTo(contacts, com.khizrim.dialer.ui.Edge.BOTTOM, -dy / h)
+                    stack?.previewTo(contacts, com.khizrim.dialer.ui.Edge.BOTTOM, (-dy / h).coerceAtLeast(0f))
                 }
                 if (!ch.pressed) {
                     released = true
                     if (dragging) {
                         val v = tracker.calculateVelocity().y
-                        if (stack == null) {
-                            if (dy < -threshold) vm.openTextSearch() else if (dy > threshold) vm.openRecents(fromHome = true)
-                        } else if (dy > 0f) stack.previewEnd(v) { vm.openRecents(fromHome = true) }
+                        if (stack == null) { if (dy < -threshold) vm.openTextSearch() }
                         else stack.previewEnd(-v) { vm.openTextSearch() }
                     }
                     break
@@ -111,6 +112,21 @@ fun HomeScreen(vm: DialerViewModel) {
         }
     }
     val searchLabel = stringResource(R.string.search_by_name)
+    val res = androidx.compose.ui.platform.LocalContext.current.resources
+    // свежие внизу (reverseLayout), подпись дня — над строками своего дня
+    val feed = vm.homeStack
+    val rows = remember(feed) {
+        buildList<Any> {
+            var day: String? = null
+            feed.asReversed().forEach { e ->
+                val d = if (e.lastAt > 0L) com.khizrim.dialer.data.Dates.day(res, e.lastAt) else null
+                if (day != null && d != day) add(FeedDay(day!!))
+                day = d
+                add(e)
+            }
+            day?.let { add(FeedDay(it)) }
+        }
+    }
     Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
             LazyColumn(
@@ -118,9 +134,10 @@ fun HomeScreen(vm: DialerViewModel) {
                     .then(gestures)
                     .semantics { customActions = listOf(androidx.compose.ui.semantics.CustomAccessibilityAction(searchLabel) { vm.openTextSearch(); true }) }
                     .padding(horizontal = 12.dp),
-                verticalArrangement = Arrangement.Bottom,
+                state = list,
+                reverseLayout = true,
             ) {
-                if (vm.homeStack.isEmpty() && vm.favorites.isEmpty()) {
+                if (feed.isEmpty() && vm.favorites.isEmpty()) {
                     item(key = "empty") {
                         Column(Modifier.padding(start = 12.dp, end = 12.dp, bottom = 24.dp).animateItem()) {
                             Text(stringResource(R.string.home_empty_title), style = OzType.nameHome, color = oz.fg)
@@ -131,7 +148,34 @@ fun HomeScreen(vm: DialerViewModel) {
                         }
                     }
                 }
-                items(vm.homeStack, key = { it.key }) { e ->
+                items(rows, key = { r -> if (r is FeedDay) "d" + r.text else (r as com.khizrim.dialer.model.HomeEntry).key }) { r ->
+                    if (r is FeedDay) {
+                        // подпись дня — тихий разделитель с линией
+                        Row(
+                            Modifier.animateItem(fadeInSpec = Motion.enter(Motion.FADE), placementSpec = if (reduced) null else Motion.enter(Motion.MOVE), fadeOutSpec = Motion.exit(Motion.FADE))
+                                .fillMaxWidth().padding(start = 12.dp, end = 12.dp, top = 24.dp, bottom = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(r.text, style = OzType.small.copy(fontWeight = FontWeight.Medium), color = oz.fg3, modifier = Modifier.semantics { heading() })
+                            Box(Modifier.padding(start = 12.dp).weight(1f).height(1.dp).background(oz.line))
+                        }
+                        return@items
+                    }
+                    val e = r as com.khizrim.dialer.model.HomeEntry
+                    if (e.silent > 0) {
+                        // незнакомые без звука — одной тихой строкой; нажатие раскрывает их прямо в ленте
+                        Row(
+                            Modifier.animateItem().fillMaxWidth().heightIn(min = 56.dp)
+                                .press(vm::toggleSilent, label = pluralStringResource(R.plurals.silent_unknown, e.silent, e.silent))
+                                .padding(horizontal = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            OzIcon(R.drawable.ic_oz_moon, oz.fg3, 18.dp)
+                            Text(pluralStringResource(R.plurals.silent_unknown, e.silent, e.silent), style = OzType.body, color = oz.fg2, modifier = Modifier.padding(start = 12.dp).weight(1f))
+                            OzIcon(R.drawable.ic_oz_chevron, oz.fg3, 18.dp)
+                        }
+                        return@items
+                    }
                     val p = e.person
                     val method = p?.let { vm.defaultOf(it) } ?: if (p == null) Method.PHONE else null
                     val note = e.missedNote
@@ -141,6 +185,7 @@ fun HomeScreen(vm: DialerViewModel) {
                         targetValue = if (isLeaving) 1f else 0f,
                         animationSpec = Motion.exit(Motion.FADE), label = "leave",
                     )
+                    val quiet = vm.isSilenced(e)
                     Row(
                         Modifier
                             .animateItem(
@@ -149,7 +194,7 @@ fun HomeScreen(vm: DialerViewModel) {
                                 placementSpec = if (reduced) null else Motion.enter(Motion.MOVE),
                                 fadeOutSpec = Motion.exit(Motion.FADE),
                             )
-                            // смахнуть влево — убрать с главной, с «Вернуть»
+                            // смахнуть влево — скрыть до следующего контакта, с «Вернуть»
                             .then(if (vm.leaving == null) Modifier.swipeAway { vm.removeFromHome(e.key, now = true) } else Modifier)
                             .graphicsLayer {
                                 alpha = 1f - progress
@@ -164,7 +209,7 @@ fun HomeScreen(vm: DialerViewModel) {
                                 .press(
                                     onClick = { if (p != null) vm.openPerson(p.id) else vm.openMenu(e, MenuContext.HOME) },
                                     onLongClick = { vm.openMenu(e, MenuContext.HOME) },
-                                    label = e.title + (note?.let { ", $it" } ?: ""),
+                                    label = e.title + ((note ?: e.note)?.let { ", $it" } ?: ""),
                                 )
                                 .padding(horizontal = 12.dp, vertical = 10.dp),
                             verticalArrangement = Arrangement.Center,
@@ -172,10 +217,11 @@ fun HomeScreen(vm: DialerViewModel) {
                             Text(
                                 e.title,
                                 style = if (p != null && !p.nameIsNumber) OzType.nameHome else OzType.numberHome,
-                                color = oz.fg, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                                color = if (quiet) oz.fg2 else oz.fg, maxLines = 1, overflow = TextOverflow.Ellipsis,
                             )
-                            if (note != null) {
-                                Text(note, style = OzType.small, color = oz.danger, modifier = Modifier.padding(top = 4.dp))
+                            val second = if (quiet) stringResource(R.string.silenced) else note ?: e.note
+                            if (second != null) {
+                                Text(second, style = OzType.small, color = if (note != null && !quiet) oz.danger else oz.fg3, modifier = Modifier.padding(top = 4.dp))
                             }
                         }
                         com.khizrim.dialer.ui.components.ReachButton(method, e.title) { vm.tap(e) }
@@ -246,7 +292,9 @@ fun HomeScreen(vm: DialerViewModel) {
                         exit = fadeOut(Motion.exit(Motion.PRESS)),
                     ) {
                         Row {
-                            TextAction(stringResource(R.string.journal), oz.fg2, { vm.openRecents(fromHome = true) }, modifier = Modifier.heightIn(min = 48.dp))
+                            // «Пропущенные» — только когда они есть; во время фильтра на его месте «Все»
+                            if (vm.missedOnly) TextAction(stringResource(R.string.filter_all), oz.fg2, { vm.showMissedOnly(false) }, modifier = Modifier.heightIn(min = 48.dp))
+                            else if (vm.homeHasMissed) TextAction(stringResource(R.string.filter_missed), oz.danger, { vm.showMissedOnly(true) }, modifier = Modifier.heightIn(min = 48.dp))
                             TextAction(stringResource(R.string.contacts), oz.fg2, vm::openTextSearch, modifier = Modifier.heightIn(min = 48.dp))
                         }
                     }
@@ -297,3 +345,6 @@ private fun CallAlertRow(vm: DialerViewModel, alert: com.khizrim.dialer.telecom.
         }
     }
 }
+
+/** Подпись дня в ленте. */
+private data class FeedDay(val text: String)

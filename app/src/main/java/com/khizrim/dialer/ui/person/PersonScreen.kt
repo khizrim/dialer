@@ -1,5 +1,6 @@
 package com.khizrim.dialer.ui.person
 
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.horizontalScroll
@@ -71,7 +72,7 @@ fun PersonScreen(vm: DialerViewModel, id: Long) {
     val p = vm.person(id) ?: return
     val method = vm.defaultOf(p)
     val fav = p.starred
-    val history = remember(p, vm.ready) { vm.history(p).take(5) }
+    val history = remember(p, vm.ready, vm.recentCalls) { vm.history(p) }
 
     // карточку тянут вниз — весь экран идёт за пальцем 1:1 и открывает тот, что под ним; отпустили — доезжает или возвращается
     Column(
@@ -82,7 +83,8 @@ fun PersonScreen(vm: DialerViewModel, id: Long) {
             verticalArrangement = Arrangement.Bottom,
         ) {
             if (history.isNotEmpty()) {
-                Column(Modifier.padding(bottom = 40.dp)) {
+                // все звонки с человеком — здесь, с прокруткой: отдельного журнала больше нет
+                Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState(), reverseScrolling = true).padding(bottom = 40.dp)) {
                     history.forEach { e ->
                         Row(Modifier.padding(vertical = 6.dp)) {
                             Text(e.day, style = OzType.time, color = oz.fg3, modifier = Modifier.width(56.dp))
