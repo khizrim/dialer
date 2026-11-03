@@ -177,7 +177,11 @@ start(); record("to-settings", 6, lambda: tap(T["settings"], wait=2.5)); shot("s
 swipe(1700, 500); shot("settings-2"); swipe(1700, 500); shot("settings-3"); back()
 # 9. звонки
 start(); record("incoming", 14, lambda: (subprocess.run(["adb", "emu", "gsm", "call", "+79161112233"]), time.sleep(4), shot("incoming-full"), tap(T["answer"], wait=1), fast("answer-1s"), time.sleep(2)))
-shot("in-call"); note("telecom: " + subprocess.run(["adb", "shell", "dumpsys telecom | grep -m3 -E 'state=(ACTIVE|RINGING)'"], capture_output=True, text=True).stdout.strip())
+shot("in-call")
+ans = [(x, y) for t, d, x, y, b in nodes() if t == T["answer"] or d == T["answer"]]
+if ans:
+    ax, ay = ans[-1]; sh("shell", "input", "tap", str(ax), str(ay - 110)); time.sleep(1); fast("fullscreen-answer-1s"); time.sleep(2); shot("fullscreen-after-answer")
+note("telecom: " + subprocess.run(["adb", "shell", "dumpsys telecom | grep -m3 -E 'state=(ACTIVE|RINGING)'"], capture_output=True, text=True).stdout.strip())
 subprocess.run(["adb", "emu", "gsm", "cancel", "+79161112233"]); time.sleep(1.2); shot("call-ended"); time.sleep(4)
 subprocess.run(["adb", "emu", "gsm", "call", "+74997001122"]); time.sleep(4); shot("incoming-unknown")
 subprocess.run(["adb", "emu", "gsm", "cancel", "+74997001122"]); time.sleep(4); shot("after-unknown")
