@@ -49,6 +49,7 @@ def record(name, seconds, actions):
     remote = f"/sdcard/m-{name}.mp4"
     p = subprocess.Popen(["adb", "shell", "screenrecord", "--time-limit", str(seconds + 2), "--bit-rate", "12000000", remote])
     time.sleep(1.2)
+    sh("shell", "log", "-t", "OzMotion", f"walk {name} actions")
     try: actions()
     except Exception as e: note(f"ERR {name}: {e}")
     p.wait(); time.sleep(1)

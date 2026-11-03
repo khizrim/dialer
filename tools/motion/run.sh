@@ -17,6 +17,8 @@ adb shell cmd role add-role-holder android.app.role.CALL_SCREENING $P 0 || true
 bash tools/motion/seed.sh >/dev/null 2>&1
 adb shell cmd locale set-app-locales $P --locales ru-RU || true
 mkdir -p motion
+adb logcat -c || true
 OUT=motion python3 tools/motion/walk.py || true
 adb logcat -d -b crash > motion/crash.txt || true
+adb logcat -d -v time -s OzMotion:D Choreographer:I ActivityManager:W > motion/trace.txt || true
 exit 0

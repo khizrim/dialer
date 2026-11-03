@@ -267,6 +267,7 @@ fun Modifier.swipeAway(enabled: Boolean = true, onRight: (() -> Unit)? = null, o
                 onDragStart = { tracker.resetTracking() },
                 onDragEnd = {
                     val v = tracker.calculateVelocity().x
+                    android.util.Log.d("OzMotion", "swipeAway end offset=${offset.value} v=$v")
                     scope.launch {
                         val settle = com.khizrim.dialer.ui.theme.Motion.settle<Float>()
                         if (offset.value > threshold && onRight != null) {
@@ -279,6 +280,7 @@ fun Modifier.swipeAway(enabled: Boolean = true, onRight: (() -> Unit)? = null, o
                             // список убирает её сразу: соседи смыкаются, пока она ещё уезжает, а не после
                             // долгого хвоста пружины (иначе ~1 с на её месте пусто, а потом всё прыгает)
                             onSwiped()
+                            android.util.Log.d("OzMotion", "swipeAway removed")
                             if (!reduced) offset.animateTo(-w[0], settle, v.coerceAtMost(0f))
                             // если строку так и не убрали (нет прав и т. п.) — через мгновение возвращаем
                             kotlinx.coroutines.delay(700)
