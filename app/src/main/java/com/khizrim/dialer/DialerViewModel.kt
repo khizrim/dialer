@@ -344,14 +344,21 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
         return if (Method.PHONE in p.methods) Method.PHONE else p.methods.firstOrNull()
     }
 
+    /** Номер для звонка и SMS: выбранный в «Другом способе», если он ещё есть в контакте, иначе основной. */
+    fun numberFor(p: Person): String? {
+        defaultsVersion
+        val saved = prefs.numberFor(p.lookupKey)?.let { s -> p.phones.firstOrNull { Numbers.key(it.number) == Numbers.key(s) } }
+        return saved?.number ?: p.mainNumber
+    }
+
     fun isAsk(p: Person): Boolean { defaultsVersion; return prefs.defaultFor(p.lookupKey) == Prefs.ASK }
 
     /** Выполнить способ связи. Без способа по умолчанию показываем выбор. */
-    fun perform(p: Person, method: Method?) {
+    fun perform(p: Person, method: Method?, number: String? = null) {
         if (method == null) { menu = null; sheet = SheetState(SheetMode.OTHER, p.id); return }
         sheet = null; menu = null
         closeKeypad()
-        val error = Launcher.perform(ctx, p, method)
+        val error = Launcher.perform(ctx, p, method, number ?: numberFor(p))
         if (error != null) { say(error); return }
         prefs.log(p.key, method)
         prefs.unhide(p.key)
@@ -370,16 +377,17 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     fun openSheet(p: Person, mode: SheetMode) { menu = null; sheet = SheetState(mode, p.id) }
     fun closeSheet() { sheet = null }
 
-    fun pickInSheet(m: Method) {
+    fun pickInSheet(m: Method, number: String? = null) {
         val s = sheet ?: return
         val p = person(s.personId) ?: return
         if (s.mode == SheetMode.DEFAULT) {
             prefs.setDefault(p.lookupKey, m)
+            if (number != null) prefs.setNumber(p.lookupKey, number)
             defaultsVersion++
             sheet = null
             say(str(R.string.now_on_tap, m.label(ctx)))
         } else {
-            perform(p, m)
+            perform(p, m, number)
         }
     }
 

@@ -119,9 +119,20 @@ fun BoxScope.MethodSheet(vm: DialerViewModel) {
             Text(p.name, style = OzType.nameSearch, color = oz.fg, modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 4.dp))
             Text(title, style = OzType.small, color = oz.fg3, modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 2.dp, bottom = 8.dp))
         }
-        p.methods.forEachIndexed { i, m ->
-            if (i > 0) HorizontalDivider(thickness = 1.dp, color = oz.line)
-            MethodRow(m, if (m == Method.PHONE) stringResource(m.title) + " " + com.khizrim.dialer.data.PhoneFormat.pretty(p.mainNumber.orEmpty()) else stringResource(m.title), m == current) { vm.pickInSheet(m) }
+        // у телефона и SMS по строке на каждый номер: «Позвонить» и под ним «мобильный  +7 …»
+        val chosen = vm.numberFor(p)
+        val many = p.phones.size > 1
+        var first = true
+        p.methods.forEach { m ->
+            val perNumber = m == Method.PHONE || m == Method.SMS
+            val numbers: List<com.khizrim.dialer.model.Phone?> = if (perNumber && p.phones.isNotEmpty()) p.phones else listOf(null)
+            numbers.forEach { ph ->
+                if (!first) HorizontalDivider(thickness = 1.dp, color = oz.line)
+                first = false
+                val sub = ph?.let { (if (many) it.label + "  " else "") + com.khizrim.dialer.data.PhoneFormat.pretty(it.number) }
+                val selected = m == current && (ph == null || !many || ph.number == chosen)
+                MethodRow(m, stringResource(m.title), selected, sub) { vm.pickInSheet(m, ph?.number) }
+            }
         }
         HorizontalDivider(Modifier.padding(top = 4.dp), thickness = 1.dp, color = oz.line)
         SheetRow(if (setMode) stringResource(R.string.ask_every_time) else stringResource(R.string.make_default), oz.fg3, vm::sheetFooter)
@@ -129,7 +140,7 @@ fun BoxScope.MethodSheet(vm: DialerViewModel) {
 }
 
 @Composable
-private fun MethodRow(m: Method, label: String, selected: Boolean, onClick: () -> Unit) {
+private fun MethodRow(m: Method, label: String, selected: Boolean, sub: String? = null, onClick: () -> Unit) {
     val oz = LocalOz.current
     Row(
         Modifier
@@ -142,7 +153,10 @@ private fun MethodRow(m: Method, label: String, selected: Boolean, onClick: () -
         horizontalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         OzIcon(m.icon, oz.fg2)
-        Text(label, style = OzType.body, color = oz.fg, modifier = Modifier.weight(1f))
+        Column(Modifier.weight(1f).padding(vertical = 8.dp)) {
+            Text(label, style = OzType.body, color = oz.fg)
+            if (sub != null) Text(sub, style = OzType.small, color = oz.fg3, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+        }
         // галочка переходит прозрачностью за 150 мс
         AnimatedVisibility(selected, enter = fadeIn(Motion.enter(Motion.FADE)), exit = fadeOut(Motion.exit(Motion.FADE))) {
             OzIcon(R.drawable.ic_oz_check, oz.accent)

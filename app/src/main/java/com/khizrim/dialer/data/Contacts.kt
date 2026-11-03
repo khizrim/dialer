@@ -101,6 +101,15 @@ object ContactsSource {
             if (c.moveToFirst()) c.getString(0) else null
         }
     }.getOrNull()
+
+    /** Подпись номера в контакте («мобильный», «рабочий») для экрана входящего. */
+    fun phoneLabelFor(context: Context, number: String): String? = runCatching {
+        if (number.isBlank()) return null
+        val uri = Uri.withAppendedPath(ContactsContract.PhoneLookup.CONTENT_FILTER_URI, Uri.encode(number))
+        context.contentResolver.query(uri, arrayOf(ContactsContract.PhoneLookup.TYPE, ContactsContract.PhoneLookup.LABEL), null, null, null)?.use { c ->
+            if (c.moveToFirst()) CommonDataKinds.Phone.getTypeLabel(context.resources, c.getInt(0), c.getString(1)).toString().lowercase() else null
+        }
+    }.getOrNull()
 }
 
 /** Сравнение номеров без кода страны и форматирования. */

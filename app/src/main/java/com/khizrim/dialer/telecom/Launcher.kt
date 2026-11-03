@@ -20,11 +20,11 @@ import com.khizrim.dialer.model.Person
 object Launcher {
 
     /** Возвращает null при успехе или короткий текст ошибки для тоста. */
-    fun perform(context: Context, person: Person, method: Method): String? {
+    fun perform(context: Context, person: Person, method: Method, number: String? = person.mainNumber): String? {
         val channel = person.channels.firstOrNull { it.method == method }
         return when {
-            method == Method.PHONE -> person.mainNumber?.let { call(context, it) } ?: context.getString(R.string.err_no_number)
-            method == Method.SMS -> person.mainNumber?.let { sms(context, it) } ?: context.getString(R.string.err_no_number)
+            method == Method.PHONE -> number?.let { call(context, it) } ?: context.getString(R.string.err_no_number)
+            method == Method.SMS -> number?.let { sms(context, it) } ?: context.getString(R.string.err_no_number)
             channel?.dataId != null && channel.mimeType != null -> {
                 val uri = ContentUris.withAppendedId(ContactsContract.Data.CONTENT_URI, channel.dataId)
                 val intent = Intent(Intent.ACTION_VIEW).setDataAndType(uri, channel.mimeType).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)

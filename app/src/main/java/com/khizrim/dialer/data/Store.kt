@@ -56,6 +56,12 @@ class Prefs(context: Context) {
         sp.edit().putString("def:$lookupKey", method?.name ?: ASK).apply()
     }
 
+    /** Номер, на который звонить и писать SMS, если у человека их несколько. */
+    fun numberFor(lookupKey: String): String? = sp.getString("num:$lookupKey", null)
+    fun setNumber(lookupKey: String, number: String?) {
+        sp.edit().apply { if (number == null) remove("num:$lookupKey") else putString("num:$lookupKey", number) }.apply()
+    }
+
     fun hiddenAt(key: String): Long = sp.getLong("hid:$key", 0L)
     fun hide(keys: Collection<String>, at: Long = System.currentTimeMillis()) {
         val e = sp.edit()

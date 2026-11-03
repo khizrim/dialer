@@ -101,7 +101,8 @@ object CallManager {
             if (ctx != null) io.execute {
                 val name = ContactsSource.nameFor(ctx, number)
                 // незнакомым номерам — подпись определителя: оператор и регион или «Похоже на спам»
-                val label = if (name == null) runCatching { com.khizrim.dialer.callerid.CallerId.labelFor(ctx, number) }.getOrNull() else null
+                val label = if (name == null) runCatching { com.khizrim.dialer.callerid.CallerId.labelFor(ctx, number) }.getOrNull()
+                    else ContactsSource.phoneLabelFor(ctx, number)
                 val spam = name == null && runCatching { com.khizrim.dialer.callerid.CallerId.isSuspicious(ctx, number) }.getOrDefault(false)
                 main.post { names[number] = name; labels[number] = label; if (spam) suspicious += number; refresh() }
             }
