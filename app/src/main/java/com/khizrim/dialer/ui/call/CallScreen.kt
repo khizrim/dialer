@@ -1,5 +1,10 @@
 package com.khizrim.dialer.ui.call
 
+import com.khizrim.dialer.ui.theme.raisedFill
+import com.khizrim.dialer.ui.theme.well
+import com.khizrim.dialer.ui.theme.lift
+import com.khizrim.dialer.ui.theme.OzShape
+
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -105,7 +110,9 @@ fun CallScreen(c: CallState, actions: CallActions, locked: Boolean = false) {
             Spacer(Modifier.height(if (c.phase == CallPhase.RINGING) 72.dp else 160.dp))
             Text(
                 title,
-                style = if (known) OzType.nameCall else OzType.digit,
+                style = if (known) OzType.nameCall else OzType.callNumber,
+                maxLines = if (known) 2 else 1,
+                softWrap = known,
                 color = oz.fg,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.semantics { heading() },
@@ -179,11 +186,11 @@ private fun Ringing(actions: CallActions, known: Boolean, secondLine: Boolean, l
 private fun LabeledRound(icon: Int, label: String, fill: Color, onClick: () -> Unit, onLongClick: (() -> Unit)? = null) {
     val oz = LocalOz.current
     Column(
-        Modifier.press(onClick, onLongClick, shape = RoundedCornerShape(20.dp), pressColor = Color.Transparent),
+        Modifier.press(onClick, onLongClick, shape = RoundedCornerShape(16.dp), pressColor = Color.Transparent),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Box(Modifier.size(64.dp).background(fill, CircleShape), contentAlignment = Alignment.Center) {
+        Box(Modifier.size(64.dp).raisedFill(fill, CircleShape), contentAlignment = Alignment.Center) {
             OzIcon(icon, Color.White, 28.dp)
         }
         Text(label, style = OzType.small, color = oz.fg2)
@@ -215,8 +222,8 @@ private fun Active(c: CallState, actions: CallActions, onRoutes: () -> Unit) {
             Modifier
                 .padding(bottom = 40.dp)
                 .size(64.dp)
-                .press(actions::hangup, shape = CircleShape, pressColor = oz.dangerFill, label = stringResource(R.string.end_call))
-                .background(oz.dangerFill, CircleShape),
+                .raisedFill(oz.dangerFill, CircleShape)
+                .press(actions::hangup, shape = CircleShape, pressColor = Color.White.copy(alpha = .12f), label = stringResource(R.string.end_call)),
             contentAlignment = Alignment.Center,
         ) { OzIcon(R.drawable.ic_oz_end_call, Color.White, 28.dp) }
     }
@@ -230,14 +237,15 @@ private fun Toggle(icon: Int, label: String, on: Boolean, onClick: () -> Unit) {
     Column(
         Modifier
             .width(96.dp)
-            .press(onClick, shape = RoundedCornerShape(16.dp), role = Role.Switch)
+            .well(OzShape.row, on)
+            .press(onClick, shape = OzShape.row, role = Role.Switch)
             .semantics { stateDescription = stateText }
             .padding(vertical = 10.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         OzIcon(icon, color, 26.dp)
-        Text(label, style = OzType.small, color = color)
+        Text(label, style = OzType.label, color = color, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
     }
 }
 
@@ -252,7 +260,7 @@ private fun Dtmf(typed: String, actions: CallActions) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     row.forEach { d ->
                         Box(
-                            Modifier.weight(1f).height(56.dp).press({ actions.tone(d) }, shape = RoundedCornerShape(14.dp), label = stringResource(R.string.tone, d.toString())),
+                            Modifier.weight(1f).height(56.dp).press({ actions.tone(d) }, shape = RoundedCornerShape(16.dp), label = stringResource(R.string.tone, d.toString())),
                             contentAlignment = Alignment.Center,
                         ) { Text(d.toString(), style = big, color = oz.fg) }
                     }
@@ -273,8 +281,9 @@ private fun BlockConfirm(number: String, onCancel: () -> Unit, onBlock: () -> Un
                 .safeDrawingPadding()
                 .padding(12.dp)
                 .fillMaxWidth()
-                .press({}, shape = RoundedCornerShape(24.dp), pressColor = oz.sheet)
-                .background(oz.sheet, RoundedCornerShape(24.dp))
+                .lift(OzShape.sheet)
+                .press({}, shape = OzShape.sheet, pressColor = oz.sheet)
+                .background(oz.sheet, OzShape.sheet)
                 .padding(24.dp),
         ) {
             Text(stringResource(R.string.block_title, number), style = OzType.title, color = oz.fg)
@@ -287,8 +296,8 @@ private fun BlockConfirm(number: String, onCancel: () -> Unit, onBlock: () -> Un
                 Spacer(Modifier.width(8.dp))
                 Box(
                     Modifier
-                        .press(onBlock, shape = RoundedCornerShape(22.dp), pressColor = oz.dangerFill)
-                        .background(oz.dangerFill, RoundedCornerShape(22.dp))
+                        .press(onBlock, shape = RoundedCornerShape(12.dp), pressColor = oz.dangerFill)
+                        .background(oz.dangerFill, RoundedCornerShape(12.dp))
                         .padding(horizontal = 16.dp, vertical = 12.dp),
                 ) { Text(stringResource(R.string.block), style = OzType.small.copy(fontWeight = FontWeight.SemiBold), color = Color.White) }
             }
@@ -313,7 +322,7 @@ private fun OtherLineRow(o: com.khizrim.dialer.model.OtherLine, phase: CallPhase
     Row(
         Modifier
             .padding(top = 16.dp)
-            .press(actions::swap, shape = RoundedCornerShape(14.dp), label = text + ". " + stringResource(R.string.swap))
+            .press(actions::swap, shape = RoundedCornerShape(16.dp), label = text + ". " + stringResource(R.string.swap))
             .padding(horizontal = 14.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -332,7 +341,7 @@ private fun SimChoice(labels: List<String>, actions: CallActions) {
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         labels.forEachIndexed { i, label ->
             Box(
-                Modifier.fillMaxWidth().height(56.dp).press({ actions.chooseSim(i) }, shape = RoundedCornerShape(14.dp)).padding(horizontal = 16.dp),
+                Modifier.fillMaxWidth().height(56.dp).press({ actions.chooseSim(i) }, shape = RoundedCornerShape(16.dp)).padding(horizontal = 16.dp),
                 contentAlignment = Alignment.CenterStart,
             ) { Text(label, style = OzType.list, color = oz.fg) }
         }
@@ -352,14 +361,15 @@ private fun RoutePicker(c: CallState, onPick: (Int) -> Unit, onCancel: () -> Uni
                 .safeDrawingPadding()
                 .padding(12.dp)
                 .fillMaxWidth()
-                .press({}, shape = RoundedCornerShape(24.dp), pressColor = oz.sheet)
-                .background(oz.sheet, RoundedCornerShape(24.dp))
+                .lift(OzShape.sheet)
+                .press({}, shape = OzShape.sheet, pressColor = oz.sheet)
+                .background(oz.sheet, OzShape.sheet)
                 .padding(vertical = 12.dp),
         ) {
             options.forEach { r ->
                 val on = c.route == r
                 Row(
-                    Modifier.fillMaxWidth().height(56.dp).press({ onPick(r) }, shape = RoundedCornerShape(14.dp)).padding(horizontal = 24.dp),
+                    Modifier.fillMaxWidth().height(56.dp).press({ onPick(r) }, shape = RoundedCornerShape(16.dp)).padding(horizontal = 24.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(routeLabel(c, r), style = OzType.list, color = if (on) oz.accent else oz.fg, modifier = Modifier.weight(1f))

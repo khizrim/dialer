@@ -45,6 +45,7 @@ import com.khizrim.dialer.ui.theme.LocalReducedMotion
 import com.khizrim.dialer.ui.theme.Motion
 import com.khizrim.dialer.ui.theme.OzType
 import com.khizrim.dialer.ui.theme.Inter
+import com.khizrim.dialer.ui.theme.lift
 import com.khizrim.dialer.model.Method
 
 /** Главная: стопка имён, ближайший человек внизу. Тап связывает, долгое нажатие открывает меню. */
@@ -133,7 +134,7 @@ fun HomeScreen(vm: DialerViewModel) {
                             Modifier
                                 .fillMaxWidth()
                                 .heightIn(min = 52.dp)
-                                .background(oz.fg, RoundedCornerShape(14.dp))
+                                .lift(com.khizrim.dialer.ui.theme.OzShape.row).background(oz.fg, com.khizrim.dialer.ui.theme.OzShape.row)
                                 .padding(start = 16.dp, end = 6.dp)
                                 .semantics { liveRegion = LiveRegionMode.Polite },
                             verticalAlignment = Alignment.CenterVertically,

@@ -1,5 +1,10 @@
 package com.khizrim.dialer.ui.components
 
+import com.khizrim.dialer.ui.theme.raisedFill
+import com.khizrim.dialer.ui.theme.well
+import com.khizrim.dialer.ui.theme.lift
+import com.khizrim.dialer.ui.theme.OzShape
+
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -110,8 +115,8 @@ fun RoundButton(
     Box(
         Modifier
             .size(size)
-            .press(onClick, shape = CircleShape, pressColor = fill, label = label)
-            .background(fill, CircleShape),
+            .raisedFill(fill, CircleShape)
+            .press(onClick, shape = CircleShape, pressColor = Color.White.copy(alpha = .12f), label = label),
         contentAlignment = Alignment.Center,
     ) {
         OzIcon(icon, Color.White, iconSize)
