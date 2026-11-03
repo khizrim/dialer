@@ -156,12 +156,12 @@ if num:
     sh("shell", "input", "tap", str(x), str(y)); time.sleep(3); shot("card-number-tap"); calls("after-card-tap")
     hangup(); time.sleep(2)
 start(); tap("Мама", long=True, wait=2); tap(T["card"], wait=2.5)
-record("card-swipe-down", 6, lambda: drag(540, 900, 2100, 350, 2.5)); shot("after-card-swipe-down")
+record("card-swipe-down", 6, lambda: drag(540, 1350, 2250, 350, 2.5)); shot("after-card-swipe-down")
 start(); tap(T["keypad"], wait=2); keys("89161234567"); time.sleep(1); shot("keypad-before-erase")
 record("keypad-number-swipe-left", 6, lambda: (sh("shell", "input", "swipe", "900", "330", "150", "330", "250"), time.sleep(2.5))); shot("keypad-after-erase-top")
 p2 = None
 for t, d, x, y, b in nodes():
-    if t.startswith("+7") and y < 900: p2 = (x, y)
+    if t and t[0] in "+8" and t.replace(" ","").replace("-","").replace("(","").replace(")","").lstrip("+").isdigit() and 900 < y < 1500: p2 = (x, y)
 note(f"dialed field: {p2}")
 if p2:
     record("keypad-number-swipe-left-2", 6, lambda: (sh("shell", "input", "swipe", "950", str(p2[1]), "120", str(p2[1]), "250"), time.sleep(2.5))); shot("keypad-after-erase")
