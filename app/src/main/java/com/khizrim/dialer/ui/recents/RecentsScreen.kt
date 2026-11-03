@@ -17,6 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
@@ -34,6 +35,7 @@ import com.khizrim.dialer.ui.components.BottomBar
 import com.khizrim.dialer.ui.components.GhostIconButton
 import com.khizrim.dialer.ui.components.KeypadFab
 import com.khizrim.dialer.ui.components.press
+import com.khizrim.dialer.ui.components.swipeAway
 import com.khizrim.dialer.ui.theme.LocalOz
 import com.khizrim.dialer.ui.theme.OzType
 import java.text.DateFormat
@@ -68,7 +70,20 @@ fun RecentsScreen(vm: DialerViewModel) {
         if (ok) vm.askClearLog()
     }
     Column(Modifier.fillMaxSize()) {
-        LazyColumn(Modifier.weight(1f).fillMaxWidth().padding(horizontal = 12.dp), state = rememberLazyListState(), reverseLayout = true) {
+        // у самого нового звонка тянут вверх — обратно на главную, зеркально жесту, которым журнал открыли
+        val density = androidx.compose.ui.platform.LocalDensity.current
+        val back = remember(vm) {
+            object : androidx.compose.ui.input.nestedscroll.NestedScrollConnection {
+                var pull = 0f
+                override fun onPostScroll(consumed: androidx.compose.ui.geometry.Offset, available: androidx.compose.ui.geometry.Offset, source: androidx.compose.ui.input.nestedscroll.NestedScrollSource): androidx.compose.ui.geometry.Offset {
+                    if (source == androidx.compose.ui.input.nestedscroll.NestedScrollSource.UserInput) pull = if (available.y < 0f) pull + available.y else 0f
+                    if (pull < -with(density) { 96.dp.toPx() }) { pull = 0f; vm.back() }
+                    return androidx.compose.ui.geometry.Offset.Zero
+                }
+                override suspend fun onPreFling(available: androidx.compose.ui.unit.Velocity): androidx.compose.ui.unit.Velocity { pull = 0f; return androidx.compose.ui.unit.Velocity.Zero }
+            }
+        }
+        LazyColumn(Modifier.weight(1f).fillMaxWidth().nestedScroll(back).padding(horizontal = 12.dp), state = rememberLazyListState(), reverseLayout = true) {
             if (lines.isEmpty()) {
                 item(key = "empty") {
                     Text(stringResource(if (missedOnly) R.string.recents_no_missed else R.string.recents_empty), style = OzType.body, color = oz.fg2, modifier = Modifier.padding(12.dp))
@@ -89,16 +104,22 @@ fun RecentsScreen(vm: DialerViewModel) {
                             Modifier
                                 .fillMaxWidth()
                                 .heightIn(min = 56.dp)
+                                // смахнуть влево — удалить звонок с «Вернуть» (нужно разрешение на запись журнала)
+                                .swipeAway(vm.canClearLog) { vm.swipeDeleteRecord(r) }
                                 .press({ vm.callBack(r, l.person) }, onLongClick = { vm.openRecentMenu(r, l.person) }, shape = RoundedCornerShape(16.dp), label = label)
                                 .padding(horizontal = 12.dp, vertical = 12.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Column(Modifier.weight(1f), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(4.dp)) {
                                 Text(title, style = if (l.person != null && !l.person.nameIsNumber) OzType.nameList else OzType.number, color = oz.fg, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                // SIM в конце второй строки, только когда их две
+                                // вторая строка только когда есть что сказать: необычный звонок или не основная SIM
                                 val simIdx = if (vm.sims.size > 1) vm.sims.indexOfFirst { it.first == r.account } else -1
-                                val second = if (simIdx >= 0) r.text(res) + "  " + stringResource(R.string.sim_n, simIdx + 1) else r.text(res)
-                                Text(second, style = OzType.small, color = if (r.missed) oz.danger else oz.fg3)
+                                val sim = if (simIdx >= 0 && simIdx != vm.mainSimIndex) stringResource(R.string.sim_n, simIdx + 1) else null
+                                val note = r.note(res)
+                                if (note != null || sim != null) Row {
+                                    if (note != null) Text(note, style = OzType.small, color = if (r.missed) oz.danger else oz.fg3)
+                                    if (sim != null) Text((if (note != null) "  " else "") + sim, style = OzType.small, color = oz.fg3)
+                                }
                             }
                             Text(time.format(Date(r.date)), style = OzType.time, color = oz.fg3, modifier = Modifier.padding(start = 12.dp))
                         }
@@ -119,14 +140,16 @@ fun RecentsScreen(vm: DialerViewModel) {
             }
         }
         BottomBar {
-            // фильтр двумя словами: активное fg и 500, неактивное fg3, без заливки
+            // фильтр двумя словами, и только когда есть что фильтровать
             Row(Modifier.weight(1f)) {
+              if (vm.hasMissed || missedOnly) {
                 // активное слово подчёркнуто тонкой линией — видно и без цвета
                 val underline = androidx.compose.ui.text.style.TextDecoration.Underline
                 TextAction(stringResource(R.string.filter_all), if (missedOnly) oz.fg3 else oz.fg, { vm.showMissedOnly(false) },
                     style = OzType.body.copy(fontWeight = if (missedOnly) FontWeight.Normal else FontWeight.Medium, textDecoration = if (missedOnly) null else underline))
                 TextAction(stringResource(R.string.filter_missed), if (missedOnly) oz.fg else oz.fg3, { vm.showMissedOnly(true) },
                     style = OzType.body.copy(fontWeight = if (missedOnly) FontWeight.Medium else FontWeight.Normal, textDecoration = if (missedOnly) underline else null))
+              }
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 KeypadFab { vm.openKeypad() }

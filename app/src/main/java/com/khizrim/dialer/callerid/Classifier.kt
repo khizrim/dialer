@@ -120,3 +120,18 @@ object RecentContact {
         return if (d.length < 7) null else d.takeLast(10)
     }
 }
+
+/** Имя, которое передала сеть (CNAP): операторы и их антиспам-сервисы подписывают так звонки. */
+object NetworkName {
+    private val SPAM = Regex("спам|spam|мошен|fraud|scam|робот|реклам", RegexOption.IGNORE_CASE)
+
+    /** Пригодное для показа имя: не пустое и не сам номер. */
+    fun usable(name: String?): String? {
+        val n = name?.trim().orEmpty()
+        if (n.isEmpty()) return null
+        if (n.all { it.isDigit() || it in "+-() " }) return null
+        return n
+    }
+
+    fun looksLikeSpam(name: String?): Boolean = name != null && SPAM.containsMatchIn(name)
+}

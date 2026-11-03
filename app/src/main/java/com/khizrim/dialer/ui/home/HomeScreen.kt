@@ -46,6 +46,7 @@ import com.khizrim.dialer.ui.components.KeypadFab
 import com.khizrim.dialer.ui.components.OzIcon
 import com.khizrim.dialer.ui.components.TextAction
 import com.khizrim.dialer.ui.components.press
+import com.khizrim.dialer.ui.components.swipeAway
 import com.khizrim.dialer.ui.theme.LocalOz
 import com.khizrim.dialer.ui.theme.LocalReducedMotion
 import com.khizrim.dialer.ui.theme.Motion
@@ -72,6 +73,7 @@ fun HomeScreen(vm: DialerViewModel) {
         awaitEachGesture {
             val down = awaitFirstDown(requireUnconsumed = false, pass = androidx.compose.ui.input.pointer.PointerEventPass.Initial)
             var dy = 0f
+            var dx = 0f
             var dragging = false
             while (true) {
                 val ev = awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Initial)
@@ -85,6 +87,9 @@ fun HomeScreen(vm: DialerViewModel) {
                     break
                 }
                 dy += ch.position.y - ch.previousPosition.y
+                dx += ch.position.x - ch.previousPosition.x
+                // горизонтальный жест — это смахивание строки, его отдаём строке
+                if (!dragging && kotlin.math.abs(dx) > slop && kotlin.math.abs(dx) > kotlin.math.abs(dy)) break
                 if (!dragging && kotlin.math.abs(dy) > slop) dragging = true
                 if (dragging) {
                     ch.consume()
@@ -133,6 +138,8 @@ fun HomeScreen(vm: DialerViewModel) {
                                 placementSpec = if (reduced) null else Motion.enter(Motion.MOVE),
                                 fadeOutSpec = Motion.exit(Motion.FADE),
                             )
+                            // смахнуть влево — убрать с главной, с «Вернуть»
+                            .then(if (vm.leaving == null) Modifier.swipeAway { vm.removeFromHome(e.key, now = true) } else Modifier)
                             .graphicsLayer {
                                 alpha = 1f - progress
                                 translationX = if (reduced) 0f else shift * progress
@@ -180,7 +187,8 @@ fun HomeScreen(vm: DialerViewModel) {
                                 .padding(horizontal = 12.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            OzIcon(m?.icon ?: R.drawable.ic_oz_help, oz.fg3, 16.dp, modifier = Modifier.padding(end = 6.dp))
+                            // трубку не рисуем: она у всех одинаковая; значок только у тех, кому обычно пишут
+                            if (m != Method.PHONE) OzIcon(m?.icon ?: R.drawable.ic_oz_help, oz.fg3, 16.dp, modifier = Modifier.padding(end = 6.dp))
                             Text(p.name.substringBefore(' '), style = OzType.body.copy(fontFamily = com.khizrim.dialer.ui.theme.Literata), color = oz.fg, maxLines = 1)
                         }
                     }

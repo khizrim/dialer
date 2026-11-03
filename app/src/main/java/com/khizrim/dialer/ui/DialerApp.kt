@@ -125,7 +125,7 @@ fun DialerApp(vm: DialerViewModel = viewModel()) {
             SyncHelpSheet(vm)
             ConfirmLayer(vm)
             // тост встаёт над плашкой звонка, а не на неё
-            FloatToast(vm.toast, bottom = floatBottom(vm) + if (hasLive) 60.dp else 0.dp)
+            FloatToast(vm.toast, bottom = floatBottom(vm) + if (hasLive) 60.dp else 0.dp, undoHere = vm.screen != Screen.HOME || vm.keypadOpen, onUndo = vm::undo)
         }
     }
 }

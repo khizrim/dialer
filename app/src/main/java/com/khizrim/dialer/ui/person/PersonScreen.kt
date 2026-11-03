@@ -85,13 +85,19 @@ fun PersonScreen(vm: DialerViewModel, id: Long) {
             p.photo?.let { ContactPhoto(it, Modifier.padding(bottom = 16.dp)) }
             Text(p.shownName, style = if (p.nameIsNumber) OzType.numberHome else OzType.namePerson, color = oz.fg, modifier = Modifier.padding(bottom = 12.dp).semantics { heading() })
             // номера под именем: тип и номер серым, чтобы было видно, куда звоним
+            // тип номера нужен, только чтобы различать несколько номеров
             if (!p.nameIsNumber || p.phones.size > 1) {
-                val many = true
+                val many = p.phones.size > 1
+                // тап по номеру — звонок именно на него, долгое нажатие копирует
                 p.phones.take(3).forEach { ph ->
                     Text(
                         (if (many) ph.label.replaceFirstChar { it.uppercase() } + "  " else "") + com.khizrim.dialer.data.PhoneFormat.pretty(ph.number),
                         style = OzType.body.copy(fontFeatureSettings = "cv11, tnum"), color = oz.fg3, maxLines = 1,
-                        modifier = Modifier.padding(bottom = 6.dp),
+                        modifier = Modifier
+                            .offset(x = (-8).dp)
+                            .press({ vm.callNumberOf(p, ph.number) }, onLongClick = { vm.copyNumber(ph.number) }, shape = OzShape.text,
+                                label = stringResource(R.string.call_to, com.khizrim.dialer.data.PhoneFormat.pretty(ph.number)))
+                            .padding(horizontal = 8.dp, vertical = 3.dp),
                     )
                 }
             }
@@ -101,7 +107,7 @@ fun PersonScreen(vm: DialerViewModel, id: Long) {
                     .fillMaxWidth()
                     .height(56.dp)
                     .raisedFill(oz.accentFill, OzShape.main)
-                    .press({ vm.perform(p, method) }, shape = OzShape.main, pressColor = Color.White.copy(alpha = .12f)),
+                    .press({ vm.perform(p, method) }, onLongClick = { vm.openSheet(p, SheetMode.OTHER) }, shape = OzShape.main, pressColor = Color.White.copy(alpha = .12f)),
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically,
             ) {

@@ -276,25 +276,28 @@ fun BoxScope.ConfirmLayer(vm: DialerViewModel) {
 
 /** Плавающий тост для всего, кроме «Вернуть» (тот живёт в нижней панели главной). */
 @Composable
-fun BoxScope.FloatToast(toast: ToastState?, bottom: androidx.compose.ui.unit.Dp) {
+fun BoxScope.FloatToast(toast: ToastState?, bottom: androidx.compose.ui.unit.Dp, undoHere: Boolean = false, onUndo: () -> Unit = {}) {
     val oz = LocalOz.current
-    val visible = toast != null && !toast.undo
+    // «Вернуть» на главной живёт в нижней панели, на остальных экранах — в этом тосте
+    val visible = toast != null && (!toast.undo || undoHere)
     val t = rememberLast(if (visible) toast else null)
     AnimatedVisibility(
         visible,
         modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(start = 24.dp, end = 24.dp, bottom = bottom),
         enter = fadeIn(Motion.enter(Motion.MOVE)), exit = fadeOut(Motion.exit(Motion.FADE)),
     ) {
-        Text(
-            t?.text ?: "",
-            style = OzType.small,
-            color = oz.bg,
-            modifier = Modifier
+        Row(
+            Modifier
                 .fillMaxWidth()
+                .heightIn(min = 48.dp)
                 .lift(OzShape.row).background(oz.fg, OzShape.row)
                 .semantics { liveRegion = LiveRegionMode.Polite }
-                .padding(horizontal = 16.dp, vertical = 14.dp),
-        )
+                .padding(start = 16.dp, end = if (t?.undo == true) 6.dp else 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(t?.text ?: "", style = OzType.small, color = oz.bg, modifier = Modifier.weight(1f).padding(vertical = 14.dp))
+            if (t?.undo == true) TextAction(stringResource(R.string.undo), oz.toastAct, onUndo, style = OzType.small.copy(fontWeight = FontWeight.SemiBold))
+        }
     }
 }
 

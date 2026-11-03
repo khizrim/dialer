@@ -106,10 +106,10 @@ fun CallScreen(c: CallState, actions: CallActions, locked: Boolean = false) {
     val known = c.name != null
     val title = c.name ?: c.number.takeIf { it.isNotEmpty() }?.let { PhoneFormat.pretty(it) } ?: stringResource(R.string.hidden_number)
     val subBase = when (c.phase) {
-        CallPhase.RINGING -> if (known) (c.label ?: "").replaceFirstChar { it.uppercase() } else c.label ?: stringResource(R.string.not_in_contacts)
+        CallPhase.RINGING -> if (known) (c.label ?: "").replaceFirstChar { it.uppercase() } else c.label ?: ""
         CallPhase.DIALING -> if (c.simChoice != null) stringResource(R.string.choose_sim) else stringResource(R.string.calling)
         CallPhase.ACTIVE -> if (c.onHold) stringResource(R.string.on_hold) else
-            stringResource(R.string.net_phone) + "  " + CallManager.timer(((now - c.connectedAt).coerceAtLeast(0)) / 1000)
+            CallManager.timer(((now - c.connectedAt).coerceAtLeast(0)) / 1000)
         CallPhase.ENDED -> if (c.failed) stringResource(R.string.call_failed_text) else c.endText
     }
     val sub = if (c.sim != null && c.phase != CallPhase.ENDED && c.simChoice == null) "$subBase  ${c.sim}" else subBase

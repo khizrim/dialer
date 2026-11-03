@@ -182,6 +182,9 @@ object CallManager {
         val all = runCatching { ctx.getSystemService(TelecomManager::class.java)?.callCapablePhoneAccounts }.getOrNull().orEmpty()
         if (all.size < 2) return null
         val i = all.indexOfFirst { it == handle }.takeIf { it >= 0 } ?: return null
+        // основную SIM не подписываем: подпись нужна, только когда звонок идёт не с неё
+        val main = com.khizrim.dialer.data.Prefs(ctx).simForCalls?.let { id -> all.indexOfFirst { it.id == id } }?.takeIf { it >= 0 } ?: 0
+        if (i == main) return null
         return ctx.getString(R.string.sim_n, i + 1)
     }
 
