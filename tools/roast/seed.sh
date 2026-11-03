@@ -6,7 +6,7 @@ i=0
 add() { # имя номер starred
   i=$((i+1))
   $A content insert --uri content://com.android.contacts/raw_contacts --bind account_type:s:local --bind account_name:s:local --bind starred:i:$3
-  $A content insert --uri content://com.android.contacts/data --bind raw_contact_id:i:$i --bind mimetype:s:vnd.android.cursor.item/name --bind data1:s:"$1"
+  $A content insert --uri content://com.android.contacts/data --bind raw_contact_id:i:$i --bind mimetype:s:vnd.android.cursor.item/name --bind "data1:s:'$1'"
   $A content insert --uri content://com.android.contacts/data --bind raw_contact_id:i:$i --bind mimetype:s:vnd.android.cursor.item/phone_v2 --bind data1:s:"$2" --bind data2:i:2
 }
 add "Мама" "+79161112233" 1
@@ -31,3 +31,9 @@ call "+79997654321" 2 3000 30
 call "+79101112233" 3 4000 0
 add "Александра Константинопольская" "+79031112200" 0
 add "+7 916 555-00-11 Доставка" "+79165550011" 0
+
+# 30+ контактов, чтобы появился алфавитный указатель
+n=0
+for nm in Алексей Борис Вера Галина Денис Елена Жанна Зоя Ирина Кирилл Лариса Михаил Наталья Олег Павел Роман Светлана Тимур Ульяна Фёдор Христина Цветана Чеслав Шамиль Эдуард Юлия Яна Anna Brian Chloe David Emma; do
+  n=$((n+1)); add "$nm" "+7926100$(printf %04d $n)" 0
+done
