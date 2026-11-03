@@ -136,6 +136,20 @@ if num:
     back(); calls("before-card-tap")
     sh("shell", "input", "tap", str(x), str(y)); time.sleep(3); shot("card-number-tap"); calls("after-card-tap")
     subprocess.run(["adb", "shell", "input", "keyevent", "KEYCODE_ENDCALL"]); time.sleep(2)
+start(); tap("Мама", long=True, wait=2); tap(T["card"], wait=2.5)
+record("card-swipe-down", 6, lambda: drag(540, 900, 2100, 350, 2.5)); shot("after-card-swipe-down")
+start(); tap(T["keypad"], wait=2); keys("89161234567"); time.sleep(1); shot("keypad-before-erase")
+record("keypad-number-swipe-left", 6, lambda: (sh("shell", "input", "swipe", "900", "330", "150", "330", "250"), time.sleep(2.5))); shot("keypad-after-erase-top")
+p2 = None
+for t, d, x, y, b in nodes():
+    if t.startswith("+7") and y < 900: p2 = (x, y)
+note(f"dialed field: {p2}")
+if p2:
+    record("keypad-number-swipe-left-2", 6, lambda: (sh("shell", "input", "swipe", "950", str(p2[1]), "120", str(p2[1]), "250"), time.sleep(2.5))); shot("keypad-after-erase")
+back(); back()
+start(); tap(T["journal"], wait=2.5); calls("before-journal-swipe-right")
+record("journal-swipe-row-right", 8, lambda: hswipe(1900, 120, 950, wait=4)); shot("journal-after-swipe-right"); calls("after-journal-swipe-right")
+subprocess.run(["adb", "shell", "input", "keyevent", "KEYCODE_ENDCALL"]); time.sleep(3)
 # звонки
 start(); record("incoming-contact", 14, lambda: (subprocess.run(["adb", "emu", "gsm", "call", "+79161112233"]), time.sleep(4), tap(T["answer"], wait=4)))
 shot("in-call")
