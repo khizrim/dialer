@@ -221,8 +221,12 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     fun person(id: Long): Person? = byId[id]
 
     fun openContacts() { closeKeypad(); screen = Screen.CONTACTS }
-    fun openBlocked() { screen = Screen.BLOCKED }
-    fun openUnknown() { screen = Screen.UNKNOWN }
+    /** Незнакомые и заблокированные открываются из настроек или из уведомления: назад — туда, откуда пришли. */
+    private var listFrom = Screen.HOME
+    fun openBlocked() { if (screen != Screen.BLOCKED) listFrom = originFor(screen); screen = Screen.BLOCKED }
+    fun openUnknown() { if (screen != Screen.UNKNOWN) listFrom = originFor(screen); screen = Screen.UNKNOWN }
+    // из «Всех контактов» по-прежнему возвращаемся в них; со всех прочих экранов — на главную или в настройки
+    private fun originFor(s: Screen) = if (s == Screen.SETTINGS || s == Screen.CONTACTS) s else Screen.HOME
 
     /** «Найти в интернете»: открывает браузер, номер никуда больше не уходит. */
     fun searchWeb(number: String) {
@@ -232,7 +236,9 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     /** Журнал: открыт с главной (назад — на главную) или из контактов. */
     var recentsFromHome by mutableStateOf(false); private set
     var missedOnly by mutableStateOf(false); private set
+    private var recentsFrom = Screen.HOME
     fun openRecents(fromHome: Boolean = false, missed: Boolean = false) {
+        if (screen != Screen.RECENTS) recentsFrom = if (screen == Screen.CONTACTS) Screen.CONTACTS else Screen.HOME
         closeKeypad(); recentsFromHome = fromHome; missedOnly = missed; screen = Screen.RECENTS
     }
     fun showMissedOnly(v: Boolean) { missedOnly = v }
@@ -390,7 +396,9 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
         screen == Screen.PERSON -> { leavePerson(); true }
         screen == Screen.RECENTS && recentsFromHome -> { screen = Screen.HOME; true }
         screen == Screen.SETTINGS -> { leaveSettings(); true }
-        screen == Screen.BLOCKED || screen == Screen.UNKNOWN || screen == Screen.RECENTS || screen == Screen.SETTINGS -> { screen = Screen.CONTACTS; true }
+        screen == Screen.BLOCKED || screen == Screen.UNKNOWN -> { screen = listFrom; true }
+        // журнал из уведомления о пропущенном: назад — на главную, а не на экран, куда иначе не попасть
+        screen == Screen.RECENTS -> { screen = recentsFrom; true }
         screen == Screen.CONTACTS -> { screen = Screen.HOME; true }
         else -> false
     }
@@ -693,7 +701,7 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
         confirm = ConfirmState(
             str(R.string.clear_home_title),
             str(R.string.clear_home_text),
-            str(R.string.clear),
+            str(R.string.hide),
         ) {
             prefs.hide(home.map { it.key })
             home.clear(); tidy = false; toast = null; removed = emptyList()
