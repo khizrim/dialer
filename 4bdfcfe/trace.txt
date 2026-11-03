@@ -1,0 +1,565 @@
+--------- beginning of system
+11-03 19:43:12.158 W/ActivityManager(  553): registerReceiverWithFeature: no app for null
+11-03 19:43:12.242 W/ActivityManager(  553): Slow operation: 55ms so far, now at startProcess: returned from zygote!
+11-03 19:43:12.242 W/ActivityManager(  553): Slow operation: 55ms so far, now at startProcess: done updating battery stats
+11-03 19:43:12.242 W/ActivityManager(  553): Slow operation: 55ms so far, now at startProcess: building log message
+11-03 19:43:12.242 W/ActivityManager(  553): Slow operation: 55ms so far, now at startProcess: starting to update pids map
+11-03 19:43:12.261 W/ActivityManager(  553): Slow operation: 74ms so far, now at startProcess: done updating pids map
+--------- beginning of main
+11-03 19:43:13.542 I/Choreographer(  927): Skipped 52 frames!  The application may be doing too much work on its main thread.
+11-03 19:43:14.752 I/Choreographer( 6919): Skipped 50 frames!  The application may be doing too much work on its main thread.
+11-03 19:43:15.466 I/Choreographer( 6919): Skipped 37 frames!  The application may be doing too much work on its main thread.
+11-03 19:43:17.000 I/Choreographer( 1214): Skipped 38 frames!  The application may be doing too much work on its main thread.
+11-03 19:43:17.235 I/Choreographer( 6919): Skipped 84 frames!  The application may be doing too much work on its main thread.
+11-03 19:43:18.186 I/Choreographer( 6919): Skipped 55 frames!  The application may be doing too much work on its main thread.
+11-03 19:43:19.962 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:43:21.989 I/OzMotion( 7034): walk light-01-home-pull-down-journal-fast actions
+11-03 19:43:28.942 I/Choreographer( 2032): Skipped 44 frames!  The application may be doing too much work on its main thread.
+11-03 19:43:28.980 W/ActivityManager(  553): registerReceiverWithFeature: no app for null
+11-03 19:43:29.361 W/ActivityManager(  553): Slow operation: 154ms so far, now at startProcess: done updating pids map
+11-03 19:43:29.398 W/ActivityManager(  553): setHasOverlayUi called on unknown pid: 6919
+11-03 19:43:31.515 I/Choreographer( 7099): Skipped 37 frames!  The application may be doing too much work on its main thread.
+11-03 19:43:32.452 I/Choreographer( 7099): Skipped 50 frames!  The application may be doing too much work on its main thread.
+11-03 19:43:34.000 I/Choreographer( 7099): Skipped 60 frames!  The application may be doing too much work on its main thread.
+11-03 19:43:34.821 I/Choreographer( 7099): Skipped 48 frames!  The application may be doing too much work on its main thread.
+11-03 19:43:37.199 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:43:39.590 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:43:44.162 I/OzMotion( 7281): walk light-02-journal-back-home actions
+11-03 19:43:51.509 W/ActivityManager(  553): setHasOverlayUi called on unknown pid: 7099
+11-03 19:43:52.254 W/ActivityManager(  553): registerReceiverWithFeature: no app for null
+11-03 19:43:52.739 W/ActivityManager(  553): Slow operation: 425ms so far, now at startProcess: done starting proc!
+11-03 19:43:52.740 W/ActivityManager(  553): Slow operation: 425ms so far, now at startProcess: asking zygote to start proc
+11-03 19:43:52.797 W/ActivityManager(  553): Slow operation: 482ms so far, now at startProcess: returned from zygote!
+11-03 19:43:52.804 W/ActivityManager(  553): Slow operation: 489ms so far, now at startProcess: done updating battery stats
+11-03 19:43:52.804 W/ActivityManager(  553): Slow operation: 490ms so far, now at startProcess: building log message
+11-03 19:43:52.805 W/ActivityManager(  553): Slow operation: 490ms so far, now at startProcess: starting to update pids map
+11-03 19:43:52.805 W/ActivityManager(  553): Slow operation: 490ms so far, now at startProcess: done updating pids map
+11-03 19:43:53.776 I/Choreographer(  927): Skipped 36 frames!  The application may be doing too much work on its main thread.
+11-03 19:43:56.698 I/Choreographer( 7406): Skipped 33 frames!  The application may be doing too much work on its main thread.
+11-03 19:43:57.544 I/Choreographer( 7406): Skipped 47 frames!  The application may be doing too much work on its main thread.
+11-03 19:44:00.763 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:44:02.754 I/OzMotion( 7517): walk light-03-home-pull-down-journal-slow actions
+11-03 19:44:13.107 W/ActivityManager(  553): setHasOverlayUi called on unknown pid: 7406
+11-03 19:44:13.617 W/ActivityManager(  553): registerReceiverWithFeature: no app for null
+11-03 19:44:13.787 W/ActivityManager(  553): Slow operation: 55ms so far, now at startProcess: done updating battery stats
+11-03 19:44:13.787 W/ActivityManager(  553): Slow operation: 55ms so far, now at startProcess: building log message
+11-03 19:44:13.787 W/ActivityManager(  553): Slow operation: 55ms so far, now at startProcess: starting to update pids map
+11-03 19:44:13.787 W/ActivityManager(  553): Slow operation: 55ms so far, now at startProcess: done updating pids map
+11-03 19:44:14.896 I/Choreographer(  927): Skipped 53 frames!  The application may be doing too much work on its main thread.
+11-03 19:44:15.562 I/Choreographer( 7756): Skipped 30 frames!  The application may be doing too much work on its main thread.
+11-03 19:44:16.424 I/Choreographer( 7756): Skipped 46 frames!  The application may be doing too much work on its main thread.
+11-03 19:44:18.484 I/Choreographer( 7756): Skipped 75 frames!  The application may be doing too much work on its main thread.
+11-03 19:44:19.352 I/Choreographer( 7756): Skipped 50 frames!  The application may be doing too much work on its main thread.
+11-03 19:44:21.331 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:44:23.375 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:44:27.947 I/OzMotion( 7869): walk light-04-journal-pull-up-home actions
+11-03 19:44:36.955 W/ActivityManager(  553): setHasOverlayUi called on unknown pid: 7756
+11-03 19:44:36.964 W/ActivityManager(  553): registerReceiverWithFeature: no app for null
+11-03 19:44:37.166 W/ActivityManager(  553): Slow operation: 77ms so far, now at startProcess: returned from zygote!
+11-03 19:44:37.166 W/ActivityManager(  553): Slow operation: 77ms so far, now at startProcess: done updating battery stats
+11-03 19:44:37.166 W/ActivityManager(  553): Slow operation: 77ms so far, now at startProcess: building log message
+11-03 19:44:37.166 W/ActivityManager(  553): Slow operation: 77ms so far, now at startProcess: starting to update pids map
+11-03 19:44:37.166 W/ActivityManager(  553): Slow operation: 77ms so far, now at startProcess: done updating pids map
+11-03 19:44:40.331 I/Choreographer( 8093): Skipped 73 frames!  The application may be doing too much work on its main thread.
+11-03 19:44:42.685 I/Choreographer( 8093): Skipped 80 frames!  The application may be doing too much work on its main thread.
+11-03 19:44:43.239 I/Choreographer( 8093): Skipped 32 frames!  The application may be doing too much work on its main thread.
+11-03 19:44:44.893 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:44:46.879 I/OzMotion( 8180): walk light-05-home-tap-journal actions
+11-03 19:44:48.351 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:44:53.968 W/ActivityManager(  553): setHasOverlayUi called on unknown pid: 8093
+11-03 19:44:53.975 W/ActivityManager(  553): registerReceiverWithFeature: no app for null
+11-03 19:44:57.247 I/Choreographer( 8269): Skipped 62 frames!  The application may be doing too much work on its main thread.
+11-03 19:44:58.654 I/Choreographer( 8269): Skipped 75 frames!  The application may be doing too much work on its main thread.
+11-03 19:44:59.144 I/Choreographer(  927): Skipped 30 frames!  The application may be doing too much work on its main thread.
+11-03 19:45:01.946 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:45:03.964 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:45:08.581 I/OzMotion( 8387): walk light-06-journal-pull-up-fast actions
+11-03 19:45:15.503 W/ActivityManager(  553): setHasOverlayUi called on unknown pid: 8269
+11-03 19:45:15.822 W/ActivityManager(  553): registerReceiverWithFeature: no app for null
+11-03 19:45:17.553 I/Choreographer(  927): Skipped 56 frames!  The application may be doing too much work on its main thread.
+11-03 19:45:17.879 I/Choreographer( 8455): Skipped 31 frames!  The application may be doing too much work on its main thread.
+11-03 19:45:18.874 I/Choreographer( 8455): Skipped 53 frames!  The application may be doing too much work on its main thread.
+11-03 19:45:19.545 I/Choreographer( 8455): Skipped 37 frames!  The application may be doing too much work on its main thread.
+11-03 19:45:20.182 I/Choreographer(  927): Skipped 41 frames!  The application may be doing too much work on its main thread.
+11-03 19:45:20.959 I/Choreographer( 8455): Skipped 74 frames!  The application may be doing too much work on its main thread.
+11-03 19:45:21.890 I/Choreographer( 8455): Skipped 55 frames!  The application may be doing too much work on its main thread.
+11-03 19:45:23.773 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:45:25.748 I/OzMotion( 8537): walk light-07-home-pull-down-cancel actions
+11-03 19:45:34.176 W/ActivityManager(  553): setHasOverlayUi called on unknown pid: 8455
+11-03 19:45:34.676 W/ActivityManager(  553): registerReceiverWithFeature: no app for null
+11-03 19:45:37.529 I/Choreographer( 8746): Skipped 58 frames!  The application may be doing too much work on its main thread.
+11-03 19:45:38.115 I/Choreographer( 8746): Skipped 32 frames!  The application may be doing too much work on its main thread.
+11-03 19:45:39.618 I/Choreographer( 8746): Skipped 73 frames!  The application may be doing too much work on its main thread.
+11-03 19:45:40.377 I/Choreographer( 8746): Skipped 45 frames!  The application may be doing too much work on its main thread.
+11-03 19:45:42.431 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:45:44.386 I/OzMotion( 8836): walk light-08-home-pull-up-contacts-fast actions
+11-03 19:45:45.975 I/Choreographer( 1699): Skipped 35 frames!  The application may be doing too much work on its main thread.
+11-03 19:45:47.442 I/Choreographer( 1699): Skipped 75 frames!  The application may be doing too much work on its main thread.
+11-03 19:45:50.687 I/Choreographer( 1699): Skipped 193 frames!  The application may be doing too much work on its main thread.
+11-03 19:45:52.288 I/Choreographer( 2032): Skipped 40 frames!  The application may be doing too much work on its main thread.
+11-03 19:45:52.906 I/Choreographer( 2032): Skipped 30 frames!  The application may be doing too much work on its main thread.
+11-03 19:45:52.988 I/Choreographer( 1214): Skipped 50 frames!  The application may be doing too much work on its main thread.
+11-03 19:45:53.526 I/Choreographer(  553): Skipped 35 frames!  The application may be doing too much work on its main thread.
+11-03 19:45:53.553 W/ActivityManager(  553): registerReceiverWithFeature: no app for null
+11-03 19:45:53.700 W/ActivityManager(  553): Slow operation: 60ms so far, now at startProcess: returned from zygote!
+11-03 19:45:53.706 W/ActivityManager(  553): Slow operation: 66ms so far, now at startProcess: done updating battery stats
+11-03 19:45:53.706 W/ActivityManager(  553): Slow operation: 67ms so far, now at startProcess: building log message
+11-03 19:45:53.706 W/ActivityManager(  553): Slow operation: 67ms so far, now at startProcess: starting to update pids map
+11-03 19:45:53.707 W/ActivityManager(  553): Slow operation: 67ms so far, now at startProcess: done updating pids map
+11-03 19:45:53.923 W/ActivityManager(  553): setHasOverlayUi called on unknown pid: 8746
+11-03 19:45:54.134 W/ActivityManager(  553): Slow operation: 90ms so far, now at finishAttachApplicationInner: after mServices.attachApplicationLocked
+11-03 19:45:54.134 W/ActivityManager(  553): Slow operation: 90ms so far, now at finishAttachApplicationInner: after dispatching broadcasts
+11-03 19:45:56.807 I/Choreographer( 8944): Skipped 48 frames!  The application may be doing too much work on its main thread.
+11-03 19:45:57.623 W/ActivityManager(  553): Foreground service started from background can not have location/camera/microphone access: service com.google.android.inputmethod.latin/com.google.android.apps.inputmethod.libs.dataservice.superpacks.SuperpacksForegroundTaskService
+11-03 19:45:57.679 I/Choreographer( 8944): Skipped 45 frames!  The application may be doing too much work on its main thread.
+11-03 19:45:59.574 I/Choreographer( 8944): Skipped 68 frames!  The application may be doing too much work on its main thread.
+11-03 19:46:00.748 I/Choreographer( 8944): Skipped 69 frames!  The application may be doing too much work on its main thread.
+11-03 19:46:02.144 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:46:04.238 I/Choreographer( 8944): Skipped 36 frames!  The application may be doing too much work on its main thread.
+11-03 19:46:07.091 I/OzMotion( 9066): walk light-09-contacts-back-home actions
+11-03 19:46:13.810 W/ActivityManager(  553): setHasOverlayUi called on unknown pid: 8944
+11-03 19:46:14.516 W/ActivityManager(  553): registerReceiverWithFeature: no app for null
+11-03 19:46:14.647 W/ActivityManager(  553): Slow operation: 56ms so far, now at startProcess: done updating battery stats
+11-03 19:46:14.647 W/ActivityManager(  553): Slow operation: 56ms so far, now at startProcess: building log message
+11-03 19:46:14.647 W/ActivityManager(  553): Slow operation: 57ms so far, now at startProcess: starting to update pids map
+11-03 19:46:14.665 W/ActivityManager(  553): Slow operation: 74ms so far, now at startProcess: done updating pids map
+11-03 19:46:14.977 W/ActivityManager(  553): Slow operation: 71ms so far, now at attachApplicationLocked: immediately after bindApplication
+11-03 19:46:14.977 W/ActivityManager(  553): Slow operation: 71ms so far, now at attachApplicationLocked: after updateLruProcessLocked
+11-03 19:46:16.142 I/Choreographer(  927): Skipped 32 frames!  The application may be doing too much work on its main thread.
+11-03 19:46:17.383 I/Choreographer( 9143): Skipped 54 frames!  The application may be doing too much work on its main thread.
+11-03 19:46:19.406 I/Choreographer( 9143): Skipped 77 frames!  The application may be doing too much work on its main thread.
+11-03 19:46:20.169 I/Choreographer( 9143): Skipped 44 frames!  The application may be doing too much work on its main thread.
+11-03 19:46:22.203 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:46:24.194 I/OzMotion( 9227): walk light-10-home-pull-up-contacts-slow actions
+11-03 19:46:30.709 I/Choreographer( 1699): Skipped 41 frames!  The application may be doing too much work on its main thread.
+11-03 19:46:30.968 I/Choreographer( 9143): Skipped 49 frames!  The application may be doing too much work on its main thread.
+11-03 19:46:34.725 I/Choreographer( 1214): Skipped 37 frames!  The application may be doing too much work on its main thread.
+11-03 19:46:35.165 W/ActivityManager(  553): registerReceiverWithFeature: no app for null
+11-03 19:46:35.437 W/ActivityManager(  553): Slow operation: 173ms so far, now at startProcess: done updating pids map
+11-03 19:46:35.662 W/ActivityManager(  553): setHasOverlayUi called on unknown pid: 9143
+11-03 19:46:36.115 W/ActivityManager(  553): Slow operation: 105ms so far, now at attachApplicationLocked: immediately before bindApplication
+11-03 19:46:36.115 W/ActivityManager(  553): Slow operation: 105ms so far, now at attachApplicationLocked: immediately after bindApplication
+11-03 19:46:36.115 W/ActivityManager(  553): Slow operation: 105ms so far, now at attachApplicationLocked: after updateLruProcessLocked
+11-03 19:46:36.751 I/Choreographer(  927): Skipped 40 frames!  The application may be doing too much work on its main thread.
+11-03 19:46:38.735 I/Choreographer( 9454): Skipped 70 frames!  The application may be doing too much work on its main thread.
+11-03 19:46:40.987 I/Choreographer( 9454): Skipped 82 frames!  The application may be doing too much work on its main thread.
+11-03 19:46:42.329 I/Choreographer( 1214): Skipped 57 frames!  The application may be doing too much work on its main thread.
+11-03 19:46:42.336 I/Choreographer( 9454): Skipped 78 frames!  The application may be doing too much work on its main thread.
+11-03 19:46:44.076 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:46:50.044 I/OzMotion( 9585): walk light-11-contacts-drag-down-close actions
+11-03 19:46:59.121 W/ActivityManager(  553): setHasOverlayUi called on unknown pid: 9454
+11-03 19:46:59.254 I/Choreographer( 2032): Skipped 55 frames!  The application may be doing too much work on its main thread.
+11-03 19:46:59.389 W/ActivityManager(  553): registerReceiverWithFeature: no app for null
+11-03 19:46:59.539 W/ActivityManager(  553): Slow operation: 57ms so far, now at startProcess: done updating battery stats
+11-03 19:46:59.539 W/ActivityManager(  553): Slow operation: 57ms so far, now at startProcess: building log message
+11-03 19:46:59.540 W/ActivityManager(  553): Slow operation: 57ms so far, now at startProcess: starting to update pids map
+11-03 19:46:59.540 W/ActivityManager(  553): Slow operation: 57ms so far, now at startProcess: done updating pids map
+11-03 19:46:59.938 W/ActivityManager(  553): Slow operation: 81ms so far, now at finishAttachApplicationInner: after mServices.attachApplicationLocked
+11-03 19:46:59.938 W/ActivityManager(  553): Slow operation: 82ms so far, now at finishAttachApplicationInner: after dispatching broadcasts
+11-03 19:47:02.730 I/Choreographer( 9815): Skipped 50 frames!  The application may be doing too much work on its main thread.
+11-03 19:47:03.808 I/Choreographer( 9815): Skipped 49 frames!  The application may be doing too much work on its main thread.
+11-03 19:47:07.242 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:47:09.238 I/OzMotion( 9911): walk light-12-home-tap-contacts actions
+11-03 19:47:10.767 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:47:12.428 I/Choreographer( 1699): Skipped 36 frames!  The application may be doing too much work on its main thread.
+11-03 19:47:16.310 I/Choreographer( 1214): Skipped 31 frames!  The application may be doing too much work on its main thread.
+11-03 19:47:16.365 I/Choreographer( 2032): Skipped 33 frames!  The application may be doing too much work on its main thread.
+11-03 19:47:16.723 W/ActivityManager(  553): setHasOverlayUi called on unknown pid: 9815
+11-03 19:47:16.773 W/ActivityManager(  553): registerReceiverWithFeature: no app for null
+11-03 19:47:16.994 W/ActivityManager(  553): Slow operation: 143ms so far, now at startProcess: returned from zygote!
+11-03 19:47:17.000 W/ActivityManager(  553): Slow operation: 150ms so far, now at startProcess: done updating battery stats
+11-03 19:47:17.001 W/ActivityManager(  553): Slow operation: 150ms so far, now at startProcess: building log message
+11-03 19:47:17.001 W/ActivityManager(  553): Slow operation: 150ms so far, now at startProcess: starting to update pids map
+11-03 19:47:17.001 W/ActivityManager(  553): Slow operation: 150ms so far, now at startProcess: done updating pids map
+11-03 19:47:17.119 I/Choreographer( 1214): Skipped 33 frames!  The application may be doing too much work on its main thread.
+11-03 19:47:19.314 I/Choreographer(10004): Skipped 35 frames!  The application may be doing too much work on its main thread.
+11-03 19:47:20.457 I/Choreographer(10004): Skipped 60 frames!  The application may be doing too much work on its main thread.
+11-03 19:47:22.045 I/Choreographer(10004): Skipped 65 frames!  The application may be doing too much work on its main thread.
+11-03 19:47:22.896 I/Choreographer(10004): Skipped 47 frames!  The application may be doing too much work on its main thread.
+11-03 19:47:24.633 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:47:26.599 I/OzMotion(10098): walk light-13-home-to-settings actions
+11-03 19:47:28.150 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:47:33.510 W/ActivityManager(  553): setHasOverlayUi called on unknown pid: 10004
+11-03 19:47:33.651 W/ActivityManager(  553): registerReceiverWithFeature: no app for null
+11-03 19:47:33.826 W/ActivityManager(  553): Slow operation: 65ms so far, now at startProcess: returned from zygote!
+11-03 19:47:33.826 W/ActivityManager(  553): Slow operation: 65ms so far, now at startProcess: done updating battery stats
+11-03 19:47:33.826 W/ActivityManager(  553): Slow operation: 66ms so far, now at startProcess: building log message
+11-03 19:47:33.826 W/ActivityManager(  553): Slow operation: 66ms so far, now at startProcess: starting to update pids map
+11-03 19:47:33.826 W/ActivityManager(  553): Slow operation: 66ms so far, now at startProcess: done updating pids map
+11-03 19:47:36.424 I/Choreographer(10190): Skipped 42 frames!  The application may be doing too much work on its main thread.
+11-03 19:47:38.003 I/Choreographer(10190): Skipped 68 frames!  The application may be doing too much work on its main thread.
+11-03 19:47:41.336 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:47:43.337 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:47:47.618 I/OzMotion(10303): walk light-14-settings-back actions
+11-03 19:47:54.373 W/ActivityManager(  553): setHasOverlayUi called on unknown pid: 10190
+11-03 19:47:54.703 W/ActivityManager(  553): registerReceiverWithFeature: no app for null
+11-03 19:47:57.227 I/Choreographer(10364): Skipped 49 frames!  The application may be doing too much work on its main thread.
+11-03 19:47:59.119 I/Choreographer(10364): Skipped 74 frames!  The application may be doing too much work on its main thread.
+11-03 19:47:59.822 I/Choreographer(10364): Skipped 39 frames!  The application may be doing too much work on its main thread.
+11-03 19:48:02.388 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:48:04.350 I/OzMotion(10449): walk light-15-long-press-menu actions
+11-03 19:48:05.913 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:48:09.348 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:48:12.665 I/OzMotion(10542): walk light-16-menu-drag-down actions
+11-03 19:48:21.245 W/ActivityManager(  553): setHasOverlayUi called on unknown pid: 10364
+11-03 19:48:21.789 W/ActivityManager(  553): registerReceiverWithFeature: no app for null
+11-03 19:48:23.077 I/Choreographer(  927): Skipped 32 frames!  The application may be doing too much work on its main thread.
+11-03 19:48:24.627 I/Choreographer(10749): Skipped 60 frames!  The application may be doing too much work on its main thread.
+11-03 19:48:25.776 I/Choreographer(10749): Skipped 57 frames!  The application may be doing too much work on its main thread.
+11-03 19:48:29.458 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:48:31.455 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:48:36.800 I/OzMotion(10855): walk light-17-menu-to-card actions
+11-03 19:48:38.321 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:48:39.918 I/Choreographer(10749): Skipped 37 frames!  The application may be doing too much work on its main thread.
+11-03 19:48:44.166 I/OzMotion(10943): walk light-18-card-other-way-sheet actions
+11-03 19:48:45.813 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:48:52.026 W/ActivityManager(  553): setHasOverlayUi called on unknown pid: 10749
+11-03 19:48:52.138 W/ActivityManager(  553): registerReceiverWithFeature: no app for null
+11-03 19:48:52.290 W/ActivityManager(  553): Slow operation: 83ms so far, now at startProcess: returned from zygote!
+11-03 19:48:52.290 W/ActivityManager(  553): Slow operation: 83ms so far, now at startProcess: done updating battery stats
+11-03 19:48:52.290 W/ActivityManager(  553): Slow operation: 83ms so far, now at startProcess: building log message
+11-03 19:48:52.290 W/ActivityManager(  553): Slow operation: 83ms so far, now at startProcess: starting to update pids map
+11-03 19:48:52.290 W/ActivityManager(  553): Slow operation: 83ms so far, now at startProcess: done updating pids map
+11-03 19:48:54.841 I/Choreographer(11052): Skipped 52 frames!  The application may be doing too much work on its main thread.
+11-03 19:48:55.388 I/Choreographer(11052): Skipped 30 frames!  The application may be doing too much work on its main thread.
+11-03 19:48:56.950 I/Choreographer(11052): Skipped 66 frames!  The application may be doing too much work on its main thread.
+11-03 19:48:57.573 I/Choreographer(11052): Skipped 37 frames!  The application may be doing too much work on its main thread.
+11-03 19:48:59.700 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:49:01.662 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:49:03.610 I/Choreographer(11052): Skipped 31 frames!  The application may be doing too much work on its main thread.
+11-03 19:49:06.858 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:49:11.414 I/OzMotion(11186): walk light-19-card-drag-down actions
+11-03 19:49:19.959 W/ActivityManager(  553): registerReceiverWithFeature: no app for null
+11-03 19:49:20.117 W/ActivityManager(  553): Slow operation: 60ms so far, now at startProcess: returned from zygote!
+11-03 19:49:20.117 W/ActivityManager(  553): Slow operation: 60ms so far, now at startProcess: done updating battery stats
+11-03 19:49:20.117 W/ActivityManager(  553): Slow operation: 60ms so far, now at startProcess: building log message
+11-03 19:49:20.117 W/ActivityManager(  553): Slow operation: 60ms so far, now at startProcess: starting to update pids map
+11-03 19:49:20.117 W/ActivityManager(  553): Slow operation: 60ms so far, now at startProcess: done updating pids map
+11-03 19:49:20.397 W/ActivityManager(  553): setHasOverlayUi called on unknown pid: 11052
+11-03 19:49:22.147 I/Choreographer(11392): Skipped 32 frames!  The application may be doing too much work on its main thread.
+11-03 19:49:23.145 I/Choreographer(11392): Skipped 53 frames!  The application may be doing too much work on its main thread.
+11-03 19:49:25.127 I/Choreographer(11392): Skipped 73 frames!  The application may be doing too much work on its main thread.
+11-03 19:49:25.731 I/Choreographer(11392): Skipped 35 frames!  The application may be doing too much work on its main thread.
+11-03 19:49:27.775 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:49:29.757 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:49:31.771 I/Choreographer(11392): Skipped 34 frames!  The application may be doing too much work on its main thread.
+11-03 19:49:35.118 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:49:39.662 I/OzMotion(11524): walk light-19a-card-swipe-down-fast actions
+11-03 19:49:47.262 W/ActivityManager(  553): setHasOverlayUi called on unknown pid: 11392
+11-03 19:49:47.616 I/Choreographer( 2032): Skipped 37 frames!  The application may be doing too much work on its main thread.
+11-03 19:49:47.664 I/Choreographer( 1214): Skipped 31 frames!  The application may be doing too much work on its main thread.
+11-03 19:49:47.901 W/ActivityManager(  553): registerReceiverWithFeature: no app for null
+11-03 19:49:48.161 W/ActivityManager(  553): Slow operation: 57ms so far, now at startProcess: returned from zygote!
+11-03 19:49:48.161 W/ActivityManager(  553): Slow operation: 57ms so far, now at startProcess: done updating battery stats
+11-03 19:49:48.161 W/ActivityManager(  553): Slow operation: 57ms so far, now at startProcess: building log message
+11-03 19:49:48.161 W/ActivityManager(  553): Slow operation: 57ms so far, now at startProcess: starting to update pids map
+11-03 19:49:48.161 W/ActivityManager(  553): Slow operation: 57ms so far, now at startProcess: done updating pids map
+11-03 19:49:49.731 I/Choreographer(  927): Skipped 57 frames!  The application may be doing too much work on its main thread.
+11-03 19:49:49.825 I/Choreographer(11597): Skipped 34 frames!  The application may be doing too much work on its main thread.
+11-03 19:49:51.149 I/Choreographer(11597): Skipped 75 frames!  The application may be doing too much work on its main thread.
+11-03 19:49:53.004 I/Choreographer(11597): Skipped 101 frames!  The application may be doing too much work on its main thread.
+11-03 19:49:55.959 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:49:57.954 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:49:59.914 I/Choreographer(11597): Skipped 30 frames!  The application may be doing too much work on its main thread.
+11-03 19:50:03.366 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:50:07.911 I/OzMotion(11742): walk light-19b-card-back actions
+11-03 19:50:14.869 W/ActivityManager(  553): setHasOverlayUi called on unknown pid: 11597
+11-03 19:50:15.303 W/ActivityManager(  553): registerReceiverWithFeature: no app for null
+11-03 19:50:18.615 I/Choreographer(11802): Skipped 55 frames!  The application may be doing too much work on its main thread.
+11-03 19:50:20.599 I/Choreographer(11802): Skipped 79 frames!  The application may be doing too much work on its main thread.
+11-03 19:50:21.247 I/Choreographer(11802): Skipped 37 frames!  The application may be doing too much work on its main thread.
+11-03 19:50:23.136 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:50:25.134 I/OzMotion(11883): walk light-20-keypad-open-type actions
+11-03 19:50:26.703 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:50:35.365 I/OzMotion(12007): walk light-21-keypad-erase-close actions
+11-03 19:50:45.232 W/ActivityManager(  553): setHasOverlayUi called on unknown pid: 11802
+11-03 19:50:45.601 W/ActivityManager(  553): registerReceiverWithFeature: no app for null
+11-03 19:50:47.322 I/Choreographer(  927): Skipped 52 frames!  The application may be doing too much work on its main thread.
+11-03 19:50:48.713 I/Choreographer(12115): Skipped 63 frames!  The application may be doing too much work on its main thread.
+11-03 19:50:50.736 I/Choreographer(12115): Skipped 109 frames!  The application may be doing too much work on its main thread.
+11-03 19:50:51.442 I/Choreographer(  927): Skipped 36 frames!  The application may be doing too much work on its main thread.
+11-03 19:50:53.819 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:50:55.845 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:50:59.498 I/OzMotion(12220): walk light-22-keypad-drag-down actions
+11-03 19:51:07.353 W/ActivityManager(  553): setHasOverlayUi called on unknown pid: 12115
+11-03 19:51:07.637 W/ActivityManager(  553): registerReceiverWithFeature: no app for null
+11-03 19:51:07.871 W/ActivityManager(  553): Slow operation: 58ms so far, now at startProcess: done updating pids map
+11-03 19:51:08.682 I/Choreographer(  927): Skipped 38 frames!  The application may be doing too much work on its main thread.
+11-03 19:51:09.790 I/Choreographer(12446): Skipped 35 frames!  The application may be doing too much work on its main thread.
+11-03 19:51:11.043 I/Choreographer(12446): Skipped 69 frames!  The application may be doing too much work on its main thread.
+11-03 19:51:12.336 I/Choreographer(12446): Skipped 68 frames!  The application may be doing too much work on its main thread.
+11-03 19:51:15.659 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:51:17.685 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:51:19.208 W/ActivityManager(  553): setHasOverlayUi called on unknown pid: 12446
+11-03 19:51:19.374 W/ActivityManager(  553): registerReceiverWithFeature: no app for null
+11-03 19:51:19.508 W/ActivityManager(  553): Slow operation: 60ms so far, now at startProcess: returned from zygote!
+11-03 19:51:19.509 W/ActivityManager(  553): Slow operation: 61ms so far, now at startProcess: done updating battery stats
+11-03 19:51:19.509 W/ActivityManager(  553): Slow operation: 61ms so far, now at startProcess: building log message
+11-03 19:51:19.512 W/ActivityManager(  553): Slow operation: 64ms so far, now at startProcess: starting to update pids map
+11-03 19:51:19.512 W/ActivityManager(  553): Slow operation: 64ms so far, now at startProcess: done updating pids map
+11-03 19:51:22.028 I/Choreographer(12553): Skipped 42 frames!  The application may be doing too much work on its main thread.
+11-03 19:51:23.750 I/Choreographer(12553): Skipped 81 frames!  The application may be doing too much work on its main thread.
+11-03 19:51:26.973 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:51:28.864 W/ActivityManager(  553): Scheduling restart of crashed service com.android.chrome/org.chromium.chrome.browser.customtabs.CustomTabsConnectionService in 1000ms for connection
+11-03 19:51:29.042 W/ActivityManager(  553): setHasOverlayUi called on unknown pid: 1163
+11-03 19:51:29.125 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:51:33.666 I/OzMotion(12691): walk light-24-journal-row-swipe-delete actions
+11-03 19:51:34.016 D/OzMotion(12553): swipeAway end offset=-188.16016 v=-3245.854
+11-03 19:51:34.027 D/OzMotion(12553): swipeAway removed
+11-03 19:51:40.132 W/ActivityManager(  553): Slow operation: 56ms so far, now at startProcess: returned from zygote!
+11-03 19:51:40.133 W/ActivityManager(  553): Slow operation: 56ms so far, now at startProcess: done updating battery stats
+11-03 19:51:40.133 W/ActivityManager(  553): Slow operation: 56ms so far, now at startProcess: building log message
+11-03 19:51:40.133 W/ActivityManager(  553): Slow operation: 56ms so far, now at startProcess: starting to update pids map
+11-03 19:51:40.133 W/ActivityManager(  553): Slow operation: 56ms so far, now at startProcess: done updating pids map
+11-03 19:51:43.481 W/ActivityManager(  553): registerReceiverWithFeature: no app for null
+11-03 19:51:43.555 W/ActivityManager(  553): setHasOverlayUi called on unknown pid: 12553
+11-03 19:51:46.635 I/Choreographer(12787): Skipped 62 frames!  The application may be doing too much work on its main thread.
+11-03 19:51:47.975 I/Choreographer(12787): Skipped 69 frames!  The application may be doing too much work on its main thread.
+11-03 19:51:48.805 I/Choreographer(  927): Skipped 34 frames!  The application may be doing too much work on its main thread.
+11-03 19:51:49.137 I/Choreographer(  927): Skipped 37 frames!  The application may be doing too much work on its main thread.
+11-03 19:51:51.393 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:51:53.393 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:51:58.009 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:52:00.134 I/OzMotion(12932): walk light-25-journal-filter actions
+11-03 19:52:01.733 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:52:05.731 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:52:10.048 W/ActivityManager(  553): registerReceiverWithFeature: no app for null
+11-03 19:52:10.096 W/ActivityManager(  553): setHasOverlayUi called on unknown pid: 12787
+11-03 19:52:10.205 W/ActivityManager(  553): Slow operation: 60ms so far, now at startProcess: done updating battery stats
+11-03 19:52:10.207 W/ActivityManager(  553): Slow operation: 62ms so far, now at startProcess: building log message
+11-03 19:52:10.207 W/ActivityManager(  553): Slow operation: 63ms so far, now at startProcess: starting to update pids map
+11-03 19:52:10.207 W/ActivityManager(  553): Slow operation: 63ms so far, now at startProcess: done updating pids map
+11-03 19:52:12.834 I/Choreographer(13066): Skipped 56 frames!  The application may be doing too much work on its main thread.
+11-03 19:52:14.588 I/Choreographer(13066): Skipped 68 frames!  The application may be doing too much work on its main thread.
+11-03 19:52:15.520 I/Choreographer(13066): Skipped 55 frames!  The application may be doing too much work on its main thread.
+11-03 19:52:17.711 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:52:19.764 I/OzMotion(13151): walk light-26-incoming-answer-end actions
+11-03 19:52:22.322 I/Choreographer(  927): Skipped 49 frames!  The application may be doing too much work on its main thread.
+11-03 19:52:25.062 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:52:27.568 I/Choreographer(13066): Skipped 73 frames!  The application may be doing too much work on its main thread.
+11-03 19:52:29.799 I/Choreographer(  927): Skipped 49 frames!  The application may be doing too much work on its main thread.
+11-03 19:52:30.411 I/Choreographer(13066): Skipped 168 frames!  The application may be doing too much work on its main thread.
+11-03 19:52:30.991 I/Choreographer(  927): Skipped 60 frames!  The application may be doing too much work on its main thread.
+11-03 19:52:31.470 I/Choreographer(13066): Skipped 30 frames!  The application may be doing too much work on its main thread.
+11-03 19:52:31.694 I/Choreographer(  927): Skipped 30 frames!  The application may be doing too much work on its main thread.
+11-03 19:52:36.583 W/ActivityManager(  553): setHasOverlayUi called on unknown pid: 13066
+11-03 19:52:36.738 W/ActivityManager(  553): registerReceiverWithFeature: no app for null
+11-03 19:52:39.279 I/Choreographer(13338): Skipped 57 frames!  The application may be doing too much work on its main thread.
+11-03 19:52:40.956 I/Choreographer(  927): Skipped 34 frames!  The application may be doing too much work on its main thread.
+11-03 19:52:41.241 I/Choreographer(13338): Skipped 71 frames!  The application may be doing too much work on its main thread.
+11-03 19:52:41.943 I/Choreographer(13338): Skipped 41 frames!  The application may be doing too much work on its main thread.
+11-03 19:52:44.277 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:52:46.273 I/OzMotion(13421): walk light-27-cold-start actions
+11-03 19:52:54.238 I/Choreographer(  927): Skipped 41 frames!  The application may be doing too much work on its main thread.
+11-03 19:52:54.430 I/Choreographer( 1214): Skipped 36 frames!  The application may be doing too much work on its main thread.
+11-03 19:52:54.997 I/Choreographer(13338): Skipped 49 frames!  The application may be doing too much work on its main thread.
+11-03 19:52:56.214 W/ActivityManager(  553): setHasOverlayUi called on unknown pid: 13338
+11-03 19:52:56.526 W/ActivityManager(  553): registerReceiverWithFeature: no app for null
+11-03 19:52:59.412 I/Choreographer(13478): Skipped 43 frames!  The application may be doing too much work on its main thread.
+11-03 19:53:04.333 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:53:06.267 I/OzMotion(13562): walk dark-01-home-pull-down-journal-fast actions
+11-03 19:53:13.127 W/ActivityManager(  553): setHasOverlayUi called on unknown pid: 13478
+11-03 19:53:13.375 W/ActivityManager(  553): registerReceiverWithFeature: no app for null
+11-03 19:53:13.637 W/ActivityManager(  553): Slow operation: 202ms so far, now at startProcess: done updating pids map
+11-03 19:53:15.737 I/Choreographer(13630): Skipped 39 frames!  The application may be doing too much work on its main thread.
+11-03 19:53:21.126 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:53:23.166 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:53:27.728 I/OzMotion(13737): walk dark-02-journal-back-home actions
+11-03 19:53:34.444 W/ActivityManager(  553): setHasOverlayUi called on unknown pid: 13630
+11-03 19:53:34.707 W/ActivityManager(  553): registerReceiverWithFeature: no app for null
+11-03 19:53:35.075 W/ActivityManager(  553): Slow operation: 70ms so far, now at finishAttachApplicationInner: after mServices.attachApplicationLocked
+11-03 19:53:35.075 W/ActivityManager(  553): Slow operation: 70ms so far, now at finishAttachApplicationInner: after dispatching broadcasts
+11-03 19:53:36.894 I/Choreographer(13797): Skipped 36 frames!  The application may be doing too much work on its main thread.
+11-03 19:53:42.272 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:53:44.258 I/OzMotion(13880): walk dark-03-home-pull-down-journal-slow actions
+11-03 19:53:54.238 W/ActivityManager(  553): setHasOverlayUi called on unknown pid: 13797
+11-03 19:53:54.289 W/ActivityManager(  553): registerReceiverWithFeature: no app for null
+11-03 19:53:56.784 I/Choreographer(14119): Skipped 36 frames!  The application may be doing too much work on its main thread.
+11-03 19:54:01.904 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:54:03.887 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:54:08.465 I/OzMotion(14226): walk dark-04-journal-pull-up-home actions
+11-03 19:54:17.709 W/ActivityManager(  553): setHasOverlayUi called on unknown pid: 14119
+11-03 19:54:17.722 W/ActivityManager(  553): registerReceiverWithFeature: no app for null
+11-03 19:54:17.901 W/ActivityManager(  553): Slow operation: 51ms so far, now at startProcess: returned from zygote!
+11-03 19:54:17.901 W/ActivityManager(  553): Slow operation: 52ms so far, now at startProcess: done updating battery stats
+11-03 19:54:17.901 W/ActivityManager(  553): Slow operation: 52ms so far, now at startProcess: building log message
+11-03 19:54:17.901 W/ActivityManager(  553): Slow operation: 52ms so far, now at startProcess: starting to update pids map
+11-03 19:54:17.901 W/ActivityManager(  553): Slow operation: 52ms so far, now at startProcess: done updating pids map
+11-03 19:54:20.102 I/Choreographer(14449): Skipped 38 frames!  The application may be doing too much work on its main thread.
+11-03 19:54:25.317 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:54:27.294 I/OzMotion(14532): walk dark-05-home-tap-journal actions
+11-03 19:54:28.744 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:54:34.109 W/ActivityManager(  553): setHasOverlayUi called on unknown pid: 14449
+11-03 19:54:34.378 W/ActivityManager(  553): registerReceiverWithFeature: no app for null
+11-03 19:54:36.570 I/Choreographer(14616): Skipped 34 frames!  The application may be doing too much work on its main thread.
+11-03 19:54:42.132 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:54:44.105 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:54:48.668 I/OzMotion(14721): walk dark-06-journal-pull-up-fast actions
+11-03 19:54:55.434 W/ActivityManager(  553): setHasOverlayUi called on unknown pid: 14616
+11-03 19:54:55.741 W/ActivityManager(  553): registerReceiverWithFeature: no app for null
+11-03 19:54:55.918 W/ActivityManager(  553): Slow operation: 60ms so far, now at startProcess: returned from zygote!
+11-03 19:54:55.918 W/ActivityManager(  553): Slow operation: 60ms so far, now at startProcess: done updating battery stats
+11-03 19:54:55.922 W/ActivityManager(  553): Slow operation: 64ms so far, now at startProcess: building log message
+11-03 19:54:55.923 W/ActivityManager(  553): Slow operation: 65ms so far, now at startProcess: starting to update pids map
+11-03 19:54:55.924 W/ActivityManager(  553): Slow operation: 66ms so far, now at startProcess: done updating pids map
+11-03 19:54:57.887 I/Choreographer(14785): Skipped 34 frames!  The application may be doing too much work on its main thread.
+11-03 19:55:03.340 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:55:05.350 I/OzMotion(14870): walk dark-07-home-pull-down-cancel actions
+11-03 19:55:13.294 W/ActivityManager(  553): setHasOverlayUi called on unknown pid: 14785
+11-03 19:55:13.512 W/ActivityManager(  553): registerReceiverWithFeature: no app for null
+11-03 19:55:13.648 W/ActivityManager(  553): Slow operation: 82ms so far, now at startProcess: done updating pids map
+11-03 19:55:15.784 I/Choreographer(15080): Skipped 34 frames!  The application may be doing too much work on its main thread.
+11-03 19:55:21.070 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:55:23.051 I/OzMotion(15159): walk dark-08-home-pull-up-contacts-fast actions
+11-03 19:55:30.409 I/Choreographer(  553): Skipped 36 frames!  The application may be doing too much work on its main thread.
+11-03 19:55:30.422 W/ActivityManager(  553): registerReceiverWithFeature: no app for null
+11-03 19:55:30.730 W/ActivityManager(  553): setHasOverlayUi called on unknown pid: 15080
+11-03 19:55:32.742 I/Choreographer(15240): Skipped 34 frames!  The application may be doing too much work on its main thread.
+11-03 19:55:38.017 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:55:42.904 I/OzMotion(15336): walk dark-09-contacts-back-home actions
+11-03 19:55:49.799 W/ActivityManager(  553): setHasOverlayUi called on unknown pid: 15240
+11-03 19:55:49.965 W/ActivityManager(  553): registerReceiverWithFeature: no app for null
+11-03 19:55:52.224 I/Choreographer(15416): Skipped 37 frames!  The application may be doing too much work on its main thread.
+11-03 19:55:57.551 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:55:59.545 I/OzMotion(15496): walk dark-10-home-pull-up-contacts-slow actions
+11-03 19:56:05.628 I/Choreographer(15416): Skipped 42 frames!  The application may be doing too much work on its main thread.
+11-03 19:56:09.623 W/ActivityManager(  553): registerReceiverWithFeature: no app for null
+11-03 19:56:10.085 W/ActivityManager(  553): setHasOverlayUi called on unknown pid: 15416
+11-03 19:56:12.380 I/Choreographer(15721): Skipped 43 frames!  The application may be doing too much work on its main thread.
+11-03 19:56:17.637 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:56:23.529 I/OzMotion(15823): walk dark-11-contacts-drag-down-close actions
+11-03 19:56:32.665 W/ActivityManager(  553): setHasOverlayUi called on unknown pid: 15721
+11-03 19:56:32.813 W/ActivityManager(  553): registerReceiverWithFeature: no app for null
+11-03 19:56:33.011 W/ActivityManager(  553): Slow operation: 53ms so far, now at startProcess: returned from zygote!
+11-03 19:56:33.011 W/ActivityManager(  553): Slow operation: 53ms so far, now at startProcess: done updating battery stats
+11-03 19:56:33.011 W/ActivityManager(  553): Slow operation: 53ms so far, now at startProcess: building log message
+11-03 19:56:33.011 W/ActivityManager(  553): Slow operation: 53ms so far, now at startProcess: starting to update pids map
+11-03 19:56:33.105 W/ActivityManager(  553): Slow operation: 147ms so far, now at startProcess: done updating pids map
+11-03 19:56:35.214 I/Choreographer(16065): Skipped 35 frames!  The application may be doing too much work on its main thread.
+11-03 19:56:40.753 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:56:42.698 I/OzMotion(16154): walk dark-12-home-tap-contacts actions
+11-03 19:56:44.045 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:56:46.068 I/Choreographer(16065): Skipped 37 frames!  The application may be doing too much work on its main thread.
+11-03 19:56:46.069 I/Choreographer( 1699): Skipped 30 frames!  The application may be doing too much work on its main thread.
+11-03 19:56:49.800 I/Choreographer( 1214): Skipped 33 frames!  The application may be doing too much work on its main thread.
+11-03 19:56:49.989 W/ActivityManager(  553): registerReceiverWithFeature: no app for null
+11-03 19:56:50.225 W/ActivityManager(  553): setHasOverlayUi called on unknown pid: 16065
+11-03 19:56:52.443 I/Choreographer(16244): Skipped 44 frames!  The application may be doing too much work on its main thread.
+11-03 19:56:57.577 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:56:59.557 I/OzMotion(16322): walk dark-13-home-to-settings actions
+11-03 19:57:00.960 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:57:06.486 W/ActivityManager(  553): registerReceiverWithFeature: no app for null
+11-03 19:57:06.493 W/ActivityManager(  553): setHasOverlayUi called on unknown pid: 16244
+11-03 19:57:08.781 I/Choreographer(16422): Skipped 36 frames!  The application may be doing too much work on its main thread.
+11-03 19:57:14.085 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:57:16.095 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:57:20.366 I/OzMotion(16531): walk dark-14-settings-back actions
+11-03 19:57:27.258 W/ActivityManager(  553): setHasOverlayUi called on unknown pid: 16422
+11-03 19:57:27.270 W/ActivityManager(  553): registerReceiverWithFeature: no app for null
+11-03 19:57:27.465 W/ActivityManager(  553): Slow operation: 66ms so far, now at startProcess: done updating pids map
+11-03 19:57:29.741 I/Choreographer(16595): Skipped 41 frames!  The application may be doing too much work on its main thread.
+11-03 19:57:34.884 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:57:36.859 I/OzMotion(16679): walk dark-15-long-press-menu actions
+11-03 19:57:38.274 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:57:41.834 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:57:45.044 I/OzMotion(16779): walk dark-16-menu-drag-down actions
+11-03 19:57:53.123 W/ActivityManager(  553): setHasOverlayUi called on unknown pid: 16595
+11-03 19:57:53.440 W/ActivityManager(  553): registerReceiverWithFeature: no app for null
+11-03 19:57:53.682 W/ActivityManager(  553): Slow operation: 79ms so far, now at startProcess: done updating pids map
+11-03 19:57:55.969 I/Choreographer(16987): Skipped 43 frames!  The application may be doing too much work on its main thread.
+11-03 19:58:01.227 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:58:03.160 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:58:08.428 I/OzMotion(17144): walk dark-17-menu-to-card actions
+11-03 19:58:09.838 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:58:11.403 I/Choreographer(16987): Skipped 36 frames!  The application may be doing too much work on its main thread.
+11-03 19:58:15.787 I/OzMotion(17232): walk dark-18-card-other-way-sheet actions
+11-03 19:58:17.189 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:58:23.747 W/ActivityManager(  553): setHasOverlayUi called on unknown pid: 16987
+11-03 19:58:23.919 W/ActivityManager(  553): registerReceiverWithFeature: no app for null
+11-03 19:58:26.409 I/Choreographer(17342): Skipped 38 frames!  The application may be doing too much work on its main thread.
+11-03 19:58:31.755 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:58:33.799 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:58:39.145 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:58:43.700 I/OzMotion(17477): walk dark-19-card-drag-down actions
+11-03 19:58:51.734 W/ActivityManager(  553): setHasOverlayUi called on unknown pid: 17342
+11-03 19:58:51.935 W/ActivityManager(  553): registerReceiverWithFeature: no app for null
+11-03 19:58:52.086 W/ActivityManager(  553): Slow operation: 65ms so far, now at startProcess: done updating pids map
+11-03 19:58:52.772 W/ActivityManager(  553): Slow operation: 72ms so far, now at attachApplicationLocked: immediately before bindApplication
+11-03 19:58:52.773 W/ActivityManager(  553): Slow operation: 73ms so far, now at attachApplicationLocked: immediately after bindApplication
+11-03 19:58:52.773 W/ActivityManager(  553): Slow operation: 73ms so far, now at attachApplicationLocked: after updateLruProcessLocked
+11-03 19:58:54.436 I/Choreographer(17705): Skipped 45 frames!  The application may be doing too much work on its main thread.
+11-03 19:58:59.630 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:59:01.573 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:59:06.858 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:59:11.408 I/OzMotion(17838): walk dark-19a-card-swipe-down-fast actions
+11-03 19:59:19.259 W/ActivityManager(  553): setHasOverlayUi called on unknown pid: 17705
+11-03 19:59:19.501 W/ActivityManager(  553): registerReceiverWithFeature: no app for null
+11-03 19:59:21.801 I/Choreographer(17909): Skipped 40 frames!  The application may be doing too much work on its main thread.
+11-03 19:59:27.199 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:59:29.143 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:59:31.250 I/Choreographer(17909): Skipped 34 frames!  The application may be doing too much work on its main thread.
+11-03 19:59:34.602 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:59:39.133 I/OzMotion(18041): walk dark-19b-card-back actions
+11-03 19:59:46.115 W/ActivityManager(  553): setHasOverlayUi called on unknown pid: 17909
+11-03 19:59:46.167 W/ActivityManager(  553): registerReceiverWithFeature: no app for null
+11-03 19:59:48.637 I/Choreographer(18100): Skipped 41 frames!  The application may be doing too much work on its main thread.
+11-03 19:59:53.860 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 19:59:55.826 I/OzMotion(18181): walk dark-20-keypad-open-type actions
+11-03 19:59:57.272 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 20:00:00.127 W/ActivityManager(  553): Slow operation: 59ms so far, now at startProcess: returned from zygote!
+11-03 20:00:00.128 W/ActivityManager(  553): Slow operation: 59ms so far, now at startProcess: done updating battery stats
+11-03 20:00:00.128 W/ActivityManager(  553): Slow operation: 59ms so far, now at startProcess: building log message
+11-03 20:00:00.128 W/ActivityManager(  553): Slow operation: 59ms so far, now at startProcess: starting to update pids map
+11-03 20:00:00.128 W/ActivityManager(  553): Slow operation: 59ms so far, now at startProcess: done updating pids map
+11-03 20:00:06.148 I/OzMotion(18334): walk dark-21-keypad-erase-close actions
+11-03 20:00:16.119 W/ActivityManager(  553): setHasOverlayUi called on unknown pid: 18100
+11-03 20:00:16.273 W/ActivityManager(  553): registerReceiverWithFeature: no app for null
+11-03 20:00:19.023 I/Choreographer(18432): Skipped 45 frames!  The application may be doing too much work on its main thread.
+11-03 20:00:24.025 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 20:00:26.067 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 20:00:29.731 I/OzMotion(18537): walk dark-22-keypad-drag-down actions
+11-03 20:00:37.854 W/ActivityManager(  553): setHasOverlayUi called on unknown pid: 18432
+11-03 20:00:37.933 W/ActivityManager(  553): registerReceiverWithFeature: no app for null
+11-03 20:00:38.257 W/ActivityManager(  553): Slow operation: 173ms so far, now at startProcess: returned from zygote!
+11-03 20:00:38.257 W/ActivityManager(  553): Slow operation: 173ms so far, now at startProcess: done updating battery stats
+11-03 20:00:38.257 W/ActivityManager(  553): Slow operation: 173ms so far, now at startProcess: building log message
+11-03 20:00:38.257 W/ActivityManager(  553): Slow operation: 173ms so far, now at startProcess: starting to update pids map
+11-03 20:00:38.257 W/ActivityManager(  553): Slow operation: 173ms so far, now at startProcess: done updating pids map
+11-03 20:00:40.613 I/Choreographer(18765): Skipped 44 frames!  The application may be doing too much work on its main thread.
+11-03 20:00:45.781 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 20:00:47.766 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 20:00:49.359 W/ActivityManager(  553): setHasOverlayUi called on unknown pid: 18765
+11-03 20:00:49.495 W/ActivityManager(  553): registerReceiverWithFeature: no app for null
+11-03 20:00:49.949 W/ActivityManager(  553): Slow operation: 125ms so far, now at finishAttachApplicationInner: after mServices.attachApplicationLocked
+11-03 20:00:49.949 W/ActivityManager(  553): Slow operation: 125ms so far, now at finishAttachApplicationInner: after dispatching broadcasts
+11-03 20:00:51.784 I/Choreographer(18868): Skipped 42 frames!  The application may be doing too much work on its main thread.
+11-03 20:00:57.006 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 20:00:59.032 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 20:01:03.571 I/OzMotion(18973): walk dark-24-journal-row-swipe-delete actions
+11-03 20:01:03.929 D/OzMotion(18868): swipeAway end offset=-161.59961 v=-3121.9358
+11-03 20:01:03.942 D/OzMotion(18868): swipeAway removed
+11-03 20:01:13.404 W/ActivityManager(  553): setHasOverlayUi called on unknown pid: 18868
+11-03 20:01:13.533 W/ActivityManager(  553): registerReceiverWithFeature: no app for null
+11-03 20:01:13.810 W/ActivityManager(  553): Slow operation: 53ms so far, now at startProcess: done updating pids map
+11-03 20:01:16.436 I/Choreographer(19076): Skipped 46 frames!  The application may be doing too much work on its main thread.
+11-03 20:01:21.241 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 20:01:23.228 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 20:01:27.906 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 20:01:29.928 I/OzMotion(19204): walk dark-25-journal-filter actions
+11-03 20:01:31.386 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 20:01:35.479 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 20:01:39.769 W/ActivityManager(  553): registerReceiverWithFeature: no app for null
+11-03 20:01:40.047 W/ActivityManager(  553): setHasOverlayUi called on unknown pid: 19076
+11-03 20:01:42.325 I/Choreographer(19339): Skipped 44 frames!  The application may be doing too much work on its main thread.
+11-03 20:01:47.333 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 20:01:49.304 I/OzMotion(19420): walk dark-26-incoming-answer-end actions
+11-03 20:01:54.855 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 20:01:57.467 I/Choreographer(19339): Skipped 113 frames!  The application may be doing too much work on its main thread.
+11-03 20:01:59.965 I/Choreographer(19339): Skipped 149 frames!  The application may be doing too much work on its main thread.
+11-03 20:02:01.430 I/Choreographer(  927): Skipped 34 frames!  The application may be doing too much work on its main thread.
+11-03 20:02:06.103 W/ActivityManager(  553): setHasOverlayUi called on unknown pid: 19339
+11-03 20:02:06.442 W/ActivityManager(  553): registerReceiverWithFeature: no app for null
+11-03 20:02:06.584 W/ActivityManager(  553): Slow operation: 57ms so far, now at startProcess: done updating pids map
+11-03 20:02:08.691 I/Choreographer(19625): Skipped 40 frames!  The application may be doing too much work on its main thread.
+11-03 20:02:14.044 W/ActivityManager(  553): Unable to start service Intent { cmp=com.google.android.apps.tachyon/.clientapi.ClientApiService } U=0: not found
+11-03 20:02:16.030 I/OzMotion(19707): walk dark-27-cold-start actions
