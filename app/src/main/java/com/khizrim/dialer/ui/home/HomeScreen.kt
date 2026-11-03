@@ -53,6 +53,7 @@ import com.khizrim.dialer.ui.theme.OzType
 import com.khizrim.dialer.ui.theme.Inter
 import com.khizrim.dialer.ui.theme.lift
 import com.khizrim.dialer.model.Method
+import kotlinx.coroutines.launch
 
 /** Главная: стопка имён, ближайший человек внизу. Тап связывает, долгое нажатие открывает меню. */
 @Composable
@@ -63,6 +64,9 @@ fun HomeScreen(vm: DialerViewModel) {
     // после порога сдвига поглощаем касание, и нажатие на строку отменяется — свайп не звонит.
     val density = LocalDensity.current
     val threshold = with(density) { 72.dp.toPx() }
+    // стопка идёт за пальцем с сопротивлением и пружинит обратно — жест виден, пока его делают
+    val pull = remember { androidx.compose.animation.core.Animatable(0f) }
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
     val gestures = Modifier.pointerInput(vm) {
         val slop = viewConfiguration.touchSlop
         awaitEachGesture {
@@ -76,12 +80,16 @@ fun HomeScreen(vm: DialerViewModel) {
                     if (dragging) {
                         ch.consume()
                         if (dy < -threshold) vm.openTextSearch() else if (dy > threshold) vm.openRecents(fromHome = true)
+                        scope.launch { pull.animateTo(0f, Motion.enter(Motion.MOVE)) }
                     }
                     break
                 }
                 dy += ch.position.y - ch.previousPosition.y
                 if (!dragging && kotlin.math.abs(dy) > slop) dragging = true
-                if (dragging) ch.consume()
+                if (dragging) {
+                    ch.consume()
+                    if (!reduced) scope.launch { pull.snapTo(dy * 0.35f) }
+                }
             }
         }
     }
@@ -91,6 +99,7 @@ fun HomeScreen(vm: DialerViewModel) {
             LazyColumn(
                 modifier = Modifier.weight(1f).fillMaxWidth()
                     .then(gestures)
+                    .graphicsLayer { translationY = pull.value }
                     .semantics { customActions = listOf(androidx.compose.ui.semantics.CustomAccessibilityAction(searchLabel) { vm.openTextSearch(); true }) }
                     .padding(horizontal = 12.dp),
                 verticalArrangement = Arrangement.Bottom,
@@ -120,7 +129,8 @@ fun HomeScreen(vm: DialerViewModel) {
                         Modifier
                             .animateItem(
                                 fadeInSpec = Motion.enter(Motion.FADE),
-                                placementSpec = null,
+                                // соседи съезжают на место убранной строки, а не перескакивают
+                                placementSpec = if (reduced) null else Motion.enter(Motion.MOVE),
                                 fadeOutSpec = Motion.exit(Motion.FADE),
                             )
                             .graphicsLayer {

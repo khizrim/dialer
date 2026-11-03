@@ -21,6 +21,16 @@ class MainActivity : ComponentActivity() {
         setContent {
             DialerTheme { DialerApp(vm) }
         }
+        // заставка держится, пока не загрузились люди (но не дольше 1 с), — без пустого экрана между ней и главной
+        val started = android.os.SystemClock.uptimeMillis()
+        val content = findViewById<android.view.View>(android.R.id.content)
+        content.viewTreeObserver.addOnPreDrawListener(object : android.view.ViewTreeObserver.OnPreDrawListener {
+            override fun onPreDraw(): Boolean {
+                val go = vm.ready || android.os.SystemClock.uptimeMillis() - started > 1000
+                if (go) content.viewTreeObserver.removeOnPreDrawListener(this)
+                return go
+            }
+        })
     }
 
     override fun onResume() {
