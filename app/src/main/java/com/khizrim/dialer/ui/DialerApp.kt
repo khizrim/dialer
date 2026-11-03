@@ -31,6 +31,7 @@ import com.khizrim.dialer.ui.components.ConfirmLayer
 import com.khizrim.dialer.ui.components.FloatToast
 import com.khizrim.dialer.ui.components.MethodSheet
 import com.khizrim.dialer.ui.components.PersonMenu
+import com.khizrim.dialer.ui.components.SyncHelpSheet
 import com.khizrim.dialer.ui.contacts.BlockedScreen
 import com.khizrim.dialer.ui.contacts.ContactsScreen
 import com.khizrim.dialer.ui.onboarding.Onboarding
@@ -130,6 +131,7 @@ fun DialerApp(vm: DialerViewModel = viewModel()) {
 
             PersonMenu(vm)
             MethodSheet(vm)
+            SyncHelpSheet(vm)
             ConfirmLayer(vm)
             FloatToast(vm.toast, bottom = if (vm.keypadOpen) 380.dp else 96.dp)
         }

@@ -215,4 +215,15 @@
         <item quantity="many">Без звука: %1$d незнакомых</item>
         <item quantity="other">Без звука: %1$d незнакомого</item>
     </plurals>
+    <string name="sync_hint">Звонок и видео в %1$s появятся, когда %1$s сохранит контакты в телефон.</string>
+    <string name="sync_how">Как включить</string>
+    <string name="sync_title">Включить звонки через %1$s</string>
+    <string name="sync_tg_1">Откройте Telegram, Настройки</string>
+    <string name="sync_tg_2">Конфиденциальность, Контакты</string>
+    <string name="sync_tg_3">Включите «Синхронизировать контакты»</string>
+    <string name="sync_wa_1">Откройте настройки телефона, Приложения, WhatsApp</string>
+    <string name="sync_wa_2">Разрешения, Контакты: Разрешить</string>
+    <string name="sync_wa_3">Откройте WhatsApp и обновите список контактов</string>
+    <string name="sync_back">Вернитесь сюда. Через минуту появятся звонок и видео.</string>
+    <string name="open_app">Открыть %1$s</string>
 </resources>

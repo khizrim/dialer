@@ -212,4 +212,15 @@
         <item quantity="one">Silenced: %1$d unknown caller</item>
         <item quantity="other">Silenced: %1$d unknown callers</item>
     </plurals>
+    <string name="sync_hint">%1$s calls and video appear once %1$s saves contacts to the phone.</string>
+    <string name="sync_how">How to turn on</string>
+    <string name="sync_title">Turn on %1$s calls</string>
+    <string name="sync_tg_1">Open Telegram, then Settings</string>
+    <string name="sync_tg_2">Privacy and Security, then Contacts</string>
+    <string name="sync_tg_3">Turn on “Sync Contacts”</string>
+    <string name="sync_wa_1">Open phone Settings, Apps, WhatsApp</string>
+    <string name="sync_wa_2">Permissions, Contacts: Allow</string>
+    <string name="sync_wa_3">Open WhatsApp and pull to refresh the contact list</string>
+    <string name="sync_back">Come back here. Calls and video appear in about a minute.</string>
+    <string name="open_app">Open %1$s</string>
 </resources>

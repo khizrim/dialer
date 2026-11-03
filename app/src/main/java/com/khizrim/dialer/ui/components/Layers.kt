@@ -1,6 +1,7 @@
 package com.khizrim.dialer.ui.components
 
 import com.khizrim.dialer.ui.theme.lift
+import com.khizrim.dialer.ui.theme.raisedFill
 import com.khizrim.dialer.ui.theme.OzShape
 
 import androidx.compose.animation.AnimatedVisibility
@@ -132,6 +133,21 @@ fun BoxScope.MethodSheet(vm: DialerViewModel) {
                 val sub = ph?.let { (if (many) it.label + "  " else "") + com.khizrim.dialer.data.PhoneFormat.pretty(it.number) }
                 val selected = m == current && (ph == null || !many || ph.number == chosen)
                 MethodRow(m, stringResource(m.title), selected, sub) { vm.pickInSheet(m, ph?.number) }
+            }
+        }
+        // мессенджер дал только чат: объясняем, откуда возьмутся звонок и видео
+        val chatOnly = when {
+            Method.TG_CHAT in p.methods && Method.TG_CALL !in p.methods -> "Telegram"
+            Method.WA_CHAT in p.methods && Method.WA_CALL !in p.methods -> "WhatsApp"
+            else -> null
+        }
+        if (!setMode && chatOnly != null) {
+            Row(Modifier.fillMaxWidth().padding(start = 24.dp, end = 12.dp, top = 8.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                OzIcon(R.drawable.ic_oz_help, oz.fg3, size = 18.dp, modifier = Modifier.padding(top = 2.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(stringResource(R.string.sync_hint, chatOnly), style = OzType.small, color = oz.fg3)
+                    TextAction(stringResource(R.string.sync_how), oz.accent, { vm.openSyncHelp(chatOnly) }, style = OzType.small, modifier = Modifier.padding(start = 0.dp))
+                }
             }
         }
         HorizontalDivider(Modifier.padding(top = 4.dp), thickness = 1.dp, color = oz.line)
@@ -274,3 +290,33 @@ fun BoxScope.FloatToast(toast: ToastState?, bottom: androidx.compose.ui.unit.Dp)
     }
 }
 
+
+/** Как включить звонки через мессенджер: он должен сохранить контакты в телефон. */
+@Composable
+fun BoxScope.SyncHelpSheet(vm: DialerViewModel) {
+    val oz = LocalOz.current
+    val app = rememberLast(vm.syncHelp)
+    val context = androidx.compose.ui.platform.LocalContext.current
+    SheetLayer(vm.syncHelp != null, stringResource(R.string.sync_title, app.orEmpty()), vm::closeSyncHelp) {
+        if (app == null) return@SheetLayer
+        Text(stringResource(R.string.sync_title, app), style = OzType.nameSearch, color = oz.fg, modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 4.dp, bottom = 12.dp))
+        val steps = if (app == "Telegram") listOf(R.string.sync_tg_1, R.string.sync_tg_2, R.string.sync_tg_3, R.string.sync_back)
+        else listOf(R.string.sync_wa_1, R.string.sync_wa_2, R.string.sync_wa_3, R.string.sync_back)
+        steps.forEachIndexed { i, s ->
+            Row(Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                Text("${i + 1}", style = OzType.body, color = oz.fg3)
+                Text(stringResource(s), style = OzType.body, color = oz.fg, modifier = Modifier.weight(1f))
+            }
+        }
+        val pkg = if (app == "Telegram") "org.telegram.messenger" else "com.whatsapp"
+        val launch = remember(pkg) { context.packageManager.getLaunchIntentForPackage(pkg) }
+        if (launch != null) {
+            Box(
+                Modifier.padding(start = 24.dp, end = 24.dp, top = 16.dp).fillMaxWidth().height(56.dp)
+                    .raisedFill(oz.accentFill, OzShape.main)
+                    .press({ vm.closeSyncHelp(); runCatching { context.startActivity(launch) } }, shape = OzShape.main, pressColor = Color.White.copy(alpha = .12f)),
+                contentAlignment = Alignment.Center,
+            ) { Text(stringResource(R.string.open_app, app), style = OzType.strong, color = Color.White) }
+        }
+    }
+}

@@ -121,6 +121,10 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     private var removed: List<Pair<Int, HomeEntry>> = emptyList()
 
     var sheet by mutableStateOf<SheetState?>(null); private set
+    /** Лист «Как включить звонки через Telegram/WhatsApp». */
+    var syncHelp by mutableStateOf<String?>(null); private set
+    fun openSyncHelp(app: String) { sheet = null; syncHelp = app }
+    fun closeSyncHelp() { syncHelp = null }
     var menu by mutableStateOf<MenuState?>(null); private set
     var confirm by mutableStateOf<ConfirmState?>(null); private set
     var toast by mutableStateOf<ToastState?>(null); private set
@@ -263,10 +267,11 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     val canGoBack: Boolean
-        get() = confirm != null || sheet != null || menu != null || keypadOpen || screen != Screen.HOME
+        get() = confirm != null || syncHelp != null || sheet != null || menu != null || keypadOpen || screen != Screen.HOME
 
     fun back(): Boolean = when {
         confirm != null -> { confirm = null; true }
+        syncHelp != null -> { syncHelp = null; true }
         sheet != null -> { sheet = null; true }
         menu != null -> { menu = null; true }
         keypadOpen -> { closeKeypad(); true }
