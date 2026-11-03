@@ -1,0 +1,13 @@
+anim keypad-open
+anim keypad-type
+anim keypad-close
+anim settings-open
+anim settings-back
+anim contacts-open
+anim contacts-back
+anim journal-open
+anim journal-back
+anim menu-open
+anim menu-dismiss
+anim pull-search
+anim search-back

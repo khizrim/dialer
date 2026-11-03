@@ -1,0 +1,13 @@
+561,323	Tue, Nov 3	Tue, Nov 3
+414,1615	Gmail	Gmail
+666,1615	Photos	Photos
+918,1615	YouTube	YouTube
+540,1232		Home
+162,1970	Phone	Phone
+414,1970	Messages	Messages
+666,1970	Chrome	Chrome
+918,1970	Ozero Phone	Ozero Phone has 2 notifications
+539,2207		Search
+149,2207		Google app
+804,2207		Voice search
+930,2207		Google Lens

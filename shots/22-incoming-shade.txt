@@ -1,0 +1,30 @@
+285,205	Internet, AndroidWifi	Internet,AndroidWifi
+290,204	Internet	
+793,205	Bluetooth, On	Bluetooth.
+825,204	Bluetooth	
+285,384	Flashlight, Off	Flashlight
+317,383	Flashlight	
+793,384	Do Not Disturb, Off	Do Not Disturb.
+825,383	Do Not Disturb	
+309,649	Мама	
+382,653	•	
+490,653	Ozero Phone	
+624,720	Входящий звонок	
+389,847	Decline	Decline
+684,847	Answer	Answer
+130,1046	Silent	
+292,1187	Android System	
+945,1187		Expand
+913,1187	2	
+370,1265	Serial console enabled	
+783,1265	Performance is impacted. To disable, check bootloader.	
+509,1337	Configure AT Translated Set 2 keyboard	
+923,1337	Tap to select language and layout	
+202,1505	Manage	Manage
+86,63	2:09 	2:09 PM
+316,62	Tue, Nov 3	
+779,63		Speakerphone enabled.
+829,62		Wifi signal full.
+868,63		Phone signal full.
+965,63		Battery charging, 100 percent.
+975,63	100%	

@@ -1,0 +1,62 @@
+cold start: TotalTime: 5138 WaitTime: 6013
+shot shots/01-cold-1.5s
+shot shots/02-home
+tap Открыть клавиатуру @ 933,2211
+tap Набрать 9 @ 882,1824
+tap Набрать 1 @ 198,1456
+tap Набрать 6 @ 882,1640
+video keypad.mp4
+shot shots/03-keypad-916
+shot shots/04-keypad-hw-key
+tap Скрыть клавиатуру @ 201,2211
+video keypad-close.mp4
+shot shots/05-keypad-closed
+tap Настройки @ 754,2211
+video to-settings.mp4
+shot shots/06-settings
+shot shots/07-settings-2
+shot shots/08-settings-3
+video settings-back.mp4
+shot shots/09-home-again
+tap Контакты @ 388,2211
+video to-contacts.mp4
+shot shots/10-contacts
+video contacts-scroll.mp4
+shot shots/11-contacts-scrolled
+MISSING: Аня
+video open-person.mp4
+shot shots/12-person
+tap Журнал @ 145,2211
+video to-journal.mp4
+shot shots/13-journal
+tap Пропущенные @ 352,2211
+shot shots/14-journal-missed
+tap Все @ 101,2211
+tap Очистить журнал @ 754,2211
+shot shots/15-clear-dialog
+tap Очистить @ 857,2184
+video clear-confirm.mp4
+shot shots/16-journal-cleared
+shot shots/17-home-after-clear
+first row: Мама
+tap long Мама @ 540,1549
+shot shots/18-menu
+MISSING: Добавить в избранное
+tap long Мама @ 153,1786
+tap Убрать с главной @ 341,2221
+video remove-from-home.mp4
+shot shots/19-after-remove
+shot shots/20-after-remove-5s
+MISSING: Очистить главную
+video incoming-in-app.mp4
+shot shots/21-incoming-in-app
+shot shots/22-incoming-shade
+MISSING: Ответить
+MISSING: Answer
+shot shots/23-after-call
+shot shots/24-incoming-from-launcher
+shot shots/25-incoming-screen-off
+shot shots/26-home-dark
+tap Открыть клавиатуру @ 933,2211
+shot shots/27-keypad-dark
+done
