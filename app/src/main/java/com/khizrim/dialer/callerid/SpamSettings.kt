@@ -103,7 +103,8 @@ fun ExternalCallerIdRow(modifier: Modifier = Modifier) {
         lifecycle.addObserver(obs)
         onDispose { lifecycle.removeObserver(obs) }
     }
-    val apps by produceState<List<ExternalCallerId.App>?>(null, resumes) { value = withContext(Dispatchers.IO) { ExternalCallerId.apps(context) } }
+    var apps by remember { androidx.compose.runtime.mutableStateOf<List<ExternalCallerId.App>?>(null) }
+    androidx.compose.runtime.LaunchedEffect(resumes) { apps = withContext(Dispatchers.IO) { ExternalCallerId.apps(context) } }
     val list = apps
     val ready = list?.filter { it.ready }.orEmpty()
     val pending = list?.firstOrNull { !it.ready }
