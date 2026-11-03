@@ -52,6 +52,8 @@ fun SettingsScreen(vm: DialerViewModel) {
     val context = LocalContext.current
     val role = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { vm.reload() }
     var simOpen by remember { mutableStateOf(false) }
+    val saveFile = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri -> uri?.let(vm::exportTo) }
+    val openFile = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> uri?.let(vm::importFrom) }
     fun open(intent: Intent) { runCatching { context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) } }
     val appDetails = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", context.packageName, null))
 
@@ -73,10 +75,10 @@ fun SettingsScreen(vm: DialerViewModel) {
                 }
             }
             SwitchRow(stringResource(R.string.silence_unknown), vm.silenceUnknown, vm::toggleSilenceUnknown)
-            ValueRow(stringResource(R.string.unknown_numbers), null, vm::openUnknown)
+            ValueRow(stringResource(R.string.unknown_numbers), null, onClick = vm::openUnknown)
 
             Group(stringResource(R.string.set_blocking))
-            ValueRow(stringResource(R.string.blocked_numbers), null, vm::openBlocked)
+            ValueRow(stringResource(R.string.blocked_numbers), null, onClick = vm::openBlocked)
             com.khizrim.dialer.callerid.SuspiciousCallsSetting(Modifier.padding(horizontal = 12.dp))
             com.khizrim.dialer.callerid.ExternalCallerIdRow(Modifier.padding(start = 12.dp, end = 12.dp, top = 16.dp))
 
@@ -85,6 +87,12 @@ fun SettingsScreen(vm: DialerViewModel) {
                 // язык приложения задаётся системой (Android 13+), иначе — языком телефона
                 if (Build.VERSION.SDK_INT >= 33) open(Intent(Settings.ACTION_APP_LOCALE_SETTINGS, Uri.fromParts("package", context.packageName, null)))
                 else open(Intent(Settings.ACTION_LOCALE_SETTINGS))
+            }
+
+            Group(stringResource(R.string.set_transfer))
+            ValueRow(stringResource(R.string.transfer_save), null, sub = stringResource(R.string.transfer_save_sub)) { runCatching { saveFile.launch("ozero-phone.json") } }
+            ValueRow(stringResource(R.string.transfer_restore), null, sub = stringResource(R.string.transfer_restore_sub)) {
+                runCatching { openFile.launch(arrayOf("application/json", "text/plain", "application/octet-stream")) }
             }
 
             Group(stringResource(R.string.set_app))
@@ -112,7 +120,7 @@ private fun Group(title: String) {
 }
 
 @Composable
-private fun ValueRow(title: String, value: String?, onClick: (() -> Unit)?) {
+private fun ValueRow(title: String, value: String?, sub: String? = null, onClick: (() -> Unit)?) {
     val oz = LocalOz.current
     Row(
         Modifier
@@ -122,7 +130,10 @@ private fun ValueRow(title: String, value: String?, onClick: (() -> Unit)?) {
             .padding(horizontal = 12.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(title, style = OzType.list, color = oz.fg, modifier = Modifier.weight(1f))
+        Column(Modifier.weight(1f)) {
+            Text(title, style = OzType.list, color = oz.fg)
+            if (sub != null) Text(sub, style = OzType.small, color = oz.fg3)
+        }
         if (value != null) Text(value, style = OzType.small, color = oz.fg3, modifier = Modifier.padding(start = 12.dp))
         else if (onClick != null) OzIcon(R.drawable.ic_oz_chevron, oz.fg3, 18.dp)
     }

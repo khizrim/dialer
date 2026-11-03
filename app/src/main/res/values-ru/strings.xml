@@ -226,4 +226,18 @@
     <string name="sync_wa_3">Откройте WhatsApp и обновите список контактов</string>
     <string name="sync_back">Вернитесь сюда. Через минуту появятся звонок и видео.</string>
     <string name="open_app">Открыть %1$s</string>
+    <string name="set_transfer">Перенос</string>
+    <string name="transfer_save">Сохранить настройки людей в файл</string>
+    <string name="transfer_save_sub">Способы связи, номера, заблокированные</string>
+    <string name="transfer_restore">Восстановить из файла</string>
+    <string name="transfer_restore_sub">Совпадёт по номерам, лишнее не тронет</string>
+    <string name="transfer_saved">Файл сохранён</string>
+    <string name="transfer_failed">Не получилось сохранить файл</string>
+    <string name="transfer_bad_file">Это не файл Ozero Phone</string>
+    <plurals name="transfer_restored">
+        <item quantity="one">Восстановлено для %d человека</item>
+        <item quantity="few">Восстановлено для %d человек</item>
+        <item quantity="many">Восстановлено для %d человек</item>
+        <item quantity="other">Восстановлено для %d человека</item>
+    </plurals>
 </resources>

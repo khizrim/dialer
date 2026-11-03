@@ -506,6 +506,26 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    // ---------- перенос ----------
+    fun exportTo(uri: android.net.Uri) {
+        val list = people
+        viewModelScope.launch {
+            val ok = withContext(Dispatchers.IO) { com.khizrim.dialer.data.Transfer.export(ctx, uri, list) }
+            say(str(if (ok) R.string.transfer_saved else R.string.transfer_failed))
+        }
+    }
+
+    fun importFrom(uri: android.net.Uri) {
+        val list = people
+        viewModelScope.launch {
+            val n = withContext(Dispatchers.IO) { com.khizrim.dialer.data.Transfer.import(ctx, uri, list) }
+            if (n == null) { say(str(R.string.transfer_bad_file)); return@launch }
+            defaultsVersion++
+            say(ctx.resources.getQuantityString(R.plurals.transfer_restored, n, n))
+            reload()
+        }
+    }
+
     // ---------- тост ----------
     fun say(text: String, undo: Boolean = false) {
         toastJob?.cancel()

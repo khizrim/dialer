@@ -23,11 +23,14 @@
     </queries>
 
     <application
-        android:allowBackup="false"
+        android:allowBackup="true"
+        android:fullBackupContent="@xml/backup_rules"
+        android:dataExtractionRules="@xml/data_extraction_rules"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:supportsRtl="true"
-        android:theme="@style/Theme.Dialer">
+        android:theme="@style/Theme.Dialer"
+        tools:targetApi="31">
 
         <activity
             android:name=".MainActivity"

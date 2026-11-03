@@ -223,4 +223,16 @@
     <string name="sync_wa_3">Open WhatsApp and pull to refresh the contact list</string>
     <string name="sync_back">Come back here. Calls and video appear in about a minute.</string>
     <string name="open_app">Open %1$s</string>
+    <string name="set_transfer">Transfer</string>
+    <string name="transfer_save">Save people settings to a file</string>
+    <string name="transfer_save_sub">Ways to reach, numbers, blocked</string>
+    <string name="transfer_restore">Restore from a file</string>
+    <string name="transfer_restore_sub">Matched by phone numbers, nothing else is touched</string>
+    <string name="transfer_saved">File saved</string>
+    <string name="transfer_failed">Couldn’t save the file</string>
+    <string name="transfer_bad_file">This isn’t an Ozero Phone file</string>
+    <plurals name="transfer_restored">
+        <item quantity="one">Restored for %d person</item>
+        <item quantity="other">Restored for %d people</item>
+    </plurals>
 </resources>
