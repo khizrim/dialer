@@ -10,6 +10,7 @@ enum class MethodKind { CALL, CHAT }
 
 /** Способ связи: что произойдёт по нажатию на имя. */
 enum class Method(@DrawableRes val icon: Int, @StringRes val title: Int, val brand: String?, val kind: MethodKind) {
+    // short: подпись в строке способов карточки («Звонок», «Видео», «Написать», «SMS»)
     WA_VIDEO(R.drawable.ic_oz_video, R.string.m_wa_video, "WhatsApp", MethodKind.CALL),
     WA_CALL(R.drawable.ic_oz_phone, R.string.m_wa_call, "WhatsApp", MethodKind.CALL),
     WA_CHAT(R.drawable.ic_oz_chat, R.string.m_wa_chat, "WhatsApp", MethodKind.CHAT),
@@ -23,6 +24,13 @@ enum class Method(@DrawableRes val icon: Int, @StringRes val title: Int, val bra
     PHONE(R.drawable.ic_oz_phone, R.string.m_phone, null, MethodKind.CALL),
     SMS(R.drawable.ic_oz_sms, R.string.m_sms, "SMS", MethodKind.CHAT),
     ;
+
+    @get:StringRes val short: Int get() = when {
+        this == SMS -> R.string.way_sms
+        kind == MethodKind.CHAT -> R.string.way_write
+        icon == R.drawable.ic_oz_video -> R.string.way_video
+        else -> R.string.way_call
+    }
 
     fun label(context: Context): String = context.getString(title)
     fun network(context: Context): String = brand ?: context.getString(R.string.net_phone)
@@ -56,7 +64,7 @@ data class Person(
     val key: String get() = "c:$lookupKey"
 }
 
-data class HistoryEntry(val day: String, val text: String, val missed: Boolean = false, val record: CallRecord? = null)
+data class HistoryEntry(val day: String, val text: String, val missed: Boolean = false, val record: CallRecord? = null, val duration: String = "")
 
 /** Строка главной: человек из контактов или номер, которого нет в контактах. */
 data class HomeEntry(
