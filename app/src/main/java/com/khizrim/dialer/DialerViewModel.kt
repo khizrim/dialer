@@ -171,6 +171,9 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     // ---------- главная ----------
     private fun keyOf(number: String): String = byNumber[Numbers.key(number)]?.key ?: "n:" + Numbers.key(number)
 
+    /** Избранные для тихого ряда над нижней панелью главной. */
+    val favorites: List<Person> get() = people.filter { it.starred }.sortedByDescending { scores[it.key] ?: 0.0 }
+
     private fun rebuildHome() {
         class Acc(var last: Long = 0L, var lastMissed: Long = 0L, var lastOther: Long = 0L, var number: String? = null)
         val acc = LinkedHashMap<String, Acc>()
@@ -226,6 +229,30 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     }
     fun showMissedOnly(v: Boolean) { missedOnly = v }
 
+    val canClearLog: Boolean get() = granted(Manifest.permission.WRITE_CALL_LOG)
+
+    /** «Очистить журнал»: все звонки или только пропущенные, если включён фильтр. С подтверждением. */
+    fun askClearLog() {
+        val missed = missedOnly
+        confirm = ConfirmState(
+            str(if (missed) R.string.clear_missed_title else R.string.clear_log_title),
+            str(R.string.clear_log_text),
+            str(R.string.clear),
+        ) {
+            viewModelScope.launch {
+                val ok = withContext(Dispatchers.IO) {
+                    runCatching {
+                        if (missed) ctx.contentResolver.delete(android.provider.CallLog.Calls.CONTENT_URI, android.provider.CallLog.Calls.TYPE + "=?", arrayOf(android.provider.CallLog.Calls.MISSED_TYPE.toString()))
+                        else ctx.contentResolver.delete(android.provider.CallLog.Calls.CONTENT_URI, null, null)
+                        true
+                    }.getOrDefault(false)
+                }
+                say(str(if (ok) R.string.log_cleared else R.string.log_clear_failed))
+                reload()
+            }
+        }
+    }
+
     /** Из уведомления о пропущенном: карточка человека или журнал пропущенных. */
     private var pendingMissed: String? = null
     fun openMissed(number: String?) {
@@ -235,7 +262,13 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun callNumber(number: String) { closeKeypad(); Launcher.call(ctx, number)?.let { say(it) } }
-    fun openSettings() { closeKeypad(); sims = Launcher.sims(ctx); simForCalls = prefs.simForCalls; screen = Screen.SETTINGS }
+    private var settingsFrom = Screen.HOME
+    fun openSettings() {
+        closeKeypad(); sims = Launcher.sims(ctx); simForCalls = prefs.simForCalls
+        if (screen != Screen.SETTINGS) settingsFrom = screen
+        screen = Screen.SETTINGS
+    }
+    fun leaveSettings() { screen = settingsFrom }
 
     /** SIM-карты для настройки «SIM для звонков». */
     var sims by mutableStateOf<List<Pair<String, String>>>(emptyList()); private set
@@ -295,6 +328,7 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
         keypadOpen -> { closeKeypad(); true }
         screen == Screen.PERSON -> { leavePerson(); true }
         screen == Screen.RECENTS && recentsFromHome -> { screen = Screen.HOME; true }
+        screen == Screen.SETTINGS -> { leaveSettings(); true }
         screen == Screen.BLOCKED || screen == Screen.UNKNOWN || screen == Screen.RECENTS || screen == Screen.SETTINGS -> { screen = Screen.CONTACTS; true }
         screen == Screen.CONTACTS -> { screen = Screen.HOME; true }
         else -> false
@@ -481,7 +515,11 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     private var editReturn = Screen.HOME
     private var editPerson: Person? = null
 
-    fun editContact(p: Person) {
+    /** Изменение и добавление — системным редактором Контактов (решение пользователя). */
+    fun editContact(p: Person) { menu = null; sheet = null; Launcher.editContact(ctx, p)?.let { say(it) } }
+    fun addToContacts(number: String) { menu = null; sheet = null; closeKeypad(); Launcher.addContact(ctx, number)?.let { say(it) } }
+
+    private fun editContactInApp(p: Person) {
         menu = null; sheet = null
         editPerson = p
         viewModelScope.launch {
@@ -490,7 +528,7 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun addToContacts(number: String) {
+    private fun addToContactsInApp(number: String) {
         menu = null; sheet = null; closeKeypad()
         editPerson = null
         val d = com.khizrim.dialer.data.ContactEditor.blank(number)

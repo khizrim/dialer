@@ -22,6 +22,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.remember
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -81,7 +82,6 @@ fun HomeScreen(vm: DialerViewModel) {
             LazyColumn(
                 modifier = Modifier.weight(1f).fillMaxWidth()
                     .nestedScroll(gestures)
-                    .graphicsLayer { translationY = (pull.floatValue * .4f).coerceIn(-threshold, threshold) }
                     .semantics { customActions = listOf(androidx.compose.ui.semantics.CustomAccessibilityAction(searchLabel) { vm.openTextSearch(); true }) }
                     .padding(horizontal = 12.dp),
                 verticalArrangement = Arrangement.Bottom,
@@ -111,7 +111,7 @@ fun HomeScreen(vm: DialerViewModel) {
                         Modifier
                             .animateItem(
                                 fadeInSpec = Motion.enter(Motion.FADE),
-                                placementSpec = if (reduced) null else Motion.enter(Motion.MOVE),
+                                placementSpec = null,
                                 fadeOutSpec = Motion.exit(Motion.FADE),
                             )
                             .graphicsLayer {
@@ -139,6 +139,28 @@ fun HomeScreen(vm: DialerViewModel) {
                             }
                         }
                         OzIcon(method?.icon ?: R.drawable.ic_oz_help, oz.fg3, modifier = Modifier.padding(start = 16.dp))
+                    }
+                }
+            }
+            // избранные: один тихий ряд имён со значком способа, без заголовка и без заливок
+            val favs = vm.favorites
+            if (favs.isNotEmpty()) {
+                androidx.compose.foundation.lazy.LazyRow(
+                    Modifier.fillMaxWidth().padding(top = 4.dp),
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp),
+                ) {
+                    items(favs, key = { "f" + it.id }) { p ->
+                        val m = vm.defaultOf(p)
+                        Row(
+                            Modifier.heightIn(min = 48.dp)
+                                .press({ vm.perform(p, m) }, onLongClick = { vm.openMenu(p) }, shape = com.khizrim.dialer.ui.theme.OzShape.text,
+                                    label = stringResource(R.string.favorite_label, p.name, stringResource(m?.title ?: R.string.choose_method)))
+                                .padding(horizontal = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            OzIcon(m?.icon ?: R.drawable.ic_oz_help, oz.fg3, 16.dp)
+                            Text(p.name.substringBefore(' '), style = OzType.body, color = oz.fg2, maxLines = 1, modifier = Modifier.padding(start = 6.dp))
+                        }
                     }
                 }
             }
@@ -186,7 +208,11 @@ fun HomeScreen(vm: DialerViewModel) {
                         }
                     }
                 }
-                KeypadFab { vm.openKeypad() }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    GhostIconButton(R.drawable.ic_oz_sliders, stringResource(R.string.settings), vm::openSettings, tint = oz.fg3)
+                    androidx.compose.foundation.layout.Spacer(Modifier.width(12.dp))
+                    KeypadFab { vm.openKeypad() }
+                }
             }
         }
     }

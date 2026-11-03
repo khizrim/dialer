@@ -15,7 +15,8 @@ import androidx.compose.ui.platform.LocalContext
  */
 object Motion {
     val EnterEasing = CubicBezierEasing(0.16f, 1f, 0.3f, 1f)
-    val ExitEasing = CubicBezierEasing(0.7f, 0f, 0.84f, 0f)
+    // уход: мягкое ускорение (in-expo «замирало», а потом обрывалось)
+    val ExitEasing = CubicBezierEasing(0.4f, 0f, 1f, 1f)
 
     const val PRESS = 100
     const val FADE = 150

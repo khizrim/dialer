@@ -5,6 +5,7 @@
     <uses-permission android:name="android.permission.READ_CONTACTS" />
     <uses-permission android:name="android.permission.WRITE_CONTACTS" />
     <uses-permission android:name="android.permission.READ_CALL_LOG" />
+    <uses-permission android:name="android.permission.WRITE_CALL_LOG" />
     <uses-permission android:name="android.permission.CALL_PHONE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
@@ -17,6 +18,13 @@
     <queries>
         <package android:name="org.telegram.messenger" />
         <package android:name="com.whatsapp" />
+        <!-- известные определители номера: видно, даже если функция в них выключена -->
+        <package android:name="ru.yandex.searchplugin" />
+        <package android:name="com.yandex.browser" />
+        <package android:name="com.kaspersky.who_calls" />
+        <package android:name="com.truecaller" />
+        <package android:name="app.source.getcontact" />
+        <package android:name="com.numbuster.android" />
         <intent>
             <action android:name="android.telecom.CallScreeningService" />
         </intent>

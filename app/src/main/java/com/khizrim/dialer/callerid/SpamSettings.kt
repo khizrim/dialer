@@ -90,17 +90,30 @@ fun rememberCallerTag(number: String): String? {
     return tag
 }
 
-/** Строка «Внешний определитель: Яндекс». Открывает системный выбор приложения-определителя. */
+/** Строка «Внешний определитель: Яндекс». Ведёт туда, где его можно выбрать или включить. */
 @Composable
 fun ExternalCallerIdRow(modifier: Modifier = Modifier) {
     val oz = LocalOz.current
     val context = LocalContext.current
-    val apps by produceState<List<String>?>(null) { value = withContext(Dispatchers.IO) { ExternalCallerId.installed(context) } }
+    // перечитываем при каждом возвращении на экран: человек мог включить определитель в Яндексе
+    val lifecycle = androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle
+    var resumes by remember { androidx.compose.runtime.mutableIntStateOf(0) }
+    androidx.compose.runtime.DisposableEffect(lifecycle) {
+        val obs = androidx.lifecycle.LifecycleEventObserver { _, e -> if (e == androidx.lifecycle.Lifecycle.Event.ON_RESUME) resumes++ }
+        lifecycle.addObserver(obs)
+        onDispose { lifecycle.removeObserver(obs) }
+    }
+    var apps by remember { androidx.compose.runtime.mutableStateOf<List<ExternalCallerId.App>?>(null) }
+    androidx.compose.runtime.LaunchedEffect(resumes) { apps = withContext(Dispatchers.IO) { ExternalCallerId.apps(context) } }
+    val list = apps
+    val ready = list?.filter { it.ready }.orEmpty()
+    val pending = list?.firstOrNull { !it.ready }
     val title = stringResource(R.string.ext_cid_title)
     val value = when {
-        apps == null -> ""
-        apps!!.isEmpty() -> stringResource(R.string.ext_cid_none)
-        else -> apps!!.take(2).joinToString(", ")
+        list == null -> ""
+        ready.isNotEmpty() -> ready.take(2).joinToString(", ") { it.label }
+        pending != null -> stringResource(R.string.ext_cid_off, pending.label)
+        else -> stringResource(R.string.ext_cid_none)
     }
     Column(modifier) {
         Row(
@@ -108,7 +121,7 @@ fun ExternalCallerIdRow(modifier: Modifier = Modifier) {
                 .fillMaxWidth()
                 .height(56.dp)
                 .press({
-                    runCatching { context.startActivity(ExternalCallerId.chooseIntent(context)) }
+                    runCatching { context.startActivity(ExternalCallerId.chooseIntent(context, list.orEmpty())) }
                         .onFailure { runCatching { context.startActivity(ExternalCallerId.storeFallback()) } }
                 }, shape = RoundedCornerShape(14.dp), label = "$title: $value"),
             verticalAlignment = Alignment.CenterVertically,
@@ -117,7 +130,11 @@ fun ExternalCallerIdRow(modifier: Modifier = Modifier) {
             Text(value, style = OzType.small, color = oz.fg3, maxLines = 1)
         }
         Text(
-            stringResource(if (apps.isNullOrEmpty()) R.string.ext_cid_text_none else R.string.ext_cid_text),
+            when {
+                ready.isNotEmpty() -> stringResource(R.string.ext_cid_text)
+                pending != null -> stringResource(R.string.ext_cid_text_off, pending.label)
+                else -> stringResource(R.string.ext_cid_text_none)
+            },
             style = OzType.small, color = oz.fg3,
         )
     }

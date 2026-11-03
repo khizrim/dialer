@@ -8,6 +8,7 @@ import com.khizrim.dialer.ui.theme.OzShape
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -71,10 +72,8 @@ fun PersonScreen(vm: DialerViewModel, id: Long) {
         ) {
             if (history.isNotEmpty()) {
                 Column(Modifier.padding(bottom = 40.dp)) {
-                    history.forEachIndexed { i, e ->
-                        val a = remember { Animatable(0f) }
-                        LaunchedEffect(Unit) { a.animateTo(1f, Motion.enter(Motion.MOVE, delay = Motion.FADE + i * 30)) }
-                        Row(Modifier.padding(vertical = 6.dp).graphicsLayer { alpha = a.value }) {
+                    history.forEach { e ->
+                        Row(Modifier.padding(vertical = 6.dp)) {
                             Text(e.day, style = OzType.small, color = oz.fg3, modifier = Modifier.width(48.dp))
                             Spacer(Modifier.width(16.dp))
                             Text(e.text, style = OzType.small, color = if (e.missed) oz.danger else oz.fg2)
@@ -107,7 +106,8 @@ fun PersonScreen(vm: DialerViewModel, id: Long) {
             Modifier.fillMaxWidth().padding(12.dp, 16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            GhostIconButton(R.drawable.ic_oz_back, stringResource(R.string.back), vm::leavePerson)
+            // назад — системным жестом, своя стрелка его только дублировала
+            Box(Modifier)
             Row {
             GhostIconButton(R.drawable.ic_oz_edit, stringResource(R.string.edit_contact), { vm.editContact(p) })
             GhostIconButton(

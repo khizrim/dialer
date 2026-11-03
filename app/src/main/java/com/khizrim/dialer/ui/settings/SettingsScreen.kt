@@ -104,7 +104,8 @@ fun SettingsScreen(vm: DialerViewModel) {
             ValueRow(stringResource(R.string.set_version), versionName(context), onClick = null)
         }
         BottomBar {
-            GhostIconButton(R.drawable.ic_oz_back, stringResource(R.string.back), vm::openContacts)
+            // назад — системным жестом, своя стрелка его только дублировала
+            Box(Modifier)
             Box(Modifier)
         }
     }

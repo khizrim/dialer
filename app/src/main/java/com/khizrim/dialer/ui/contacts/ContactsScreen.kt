@@ -42,7 +42,8 @@ import java.util.Locale
 
 private sealed interface ListRow
 private data class Header(val letter: Char) : ListRow
-private data class Item(val person: Person) : ListRow
+private data class Item(val person: Person, val fav: Boolean = false) : ListRow
+private data object FavHeader : ListRow
 private data object Footer : ListRow
 
 private fun sectionOf(name: String): Char {
@@ -59,6 +60,9 @@ fun ContactsScreen(vm: DialerViewModel) {
         val collator = Collator.getInstance(Locale("ru"))
         val sorted = people.sortedWith { a, b -> collator.compare(a.name, b.name) }
         buildList<ListRow> {
+            // избранные сверху отдельной группой
+            val favs = sorted.filter { it.starred }
+            if (favs.isNotEmpty()) { add(FavHeader); favs.forEach { add(Item(it, fav = true)) } }
             var last: Char? = null
             sorted.forEach { p ->
                 val l = sectionOf(p.name)
@@ -89,13 +93,20 @@ fun ContactsScreen(vm: DialerViewModel) {
                 items(rows, key = { r ->
                     when (r) {
                         is Header -> "h${r.letter}"
-                        is Item -> "p${r.person.id}"
+                        is Item -> (if (r.fav) "f" else "p") + r.person.id
+                        FavHeader -> "favh"
                         Footer -> "footer"
                     }
                 }) { r ->
                     when (r) {
                         is Header -> Text(
                             r.letter.toString(),
+                            style = OzType.small.copy(fontWeight = FontWeight.Medium),
+                            color = oz.fg3,
+                            modifier = Modifier.padding(start = 12.dp, top = 16.dp, bottom = 4.dp).semantics { heading() },
+                        )
+                        FavHeader -> Text(
+                            stringResource(R.string.favorites),
                             style = OzType.small.copy(fontWeight = FontWeight.Medium),
                             color = oz.fg3,
                             modifier = Modifier.padding(start = 12.dp, top = 16.dp, bottom = 4.dp).semantics { heading() },
@@ -126,6 +137,7 @@ fun ContactsScreen(vm: DialerViewModel) {
                             TextAction(stringResource(R.string.recents), oz.fg3, { vm.openRecents() }, style = OzType.small)
                             TextAction(stringResource(R.string.unknown_numbers), oz.fg3, vm::openUnknown, style = OzType.small)
                             TextAction(stringResource(R.string.blocked_numbers), oz.fg3, vm::openBlocked, style = OzType.small)
+                            TextAction(stringResource(R.string.settings), oz.fg3, vm::openSettings, style = OzType.small)
                         }
                     }
                 }
@@ -152,7 +164,8 @@ fun ContactsScreen(vm: DialerViewModel) {
             }
         }
         BottomBar {
-            GhostIconButton(R.drawable.ic_oz_back, stringResource(R.string.back_home), vm::goHome)
+            // назад — системным жестом, своя стрелка его только дублировала
+            Box(Modifier)
             Row(verticalAlignment = Alignment.CenterVertically) {
                 GhostIconButton(R.drawable.ic_oz_sliders, stringResource(R.string.settings), vm::openSettings, tint = oz.fg2)
                 androidx.compose.foundation.layout.Spacer(Modifier.width(16.dp))
@@ -191,7 +204,8 @@ fun BlockedScreen(vm: DialerViewModel) {
             }
         }
         BottomBar {
-            GhostIconButton(R.drawable.ic_oz_back, stringResource(R.string.back), vm::openContacts)
+            // назад — системным жестом, своя стрелка его только дублировала
+            Box(Modifier)
             Box(Modifier)
         }
     }
@@ -259,7 +273,8 @@ fun UnknownScreen(vm: DialerViewModel) {
             }
         }
         BottomBar {
-            GhostIconButton(R.drawable.ic_oz_back, stringResource(R.string.back), vm::openContacts)
+            // назад — системным жестом, своя стрелка его только дублировала
+            Box(Modifier)
             Box(Modifier)
         }
     }

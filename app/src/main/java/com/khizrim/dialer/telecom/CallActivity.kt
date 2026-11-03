@@ -79,13 +79,7 @@ class CallActivity : ComponentActivity() {
             override fun addContact() {
                 val number = CallManager.currentNumber() ?: return
                 CallManager.dismiss()
-                // свой редактор в приложении вместо системного
-                startActivity(
-                    android.content.Intent(applicationContext, com.khizrim.dialer.MainActivity::class.java)
-                        .setAction(com.khizrim.dialer.MainActivity.ACTION_ADD_CONTACT)
-                        .putExtra(com.khizrim.dialer.MainActivity.EXTRA_NUMBER, number)
-                        .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK),
-                )
+                Launcher.addContact(applicationContext, number)
             }
             override fun callAgain() {
                 val number = CallManager.currentNumber() ?: return

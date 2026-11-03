@@ -282,4 +282,12 @@
     <string name="found_nickname">прозвище: %1$s</string>
     <string name="found_layout">набрано в английской раскладке</string>
     <string name="found_translit">транслит</string>
+    <string name="favorites">Избранные</string>
+    <string name="favorite_label">%1$s, избранное: %2$s</string>
+    <string name="clear_log">Очистить журнал</string>
+    <string name="clear_log_title">Очистить весь журнал?</string>
+    <string name="clear_missed_title">Очистить пропущенные?</string>
+    <string name="clear_log_text">Звонки исчезнут из журнала телефона. Контакты останутся.</string>
+    <string name="log_cleared">Журнал очищен</string>
+    <string name="log_clear_failed">Не получилось очистить журнал</string>
 </resources>

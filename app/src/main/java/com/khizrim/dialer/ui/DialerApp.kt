@@ -52,7 +52,6 @@ private data class Route(val screen: Screen, val personId: Long?)
 fun DialerApp(vm: DialerViewModel = viewModel()) {
     val oz = LocalOz.current
     val reduced = rememberReducedMotion()
-    val rise = with(LocalDensity.current) { 8.dp.roundToPx() }
     BackHandler(enabled = vm.canGoBack) { vm.back() }
 
     CompositionLocalProvider(LocalReducedMotion provides reduced) {
@@ -64,10 +63,8 @@ fun DialerApp(vm: DialerViewModel = viewModel()) {
                 AnimatedContent(
                     targetState = Route(vm.screen, vm.personId),
                     transitionSpec = {
-                        val enter = if (reduced) fadeIn(Motion.enter(Motion.FADE)) else
-                            fadeIn(Motion.enter(Motion.MOVE, delay = Motion.FADE)) +
-                                slideInVertically(Motion.enter(Motion.MOVE, delay = Motion.FADE)) { rise }
-                        enter togetherWith fadeOut(Motion.exit(Motion.FADE))
+                        // спокойная смена экранов: перекрёстное растворение без паузы и без подпрыгивания
+                        fadeIn(Motion.enter(Motion.FADE)) togetherWith fadeOut(Motion.exit(Motion.PRESS))
                     },
                     label = "screen",
                 ) { r ->
