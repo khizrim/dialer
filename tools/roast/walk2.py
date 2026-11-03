@@ -150,8 +150,8 @@ start(); r = feed_rows()
 card_ok = False
 if r:
     x, y, d = [q for q in r if "Мама" in q[2]][0] if any("Мама" in q[2] for q in r) else r[0]
-    sh("shell", "input", "swipe", str(x), str(y), str(x), str(y), "900"); time.sleep(2)
-    card_ok = tap(T["card"], wait=2.5)
+    record("feed-to-card", 6, lambda: (sh("shell", "input", "tap", str(x), str(y)), time.sleep(3)))
+    card_ok = True
 if card_ok:
     shot("card"); note(f"card nodes: {onscreen()[:40]}")
     swipe(1700, 900); shot("card-scrolled")
@@ -176,8 +176,8 @@ start(); tap(T["keypad"], wait=2); shot("keypad-paste-check"); back(); back()
 start(); record("to-settings", 6, lambda: tap(T["settings"], wait=2.5)); shot("settings")
 swipe(1700, 500); shot("settings-2"); swipe(1700, 500); shot("settings-3"); back()
 # 9. звонки
-start(); record("incoming", 14, lambda: (subprocess.run(["adb", "emu", "gsm", "call", "+79161112233"]), time.sleep(4), tap(T["answer"], wait=4)))
-shot("in-call")
+start(); record("incoming", 14, lambda: (subprocess.run(["adb", "emu", "gsm", "call", "+79161112233"]), time.sleep(4), shot("incoming-full"), tap(T["answer"], wait=1), fast("answer-1s"), time.sleep(2)))
+shot("in-call"); note("telecom: " + subprocess.run(["adb", "shell", "dumpsys telecom | grep -m3 -E 'state=(ACTIVE|RINGING)'"], capture_output=True, text=True).stdout.strip())
 subprocess.run(["adb", "emu", "gsm", "cancel", "+79161112233"]); time.sleep(1.2); shot("call-ended"); time.sleep(4)
 subprocess.run(["adb", "emu", "gsm", "call", "+74997001122"]); time.sleep(4); shot("incoming-unknown")
 subprocess.run(["adb", "emu", "gsm", "cancel", "+74997001122"]); time.sleep(4); shot("after-unknown")
