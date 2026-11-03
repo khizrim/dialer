@@ -18,6 +18,9 @@ enum class SpamAction { SILENCE, REJECT, LABEL }
 class CallerIdPrefs(context: Context) {
     private val sp = context.getSharedPreferences("ozero_callerid", Context.MODE_PRIVATE)
 
+    /** Человек сам выбрал режим (а не живёт на значении по умолчанию). */
+    val explicit: Boolean get() = sp.contains("spamAction")
+
     var action: SpamAction
         get() = runCatching { SpamAction.valueOf(sp.getString("spamAction", null) ?: "") }.getOrDefault(SpamAction.SILENCE)
         set(v) { sp.edit().putString("spamAction", v.name).apply() }
@@ -81,7 +84,19 @@ object CallerId {
         val n = number.orEmpty()
         if (n.isNotBlank() && ContactsSource.nameFor(context, n) != null) return false
         if (Prefs(context).silenceUnknownActive(context)) return true
-        return CallerIdPrefs(context).action == SpamAction.SILENCE && isSuspicious(context, n)
+        val prefs = CallerIdPrefs(context)
+        return prefs.action == SpamAction.SILENCE && actsOn(context, facts(context, n), prefs)
+    }
+
+    /** Глушить или сбрасывать этот подозрительный звонок, а не только подписать (см. [SpamPolicy]). */
+    fun actsOn(context: Context, facts: CallerFacts, prefs: CallerIdPrefs = CallerIdPrefs(context)): Boolean =
+        SpamPolicy.acts(facts.suspicion, prefs.explicit, dbAgeDays(context))
+
+    /** Возраст базы номеров в днях. */
+    fun dbAgeDays(context: Context, now: Long = System.currentTimeMillis()): Long? {
+        val raw = db(context)?.updated?.takeIf { it.isNotBlank() } ?: return null
+        val date = runCatching { SimpleDateFormat("yyyy-MM-dd", Locale.US).parse(raw) }.getOrNull() ?: return null
+        return (now - date.time) / 86_400_000L
     }
 
     /** Поиск номера в интернете: открывается браузер, сам номер приложение никуда не шлёт. */
