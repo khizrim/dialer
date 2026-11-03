@@ -40,6 +40,7 @@ jobs:
       - name: Frame sheets
         if: always()
         run: |
+          [ -d shots ] || exit 0
           sudo apt-get -qq install -y ffmpeg >/dev/null || true
           for v in $(find shots -name '*.mp4'); do ffmpeg -loglevel error -i "$v" -vf "fps=10,scale=216:-1,tile=10x3" -frames:v 1 "${v%.mp4}-sheet.png" || true; done
           find shots -name '*.mp4' -delete
