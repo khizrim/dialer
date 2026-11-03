@@ -31,6 +31,8 @@ object CallManager {
 
     private val calls = mutableListOf<Call>()
     private val names = HashMap<String, String?>()
+    private val labels = HashMap<String, String?>()
+    private val suspicious = HashSet<String>()
     private val main = Handler(Looper.getMainLooper())
     private val io = Executors.newSingleThreadExecutor()
     private var dtmf: String? = null
@@ -98,7 +100,10 @@ object CallManager {
             val ctx = appContext
             if (ctx != null) io.execute {
                 val name = ContactsSource.nameFor(ctx, number)
-                main.post { names[number] = name; refresh() }
+                // незнакомым номерам — подпись определителя: оператор и регион или «Похоже на спам»
+                val label = if (name == null) runCatching { com.khizrim.dialer.callerid.CallerId.labelFor(ctx, number) }.getOrNull() else null
+                val spam = name == null && runCatching { com.khizrim.dialer.callerid.CallerId.isSuspicious(ctx, number) }.getOrDefault(false)
+                main.post { names[number] = name; labels[number] = label; if (spam) suspicious += number; refresh() }
             }
         }
     }
@@ -188,7 +193,8 @@ object CallManager {
         state = CallState(
             name = names[number],
             number = number,
-            label = null,
+            label = labels[number],
+            suspicious = number in suspicious,
             phase = phase,
             connectedAt = connectedAt,
             muted = audio?.isMuted == true,

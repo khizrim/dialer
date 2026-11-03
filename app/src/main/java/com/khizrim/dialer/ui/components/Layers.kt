@@ -185,6 +185,7 @@ fun BoxScope.PersonMenu(vm: DialerViewModel) {
             val number = e.number.orEmpty()
             SheetRow(stringResource(R.string.add_to_contacts), oz.fg, { vm.addToContacts(number) }, R.drawable.ic_oz_user_plus)
             SheetRow(stringResource(R.string.send_sms), oz.fg, { vm.closeMenu(); vm.smsTo(number) }, R.drawable.ic_oz_sms)
+            SheetRow(stringResource(R.string.cid_search_web), oz.fg, { vm.searchWeb(number) }, R.drawable.ic_oz_search)
             SheetRow(stringResource(R.string.block), oz.fg, { vm.askBlock(number) }, R.drawable.ic_oz_ban)
         }
         if (m?.context == MenuContext.HOME) {

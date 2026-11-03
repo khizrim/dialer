@@ -194,6 +194,12 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     fun openContacts() { closeKeypad(); screen = Screen.CONTACTS }
     fun openBlocked() { screen = Screen.BLOCKED }
     fun openUnknown() { screen = Screen.UNKNOWN }
+
+    /** «Найти в интернете»: открывает браузер, номер никуда больше не уходит. */
+    fun searchWeb(number: String) {
+        menu = null
+        runCatching { ctx.startActivity(com.khizrim.dialer.callerid.CallerId.webSearchIntent(number).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)) }
+    }
     fun openRecents() { screen = Screen.RECENTS }
 
     /** Полный журнал: каждая строка — звонок, с именем, если номер есть в контактах. */

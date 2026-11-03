@@ -103,7 +103,9 @@ fun CallScreen(c: CallState, actions: CallActions, locked: Boolean = false) {
     }
     val inCall = c.phase == CallPhase.ACTIVE || c.phase == CallPhase.DIALING
 
-    Box(Modifier.fillMaxSize().background(oz.bg)) {
+    // «Похоже на спам»: тёплый фон сверху, спокойно, без тревожного красного
+    val bgBrush = if (c.suspicious) androidx.compose.ui.graphics.Brush.verticalGradient(0f to oz.warnSoft, .7f to oz.bg) else androidx.compose.ui.graphics.SolidColor(oz.bg)
+    Box(Modifier.fillMaxSize().background(bgBrush)) {
         Column(
             Modifier.fillMaxSize().safeDrawingPadding().padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -118,7 +120,7 @@ fun CallScreen(c: CallState, actions: CallActions, locked: Boolean = false) {
                 textAlign = TextAlign.Center,
                 modifier = Modifier.semantics { heading() },
             )
-            Text(sub, style = OzType.small, color = oz.fg3, modifier = Modifier.padding(top = 8.dp).semantics { liveRegion = LiveRegionMode.Polite })
+            Text(sub, style = OzType.small, color = if (c.suspicious && c.phase == CallPhase.RINGING) oz.warn else oz.fg3, modifier = Modifier.padding(top = 8.dp).semantics { liveRegion = LiveRegionMode.Polite })
             c.other?.let { OtherLineRow(it, c.phase, actions) }
             Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                 if (c.simChoice != null) SimChoice(c.simChoice, actions)

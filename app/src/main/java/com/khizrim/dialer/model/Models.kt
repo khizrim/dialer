@@ -87,6 +87,8 @@ data class CallState(
     val bluetoothName: String? = null,
     /** Подписи SIM-карт, когда система спрашивает, с какой звонить. */
     val simChoice: List<String>? = null,
+    /** Определитель считает номер подозрительным: тёплый фон и подпись цветом warn. */
+    val suspicious: Boolean = false,
 ) {
     /** Кроме телефона и динамика есть наушники или Bluetooth: показываем выбор. */
     val hasRouteChoice: Boolean get() = routes and (ROUTE_BLUETOOTH or ROUTE_WIRED) != 0
