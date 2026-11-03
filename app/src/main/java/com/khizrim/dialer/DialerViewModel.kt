@@ -35,14 +35,15 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.Locale
 
-enum class Screen { HOME, CONTACTS, PERSON, BLOCKED, UNKNOWN, RECENTS, SETTINGS, EDIT, SEARCH }
+enum class Screen { HOME, PERSON, BLOCKED, SETTINGS, EDIT, SEARCH }
 enum class SheetMode { OTHER, DEFAULT }
 enum class MenuContext { HOME, SEARCH }
 
 data class SheetState(val mode: SheetMode, val personId: Long)
 data class MenuState(val entry: HomeEntry, val context: MenuContext, val record: CallRecord? = null)
 data class ConfirmState(val title: String, val description: String, val verb: String, val run: () -> Unit)
-data class ToastState(val text: String, val undo: Boolean = false, val id: Long = System.nanoTime())
+/** [action] — подпись своей кнопки в тосте (вместо «Вернуть»); её нажатие идёт в [DialerViewModel.toastTap]. */
+data class ToastState(val text: String, val undo: Boolean = false, val action: String? = null, val id: Long = System.nanoTime())
 
 
 private class Loaded(
@@ -136,6 +137,7 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Перечитываем всё при каждом возвращении в приложение. */
     fun reload() {
+        offerDefault()
         isDefaultDialer = Launcher.isDefaultDialer(ctx)
         viewModelScope.launch { sims = withContext(Dispatchers.IO) { Launcher.sims(ctx) } }
         simForCalls = prefs.simForCalls
@@ -179,18 +181,39 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     fun favLabel(p: Person): String = p.nickname?.takeIf { favNickname && it.isNotBlank() } ?: if (p.nameIsNumber) p.shownName else p.name.substringBefore(' ')
 
     val favorites: List<Person> get() = people.filter { it.starred }.sortedByDescending { scores[it.key] ?: 0.0 }
-    /** Стопка главной без тех, кто уже стоит в ряду избранных. */
-    val homeStack: List<HomeEntry> get() = home.filter { it.person?.starred != true }
+
+    /** Незнакомые без звука в ленте свёрнуты в одну строку; нажатие раскрывает их прямо там. */
+    var silentOpen by mutableStateOf(false); private set
+    fun toggleSilent() { silentOpen = !silentOpen }
+
+    /**
+     * Лента главной — она же журнал: каждый человек или номер одной строкой на месте последнего контакта,
+     * свежие внизу. «Пропущенные» оставляет только тех, у кого последний звонок пропущен.
+     */
+    val homeStack: List<HomeEntry> get() {
+        val all = home.toList()
+        val silent = all.filter(::isSilenced)
+        val rest = all.filterNot(::isSilenced)
+        val list = if (silent.isEmpty() || silentOpen) all
+        else rest + HomeEntry("silent", null, null, silent.maxOf { it.lastAt }, null, silent = silent.size)
+        return (if (missedOnly) list.filter { it.missedNote != null } else list).sortedBy { it.lastAt }
+    }
+    /** Незнакомый, чей звонок прошёл без звука (включено «Не беспокоить незнакомым»). */
+    fun isSilenced(e: HomeEntry): Boolean = e.person == null && silenceUnknown && e.missedNote != null
+    val homeHasMissed: Boolean get() = home.any { it.missedNote != null }
 
     private fun rebuildHome() {
-        class Acc(var last: Long = 0L, var lastMissed: Long = 0L, var lastOther: Long = 0L, var number: String? = null)
+        class Acc(var last: Long = 0L, var lastMissed: Long = 0L, var lastOther: Long = 0L, var number: String? = null, var lastCall: CallRecord? = null) {
+            val missedAt = ArrayList<Long>()
+        }
         val acc = LinkedHashMap<String, Acc>()
         calls.forEach { r ->
             if (r.type == android.provider.CallLog.Calls.BLOCKED_TYPE || r.type == android.provider.CallLog.Calls.VOICEMAIL_TYPE) return@forEach
             val a = acc.getOrPut(keyOf(r.number)) { Acc() }
             if (a.number == null) a.number = r.number
+            if (r.date >= a.last) a.lastCall = r
             a.last = maxOf(a.last, r.date)
-            if (r.missed) a.lastMissed = maxOf(a.lastMissed, r.date) else a.lastOther = maxOf(a.lastOther, r.date)
+            if (r.missed) { a.lastMissed = maxOf(a.lastMissed, r.date); a.missedAt += r.date } else a.lastOther = maxOf(a.lastOther, r.date)
         }
         interactions.forEach { i ->
             val a = acc.getOrPut(i.key) { Acc() }
@@ -202,10 +225,12 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
             if (prefs.hiddenAt(key) >= a.last) return@mapNotNull null
             val person = personByKey[key]
             if (person == null && !key.startsWith("n:")) return@mapNotNull null
-            if (person == null && silenceUnknown) return@mapNotNull null
-            val missed = if (a.lastMissed > a.lastOther) Dates.missed(res, a.lastMissed) else null
-            HomeEntry(key, person, if (person == null) a.number else null, a.last, missed)
-        }.sortedBy { it.lastAt }.takeLast(HOME_SIZE).ifEmpty {
+            val missed = if (a.lastMissed > a.lastOther) Dates.missed(res, a.lastMissed, a.missedAt.count { it > a.lastOther }) else null
+            // исходящий без ответа — тоже стоит сказать; обычный звонок второй строки не получает
+            val lc = a.lastCall
+            val note = if (missed == null && lc != null && lc.date == a.last && lc.type == android.provider.CallLog.Calls.OUTGOING_TYPE && lc.duration <= 0) str(R.string.outgoing_no_answer) else null
+            HomeEntry(key, person, if (person == null) a.number else null, a.last, missed, note)
+        }.sortedBy { it.lastAt }.takeLast(FEED_SIZE).ifEmpty {
             // истории ещё нет: показываем избранных, чтобы главная не была пустой
             if (acc.isNotEmpty()) emptyList()
             else people.filter { it.starred && prefs.hiddenAt(it.key) == 0L }.take(HOME_SIZE).map { HomeEntry(it.key, it, null, 0L, null) }
@@ -220,9 +245,13 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     // ---------- навигация ----------
     fun person(id: Long): Person? = byId[id]
 
-    fun openContacts() { closeKeypad(); screen = Screen.CONTACTS }
-    fun openBlocked() { screen = Screen.BLOCKED }
-    fun openUnknown() { screen = Screen.UNKNOWN }
+    /** Незнакомые и заблокированные открываются из настроек или из уведомления: назад — туда, откуда пришли. */
+    private var listFrom = Screen.HOME
+    fun openBlocked() { if (screen != Screen.BLOCKED) listFrom = originFor(screen); screen = Screen.BLOCKED }
+    /** Незнакомые без звука теперь живут в ленте: раскрываем их там. */
+    fun openUnknown() { closeKeypad(); missedOnly = false; silentOpen = true; screen = Screen.HOME }
+    // из «Всех контактов» по-прежнему возвращаемся в них; со всех прочих экранов — на главную или в настройки
+    private fun originFor(s: Screen) = if (s == Screen.SETTINGS) s else Screen.HOME
 
     /** «Найти в интернете»: открывает браузер, номер никуда больше не уходит. */
     fun searchWeb(number: String) {
@@ -232,16 +261,17 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     /** Журнал: открыт с главной (назад — на главную) или из контактов. */
     var recentsFromHome by mutableStateOf(false); private set
     var missedOnly by mutableStateOf(false); private set
+    private var recentsFrom = Screen.HOME
+    /** Журнала отдельным экраном больше нет: лента главной и есть журнал, «пропущенные» — её фильтр. */
     fun openRecents(fromHome: Boolean = false, missed: Boolean = false) {
-        closeKeypad(); recentsFromHome = fromHome; missedOnly = missed; screen = Screen.RECENTS
+        closeKeypad(); recentsFromHome = fromHome; missedOnly = missed; screen = Screen.HOME
     }
     fun showMissedOnly(v: Boolean) { missedOnly = v }
 
     val canClearLog: Boolean get() = granted(Manifest.permission.WRITE_CALL_LOG)
 
     /** «Очистить журнал»: все звонки или только пропущенные, если включён фильтр. С подтверждением. */
-    fun askClearLog() {
-        val missed = missedOnly
+    fun askClearLog(missed: Boolean = missedOnly) {
         confirm = ConfirmState(
             str(if (missed) R.string.clear_missed_title else R.string.clear_log_title),
             str(R.string.clear_log_text),
@@ -285,6 +315,44 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     fun chooseSimForCalls(id: String?) { prefs.simForCalls = id; simForCalls = id }
     /** Номер основной SIM в списке: выбранная для звонков, иначе первая. Подписываем только звонки не с неё. */
     val mainSimIndex: Int get() = sims.indexOfFirst { it.first == simForCalls }.coerceAtLeast(0)
+
+    // ---------- SIM у кнопки вызова и в карточке ----------
+    /** Подпись SIM по id: «SIM 2 · Билайн». null — такой SIM нет. */
+    fun simLabel(id: String?): String? = sims.firstOrNull { it.first == id }?.second
+    private var simVersion by mutableStateOf(0)
+    /** SIM, выбранная на клавиатуре для этого звонка. null вместе с keypadSimSet — «система спросит». */
+    private var keypadSim by mutableStateOf<String?>(null)
+    private var keypadSimSet by mutableStateOf(false)
+    /** Через какую SIM уйдёт звонок с клавиатуры: выбранная здесь, запомненная для номера, основная. null — спросит система. */
+    val keypadSimId: String? get() {
+        simVersion
+        if (keypadSimSet) return keypadSim
+        val typed = PhoneFormat.digits(keypad)
+        val saved = typed.takeIf { it.length >= 5 }?.let { prefs.simFor(it) }?.takeIf { id -> sims.any { it.first == id } }
+        return saved ?: simForCalls?.takeIf { id -> sims.any { it.first == id } }
+    }
+    /** Нажатие на подпись SIM у кнопки вызова: следующая SIM (и «спросить», если основная не выбрана). */
+    fun cycleKeypadSim() {
+        val options: List<String?> = sims.map { it.first } + (if (simForCalls == null) listOf(null) else emptyList())
+        if (options.size < 2) return
+        val i = options.indexOf(keypadSimId)
+        keypadSim = options[(i + 1).mod(options.size)]; keypadSimSet = true
+    }
+    /** SIM, запомненная для номера, если она не основная. Только её и подписываем в карточке. */
+    fun personSim(number: String?): String? {
+        simVersion
+        if (sims.size < 2 || number == null) return null
+        val id = prefs.simFor(number)?.takeIf { s -> sims.any { it.first == s } } ?: return null
+        return id.takeIf { it != (simForCalls ?: sims.first().first) }
+    }
+    /** Нажатие на подпись SIM в карточке: следующая SIM; дошли до основной — забываем выбор. */
+    fun cyclePersonSim(number: String) {
+        val main = simForCalls ?: sims.firstOrNull()?.first ?: return
+        val cur = prefs.simFor(number) ?: main
+        val next = sims.map { it.first }.let { ids -> ids[(ids.indexOf(cur) + 1).mod(ids.size)] }
+        prefs.setSimFor(number, next.takeIf { it != main })
+        simVersion++
+    }
     val hasMissed: Boolean get() = recentCalls.any { it.first.missed }
 
     /** Полный журнал: каждая строка — звонок, с именем, если номер есть в контактах. */
@@ -388,10 +456,9 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
         menu != null -> { menu = null; true }
         keypadOpen -> { closeKeypad(); true }
         screen == Screen.PERSON -> { leavePerson(); true }
-        screen == Screen.RECENTS && recentsFromHome -> { screen = Screen.HOME; true }
         screen == Screen.SETTINGS -> { leaveSettings(); true }
-        screen == Screen.BLOCKED || screen == Screen.UNKNOWN || screen == Screen.RECENTS || screen == Screen.SETTINGS -> { screen = Screen.CONTACTS; true }
-        screen == Screen.CONTACTS -> { screen = Screen.HOME; true }
+        screen == Screen.BLOCKED -> { screen = listFrom; true }
+        // журнал из уведомления о пропущенном: назад — на главную, а не на экран, куда иначе не попасть
         else -> false
     }
 
@@ -401,7 +468,21 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     // ---------- клавиатура = поиск ----------
-    fun openKeypad(prefill: String = "") { keypad = cleanNumber(prefill); keypadOpen = true; refreshHits() }
+    fun openKeypad(prefill: String = "") { keypad = cleanNumber(prefill); keypadOpen = true; readClip(); refreshHits() }
+
+    /** Номер из буфера обмена — первой подсказкой «Вставить …». Буфер читаем только при открытии клавиатуры. */
+    var clipNumber by mutableStateOf<String?>(null); private set
+    private fun readClip() {
+        clipNumber = runCatching {
+            val cm = ctx.getSystemService(android.content.ClipboardManager::class.java)
+            val text = cm?.primaryClip?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.coerceToText(ctx)?.toString().orEmpty()
+            cleanNumber(text).takeIf { PhoneFormat.digits(it).length >= 5 && text.length <= 40 }
+        }.getOrNull()
+    }
+
+    /** Последний набранный номер: серым в пустом поле, нажатие подставляет его. */
+    val lastDialed: String? get() = calls.firstOrNull { it.type == android.provider.CallLog.Calls.OUTGOING_TYPE }?.number?.let(::cleanNumber)?.takeIf { it.isNotEmpty() }
+    fun fillLast() { lastDialed?.let { keypad = it; refreshHits() } }
 
     /** Цифры и служебные символы; запятая и точка с запятой — паузы для добавочного. */
     private fun cleanNumber(s: String): String = s.filter { it.isDigit() || it in "+*#,;" }.take(32)
@@ -410,11 +491,11 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     fun paste(text: String?) {
         val n = cleanNumber(text.orEmpty())
         if (n.isEmpty()) return
-        keypad = n; refreshHits()
+        keypad = n; clipNumber = null; refreshHits()
     }
 
     fun callVoicemail() { closeKeypad(); Launcher.voicemail(ctx)?.let { say(it) } }
-    fun closeKeypad() { keypadOpen = false; keypad = "" }
+    fun closeKeypad() { keypadOpen = false; keypad = ""; keypadSimSet = false; keypadSim = null }
     fun type(ch: Char) { if (keypad.length < 32) { keypad += ch; refreshHits() } }
     fun backspace() { keypad = keypad.dropLast(1); refreshHits() }
     fun clearKeypad() { keypad = ""; refreshHits() }
@@ -447,7 +528,6 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     var textHits by mutableStateOf<List<com.khizrim.dialer.data.TextHit>>(emptyList()); private set
     private var searchFrom = Screen.HOME
     /** Подсказка «Потяните стопку вверх» — первые 5 запусков, пока поиском не воспользовались. */
-    val showSearchHint: Boolean get() = prefs.searchHintShows <= 5 && !prefs.searchUsed
     fun countLaunch() { prefs.searchHintShows = prefs.searchHintShows + 1 }
 
     fun openTextSearch() {
@@ -464,14 +544,13 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     fun tapHit(p: Person) { closeTextSearch(); perform(p, defaultOf(p)) }
 
     fun callTyped() {
-        if (PhoneFormat.digits(keypad).isEmpty()) {
-            // пустое поле: кнопка вызова подставляет последний набранный номер, второй тап звонит
-            calls.firstOrNull { it.type == android.provider.CallLog.Calls.OUTGOING_TYPE }?.let { keypad = cleanNumber(it.number); refreshHits() }
-            return
-        }
+        // пустое поле: кнопка ничего не подставляет — последний номер виден в поле, его нажимают
+        if (PhoneFormat.digits(keypad).isEmpty()) return
         val number = keypad
+        // SIM выбрали на клавиатуре — звоним с неё, «спросить» — пусть спросит система
+        val chosen = keypadSimSet; val sim = keypadSim
         closeKeypad()
-        Launcher.call(ctx, number)?.let { say(it) }
+        Launcher.call(ctx, number, sim = sim, ask = chosen && sim == null, pinned = chosen)?.let { say(it) }
     }
 
     fun addTypedToContacts() { addToContacts(keypad) }
@@ -539,8 +618,38 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
             sheet = null
             say(str(R.string.now_on_tap, m.label(ctx)))
         } else {
-            perform(p, m, number)
+            performOther(p, m, number)
         }
+    }
+
+    /** Связаться не основным способом; когда человек вернётся в приложение, тихо предложим сделать способ основным. */
+    fun performOther(p: Person, m: Method, number: String? = null) {
+        val before = defaultOf(p)
+        perform(p, m, number)
+        if (m != before) suggestDefault = p.id to m
+    }
+
+    private var suggestDefault: Pair<Long, Method>? = null
+    private var toastAction: (() -> Unit)? = null
+
+    private fun offerDefault() {
+        val (id, m) = suggestDefault ?: return
+        suggestDefault = null
+        val p = person(id) ?: return
+        if (defaultOf(p) == m) return
+        say(m.label(ctx), action = str(R.string.make_main)) {
+            prefs.setDefault(p.lookupKey, m)
+            defaultsVersion++
+            say(str(R.string.now_on_tap, m.label(ctx)))
+        }
+    }
+
+    /** Кнопка в тосте: «Вернуть» или своё действие. */
+    fun toastTap() {
+        val a = toastAction
+        if (toast?.undo == true || a == null) { undo(); return }
+        toastAction = null; toastJob?.cancel(); toast = null
+        a()
     }
 
     fun sheetFooter() {
@@ -573,12 +682,16 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
 
     fun history(p: Person): List<HistoryEntry> {
         val keys = p.phones.map { Numbers.key(it.number) }.toSet()
-        val events = ArrayList<Triple<Long, String, Boolean>>()
+        val events = ArrayList<Pair<Long, HistoryEntry>>()
         // у обычного разговора только время, подпись — у пропущенного и несостоявшегося
         val tf = java.text.DateFormat.getTimeInstance(java.text.DateFormat.SHORT)
-        calls.filter { Numbers.key(it.number) in keys }.take(12).forEach { events += Triple(it.date, it.note(res) ?: tf.format(java.util.Date(it.date)), it.missed) }
-        interactions.filter { it.key == p.key }.takeLast(12).forEach { events += Triple(it.at, it.method.label(ctx), false) }
-        return events.sortedByDescending { it.first }.take(6).map { HistoryEntry(Dates.day(res, it.first), it.second, it.third) }
+        // из recentCalls: смахнутый в карточке звонок пропадает сразу, «Вернуть» его возвращает
+        recentCalls.asSequence().map { it.first }.filter { Numbers.key(it.number) in keys }.take(300).forEach {
+            events += it.date to HistoryEntry(Dates.day(res, it.date), it.note(res) ?: tf.format(java.util.Date(it.date)), it.missed, it)
+        }
+        interactions.filter { it.key == p.key }.takeLast(300).forEach { events += it.at to HistoryEntry(Dates.day(res, it.at), it.method.label(ctx)) }
+        // старые сверху, свежие у имени; карточка открывается у свежих
+        return events.sortedBy { it.first }.map { it.second }
     }
 
     fun smsTo(number: String) { Launcher.sms(ctx, number)?.let { say(it) } }
@@ -591,6 +704,7 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Изменение и добавление — системным редактором Контактов (решение пользователя). */
     fun editContact(p: Person) { menu = null; sheet = null; Launcher.editContact(ctx, p)?.let { say(it) } }
+    fun addNamedContact(name: String) { menu = null; sheet = null; Launcher.addContactNamed(ctx, name.trim())?.let { say(it) } }
     fun addToContacts(number: String) { menu = null; sheet = null; closeKeypad(); Launcher.addContact(ctx, number)?.let { say(it) } }
 
     private fun editContactInApp(p: Person) {
@@ -693,7 +807,7 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
         confirm = ConfirmState(
             str(R.string.clear_home_title),
             str(R.string.clear_home_text),
-            str(R.string.clear),
+            str(R.string.hide),
         ) {
             prefs.hide(home.map { it.key })
             home.clear(); tidy = false; toast = null; removed = emptyList()
@@ -750,12 +864,13 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     // ---------- тост ----------
-    fun say(text: String, undo: Boolean = false) {
+    fun say(text: String, undo: Boolean = false, action: String? = null, onAction: (() -> Unit)? = null) {
         toastJob?.cancel()
         if (toast?.undo == true && pendingRecord != null) commitPendingRecord()
-        toast = ToastState(text, undo)
+        toastAction = onAction
+        toast = ToastState(text, undo, action)
         toastJob = viewModelScope.launch {
-            delay(if (undo) 6000 else 2600)  // «Вернуть» живёт дольше: его надо успеть найти глазами
+            delay(if (undo || action != null) 6000 else 2600)  // «Вернуть» живёт дольше: его надо успеть найти глазами
             toast = null
             if (undo) { tidy = false; removed = emptyList(); commitPendingRecord() }
         }
@@ -777,5 +892,7 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
 
     companion object {
         const val HOME_SIZE = 6
+        /** Сколько людей держит лента главной (это и есть журнал). */
+        const val FEED_SIZE = 400
     }
 }

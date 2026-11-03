@@ -1,5 +1,10 @@
 package com.khizrim.dialer.ui.person
 
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.fillMaxHeight
 import com.khizrim.dialer.ui.theme.raisedFill
 import com.khizrim.dialer.ui.theme.well
 import com.khizrim.dialer.ui.theme.lift
@@ -55,6 +60,7 @@ import com.khizrim.dialer.ui.components.GhostIconButton
 import com.khizrim.dialer.ui.components.OzIcon
 import com.khizrim.dialer.ui.components.TextAction
 import com.khizrim.dialer.ui.components.press
+import com.khizrim.dialer.ui.components.swipeAway
 import com.khizrim.dialer.ui.components.dismissOnDrag
 import com.khizrim.dialer.ui.theme.LocalOz
 import com.khizrim.dialer.ui.theme.Motion
@@ -67,7 +73,7 @@ fun PersonScreen(vm: DialerViewModel, id: Long) {
     val p = vm.person(id) ?: return
     val method = vm.defaultOf(p)
     val fav = p.starred
-    val history = remember(p, vm.ready) { vm.history(p).take(5) }
+    val history = remember(p, vm.ready, vm.recentCalls) { vm.history(p) }
 
     // карточку тянут вниз — весь экран идёт за пальцем 1:1 и открывает тот, что под ним; отпустили — доезжает или возвращается
     Column(
@@ -78,12 +84,18 @@ fun PersonScreen(vm: DialerViewModel, id: Long) {
             verticalArrangement = Arrangement.Bottom,
         ) {
             if (history.isNotEmpty()) {
-                Column(Modifier.padding(bottom = 40.dp)) {
+                // все звонки с человеком — здесь, с прокруткой: отдельного журнала больше нет
+                Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState(), reverseScrolling = true).padding(bottom = 40.dp)) {
+                    val canDelete = vm.canClearLog
+                    val deleteWord = stringResource(R.string.delete)
                     history.forEach { e ->
-                        Row(Modifier.padding(vertical = 6.dp)) {
-                            Text(e.day, style = OzType.time, color = oz.fg3, modifier = Modifier.width(56.dp))
-                            Spacer(Modifier.width(16.dp))
-                            Text(e.text, style = OzType.small, color = if (e.missed) oz.danger else oz.fg2)
+                        // звонок смахивают влево — он удаляется из журнала, пока виден тост, его можно вернуть
+                        androidx.compose.runtime.key(e.record ?: e) {
+                            Row(Modifier.fillMaxWidth().swipeAway(enabled = canDelete && e.record != null, hint = deleteWord) { e.record?.let(vm::swipeDeleteRecord) }.padding(vertical = 6.dp)) {
+                                Text(e.day, style = OzType.time, color = oz.fg3, modifier = Modifier.width(56.dp))
+                                Spacer(Modifier.width(16.dp))
+                                Text(e.text, style = OzType.small, color = if (e.missed) oz.danger else oz.fg2)
+                            }
                         }
                     }
                 }
@@ -95,11 +107,14 @@ fun PersonScreen(vm: DialerViewModel, id: Long) {
             // тип номера нужен, только чтобы различать несколько номеров
             if (!p.nameIsNumber || p.phones.size > 1) {
                 val many = p.phones.size > 1
+                // номеров несколько: тот, на который звонит кнопка, помечен «основной»; номера темнее — по ним нажимают
+                val main = if (many) vm.numberFor(p) else null
                 // тап по номеру — звонок именно на него, долгое нажатие копирует
                 p.phones.take(3).forEach { ph ->
                     Text(
-                        (if (many) ph.label.replaceFirstChar { it.uppercase() } + "  " else "") + com.khizrim.dialer.data.PhoneFormat.pretty(ph.number),
-                        style = OzType.body.copy(fontFeatureSettings = "cv11, tnum"), color = oz.fg3, maxLines = 1,
+                        (if (many) ph.label.replaceFirstChar { it.uppercase() } + "  " else "") + com.khizrim.dialer.data.PhoneFormat.pretty(ph.number) +
+                            (if (main != null && com.khizrim.dialer.data.PhoneFormat.digits(main) == com.khizrim.dialer.data.PhoneFormat.digits(ph.number)) "  · " + stringResource(R.string.main_number) else ""),
+                        style = OzType.body.copy(fontFeatureSettings = "cv11, tnum"), color = if (many) oz.fg2 else oz.fg3, maxLines = 1,
                         modifier = Modifier
                             .offset(x = (-8).dp)
                             .press({ vm.callNumberOf(p, ph.number) }, onLongClick = { vm.copyNumber(ph.number) }, shape = OzShape.text,
@@ -109,22 +124,57 @@ fun PersonScreen(vm: DialerViewModel, id: Long) {
                 }
             }
             Spacer(Modifier.height(24.dp))
+            // главная кнопка из двух частей: слева — связаться, справа за разделителем — выбрать, что делать по нажатию
             Row(
-                Modifier
-                    .fillMaxWidth()
-                    .height(56.dp)
-                    .raisedFill(oz.accentFill, OzShape.main)
-                    .press({ vm.perform(p, method) }, onLongClick = { vm.openSheet(p, SheetMode.OTHER) }, shape = OzShape.main, pressColor = Color.White.copy(alpha = .12f)),
-                horizontalArrangement = Arrangement.Center,
+                Modifier.fillMaxWidth().height(56.dp).raisedFill(oz.accentFill, OzShape.main),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                OzIcon(method?.icon ?: R.drawable.ic_oz_help, Color.White)
-                Spacer(Modifier.width(10.dp))
-                Text(stringResource(method?.title ?: R.string.choose_method), style = OzType.strong, color = Color.White)
+                Row(
+                    Modifier.weight(1f).fillMaxHeight()
+                        .press({ vm.perform(p, method) }, shape = OzShape.main, pressColor = Color.White.copy(alpha = .12f)),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    OzIcon(method?.icon ?: R.drawable.ic_oz_swap, Color.White)
+                    Spacer(Modifier.width(10.dp))
+                    Text(stringResource(method?.title ?: R.string.choose_method), style = OzType.strong, color = Color.White, maxLines = 1)
+                }
+                Box(Modifier.width(1.dp).height(28.dp).background(Color.White.copy(alpha = .28f)))
+                Box(
+                    Modifier.width(52.dp).fillMaxHeight()
+                        .press({ vm.openSheet(p, SheetMode.DEFAULT) }, shape = OzShape.main, pressColor = Color.White.copy(alpha = .12f), label = stringResource(R.string.on_tap_title)),
+                    contentAlignment = Alignment.Center,
+                ) { OzIcon(R.drawable.ic_oz_chevron_down, Color.White, 20.dp) }
             }
-            Column(Modifier.padding(top = 12.dp).offset(x = (-12).dp)) {
-                TextAction(stringResource(R.string.other_way), oz.accent, { vm.openSheet(p, SheetMode.OTHER) })
-                TextAction(stringResource(R.string.change_default), oz.fg3, { vm.openSheet(p, SheetMode.DEFAULT) })
+            // две SIM и для человека запомнена не основная: тихая подпись под кнопкой, нажатие переключает или забывает
+            val simNumber = vm.numberFor(p)
+            vm.personSim(simNumber)?.let { id ->
+                Text(
+                    vm.simLabel(id).orEmpty(), style = OzType.small, color = oz.fg3, maxLines = 1,
+                    modifier = Modifier.padding(top = 4.dp).offset(x = (-12).dp)
+                        .press({ simNumber?.let(vm::cyclePersonSim) }, shape = OzShape.text, label = stringResource(R.string.sim_switch))
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                )
+            }
+            // остальные способы — строкой: значок и подпись, нажатие связывает сразу
+            val others = p.methods.filter { it != method }
+            if (others.isNotEmpty()) {
+                Row(
+                    Modifier.padding(top = 8.dp).offset(x = (-12).dp).horizontalScroll(rememberScrollState()),
+                ) {
+                    others.forEach { m ->
+                        Row(
+                            Modifier.heightIn(min = 48.dp).press({ vm.performOther(p, m) }, shape = OzShape.text).padding(horizontal = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            OzIcon(m.icon, oz.fg2, 18.dp)
+                            Spacer(Modifier.width(8.dp))
+                            Text(stringResource(m.title), style = OzType.small, color = oz.fg2, maxLines = 1)
+                        }
+                    }
+                }
+            }
+            Row(Modifier.padding(top = 4.dp).offset(x = (-12).dp)) {
                 TextAction(stringResource(R.string.edit_contact), oz.fg3, { vm.editContact(p) })
                 TextAction(
                     stringResource(if (fav) R.string.remove_favorite else R.string.add_favorite),

@@ -33,7 +33,6 @@ import com.khizrim.dialer.ui.components.MethodSheet
 import com.khizrim.dialer.ui.components.PersonMenu
 import com.khizrim.dialer.ui.components.SyncHelpSheet
 import com.khizrim.dialer.ui.contacts.BlockedScreen
-import com.khizrim.dialer.ui.contacts.ContactsScreen
 import com.khizrim.dialer.ui.onboarding.Onboarding
 import com.khizrim.dialer.ui.home.HomeScreen
 import com.khizrim.dialer.ui.keypad.KeypadPanel
@@ -67,11 +66,8 @@ fun DialerApp(vm: DialerViewModel = viewModel()) {
             ScreenStackHost(stack, Route(vm.screen, vm.personId), reduced) { r ->
                 when (r.screen) {
                     Screen.HOME -> HomeScreen(vm)
-                    Screen.CONTACTS -> ContactsScreen(vm)
                     Screen.PERSON -> r.personId?.let { PersonScreen(vm, it) }
                     Screen.BLOCKED -> BlockedScreen(vm)
-                    Screen.UNKNOWN -> com.khizrim.dialer.ui.contacts.UnknownScreen(vm)
-                    Screen.RECENTS -> com.khizrim.dialer.ui.recents.RecentsScreen(vm)
                     Screen.SETTINGS -> com.khizrim.dialer.ui.settings.SettingsScreen(vm)
                     Screen.EDIT -> com.khizrim.dialer.ui.person.EditContactScreen(vm)
                     Screen.SEARCH -> com.khizrim.dialer.ui.home.NameSearchScreen(vm)
@@ -106,7 +102,7 @@ fun DialerApp(vm: DialerViewModel = viewModel()) {
                 bottom = when { vm.keypadOpen -> 380.dp; barScreen(vm) -> 18.dp; else -> 16.dp },
                 end = if (barScreen(vm)) 84.dp else 12.dp,
                 undoHere = vm.screen != Screen.HOME || vm.keypadOpen,
-                onUndo = vm::undo,
+                onUndo = vm::toastTap,
             )
         }
     }
@@ -163,9 +159,9 @@ private fun KeypadLayer(vm: DialerViewModel, reduced: Boolean) {
 /** Где висит плашка звонка: над клавиатурой или над нижней панелью. */
 private fun floatBottom(vm: DialerViewModel): androidx.compose.ui.unit.Dp = when {
     vm.keypadOpen -> 380.dp
-    vm.screen == Screen.HOME && (vm.favorites.isNotEmpty() || vm.showSearchHint) -> 156.dp
+    vm.screen == Screen.HOME && vm.favorites.isNotEmpty() -> 156.dp
     else -> 96.dp
 }
 
 /** Экраны с нижней панелью и кнопкой набора: тост ложится в панель слева от кнопки и не закрывает содержимое. */
-private fun barScreen(vm: DialerViewModel) = !vm.keypadOpen && vm.screen in setOf(Screen.HOME, Screen.RECENTS, Screen.CONTACTS)
+private fun barScreen(vm: DialerViewModel) = !vm.keypadOpen && vm.screen in setOf(Screen.HOME)

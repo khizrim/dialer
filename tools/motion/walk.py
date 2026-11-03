@@ -49,6 +49,7 @@ def record(name, seconds, actions):
     remote = f"/sdcard/m-{name}.mp4"
     p = subprocess.Popen(["adb", "shell", "screenrecord", "--time-limit", str(seconds + 2), "--bit-rate", "12000000", remote])
     time.sleep(1.2)
+    sh("shell", "log", "-t", "OzMotion", f"walk {name} actions")
     try: actions()
     except Exception as e: note(f"ERR {name}: {e}")
     p.wait(); time.sleep(1)
@@ -63,7 +64,7 @@ def journal():
 def contacts():
     start(); swipe(540, 1700, 540, 900, 250, 2.5)
 def card():
-    start(); tap("Аня Смирнова", long=True, wait=2); tap("Открыть карточку", wait=2.5)
+    start(); tap("Мама", long=True, wait=2); tap("Открыть карточку", wait=2.5)
 
 def walk(theme):
     sh("shell", "cmd", "uimode", "night", "yes" if theme == "dark" else "no"); time.sleep(1.5)
@@ -85,10 +86,11 @@ def walk(theme):
     start(); tap("Настройки", wait=2.2); record(t("14-settings-back"), 4, lambda: back(2.2))
     start(); record(t("15-long-press-menu"), 5, lambda: tap("Аня Смирнова", long=True, wait=2.2))
     record(t("16-menu-drag-down"), 5, lambda: slow_drag(540, 1700, 2300, wait=2.0))
-    start(); tap("Аня Смирнова", long=True, wait=2)
+    start(); tap("Мама", long=True, wait=2)
     record(t("17-menu-to-card"), 4, lambda: tap("Открыть карточку", wait=2.2))
     record(t("18-card-other-way-sheet"), 5, lambda: (tap("Другой способ", wait=1.8), back(1.8)))
     card(); record(t("19-card-drag-down"), 5, lambda: slow_drag(540, 900, 2000, wait=2.2))
+    card(); record(t("19a-card-swipe-down-fast"), 5, lambda: swipe(540, 900, 540, 2100, 300, 2.5))
     card(); record(t("19b-card-back"), 4, lambda: back(2.2))
     start(); record(t("20-keypad-open-type"), 7, lambda: (tap("Открыть клавиатуру", wait=1.4), keys("8916"), time.sleep(1.2)))
     record(t("21-keypad-erase-close"), 7, lambda: ([sh("shell", "input", "keyevent", "KEYCODE_DEL") for _ in range(4)], time.sleep(0.8), back(2.0)))

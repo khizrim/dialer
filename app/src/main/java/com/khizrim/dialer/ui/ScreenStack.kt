@@ -36,7 +36,7 @@ enum class Edge(val sign: Float) { TOP(-1f), BOTTOM(1f) }
 
 /** Журнал, открытый с главной, лежит над ней; всё остальное — под ней и поднимается снизу. */
 fun edgeOf(from: Route?, to: Route): Edge =
-    if (to.screen == Screen.RECENTS && from?.screen == Screen.HOME) Edge.TOP else Edge.BOTTOM
+    Edge.BOTTOM
 
 @Stable
 class Layer(val route: Route, val edge: Edge, shown: Float) {

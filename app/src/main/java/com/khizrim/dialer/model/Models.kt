@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import com.khizrim.dialer.R
+import com.khizrim.dialer.data.CallRecord
 
 enum class MethodKind { CALL, CHAT }
 
@@ -55,7 +56,7 @@ data class Person(
     val key: String get() = "c:$lookupKey"
 }
 
-data class HistoryEntry(val day: String, val text: String, val missed: Boolean = false)
+data class HistoryEntry(val day: String, val text: String, val missed: Boolean = false, val record: CallRecord? = null)
 
 /** Строка главной: человек из контактов или номер, которого нет в контактах. */
 data class HomeEntry(
@@ -64,6 +65,10 @@ data class HomeEntry(
     val number: String?,
     val lastAt: Long,
     val missedNote: String?,
+    /** Вторая строка, если звонок был необычный, но не пропущенный: «Исходящий, без ответа». */
+    val note: String? = null,
+    /** >0 — это не человек, а свёрнутая строка «N незнакомых без звука». */
+    val silent: Int = 0,
 ) {
     val title: String get() = person?.shownName ?: com.khizrim.dialer.data.PhoneFormat.pretty(number.orEmpty())
 }

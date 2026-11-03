@@ -42,13 +42,20 @@ object Launcher {
         }.getOrDefault(true)
     }
 
-    fun call(context: Context, number: String): String? {
+    /** [pinned]: SIM выбрали руками ([sim], или «спросить» при [ask]) — запомненную не берём. */
+    @android.annotation.SuppressLint("MissingPermission")
+    fun call(context: Context, number: String, sim: String? = null, ask: Boolean = false, pinned: Boolean = false): String? {
         val uri = Uri.fromParts("tel", number, null)
         val tm = context.getSystemService(TelecomManager::class.java)
         val allowed = context.checkSelfPermission(Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED
         if (allowed && tm != null) {
             return try {
-                tm.placeCall(uri, Bundle().apply { simHandle(context, tm, number)?.let { putParcelable(TelecomManager.EXTRA_PHONE_ACCOUNT_HANDLE, it) } })
+                val handle = when {
+                    ask -> null
+                    pinned -> runCatching { tm.callCapablePhoneAccounts }.getOrNull().orEmpty().firstOrNull { it.id == sim }
+                    else -> simHandle(context, tm, number)
+                }
+                tm.placeCall(uri, Bundle().apply { handle?.let { putParcelable(TelecomManager.EXTRA_PHONE_ACCOUNT_HANDLE, it) } })
                 null
             } catch (e: SecurityException) {
                 context.getString(R.string.err_call)
@@ -92,6 +99,15 @@ object Launcher {
         val intent = Intent(ContactsContract.Intents.Insert.ACTION)
             .setType(ContactsContract.RawContacts.CONTENT_TYPE)
             .putExtra(ContactsContract.Intents.Insert.PHONE, number)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        return start(context, intent, context.getString(R.string.err_no_contacts_app))
+    }
+
+    /** Новый контакт с уже набранным именем — системным редактором. */
+    fun addContactNamed(context: Context, name: String): String? {
+        val intent = Intent(ContactsContract.Intents.Insert.ACTION)
+            .setType(ContactsContract.RawContacts.CONTENT_TYPE)
+            .putExtra(ContactsContract.Intents.Insert.NAME, name)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         return start(context, intent, context.getString(R.string.err_no_contacts_app))
     }

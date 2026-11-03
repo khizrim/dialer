@@ -41,6 +41,8 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.composed
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.text.drawText
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
@@ -189,6 +191,19 @@ fun GhostIconButton(
     ) { OzIcon(icon, tint, iconSize) }
 }
 
+/**
+ * Кнопка связи справа у строки: значок способа по умолчанию (трубка тоже), нажатие связывает.
+ * «Спрашивать каждый раз» — значок swap: по нажатию будет выбор.
+ */
+@Composable
+fun ReachButton(method: com.khizrim.dialer.model.Method?, who: String, onClick: () -> Unit) {
+    GhostIconButton(
+        method?.icon ?: R.drawable.ic_oz_swap,
+        stringResource(method?.title ?: R.string.choose_method) + ": " + who,
+        onClick, tint = LocalOz.current.fg3, size = 48.dp, iconSize = 22.dp,
+    )
+}
+
 /** Тихая текстовая кнопка. */
 @Composable
 fun TextAction(
@@ -251,12 +266,17 @@ fun CallStrip(modifier: Modifier = Modifier) {
  * Строку смахивают влево: она идёт за пальцем и гаснет; дальше 96 dp — уходит совсем и вызывает onSwiped,
  * иначе пружинит обратно. Вправо не двигается: этот жест сознательно пустой.
  */
-fun Modifier.swipeAway(enabled: Boolean = true, onRight: (() -> Unit)? = null, onSwiped: () -> Unit): Modifier = if (!enabled && onRight == null) this else composed {
-    val offset = remember { androidx.compose.animation.core.Animatable(0f) }
+fun Modifier.swipeAway(enabled: Boolean = true, hint: String? = null, onRight: (() -> Unit)? = null, onSwiped: () -> Unit): Modifier = if (!enabled && onRight == null) this else composed {
+    // порог в пикселях: по умолчанию 0.01 px, и пружина «доезжает» лишние полсекунды
+    val offset = remember { androidx.compose.animation.core.Animatable(0f, visibilityThreshold = 0.5f) }
     val scope = androidx.compose.runtime.rememberCoroutineScope()
     val density = androidx.compose.ui.platform.LocalDensity.current
     val threshold = with(density) { 96.dp.toPx() }
     val reduced = com.khizrim.dialer.ui.theme.LocalReducedMotion.current
+    // серое слово из-под строки («Удалить», «Скрыть»): видно только пока её тянут влево, после жеста гаснет
+    val hintAlpha = remember { androidx.compose.animation.core.Animatable(0f) }
+    val measurer = androidx.compose.ui.text.rememberTextMeasurer()
+    val hintStyle = com.khizrim.dialer.ui.theme.OzType.small.copy(color = com.khizrim.dialer.ui.theme.LocalOz.current.fg3)
     val tracker = remember { androidx.compose.ui.input.pointer.util.VelocityTracker() }
     val w = remember { floatArrayOf(1f) }
     this
@@ -266,6 +286,7 @@ fun Modifier.swipeAway(enabled: Boolean = true, onRight: (() -> Unit)? = null, o
                 onDragStart = { tracker.resetTracking() },
                 onDragEnd = {
                     val v = tracker.calculateVelocity().x
+                    scope.launch { hintAlpha.animateTo(0f, com.khizrim.dialer.ui.theme.Motion.exit(com.khizrim.dialer.ui.theme.Motion.FADE)) }
                     scope.launch {
                         val settle = com.khizrim.dialer.ui.theme.Motion.settle<Float>()
                         if (offset.value > threshold && onRight != null) {
@@ -275,21 +296,37 @@ fun Modifier.swipeAway(enabled: Boolean = true, onRight: (() -> Unit)? = null, o
                         } else if (enabled && (offset.value < -threshold || (v < -1500f && offset.value < 0f))) {
                             // строка уезжает за край со скоростью пальца и там остаётся: её убирает список,
                             // соседи смыкаются. Назад на место её не возвращаем — иначе она мигнёт перед исчезновением
-                            if (!reduced) offset.animateTo(-w[0], settle, v.coerceAtMost(0f))
+                            // список убирает её сразу: соседи смыкаются, пока она ещё уезжает, а не после
+                            // долгого хвоста пружины (иначе ~1 с на её месте пусто, а потом всё прыгает)
                             onSwiped()
+                            if (!reduced) offset.animateTo(-w[0], settle, v.coerceAtMost(0f))
                             // если строку так и не убрали (нет прав и т. п.) — через мгновение возвращаем
                             kotlinx.coroutines.delay(700)
                             offset.animateTo(0f, settle)
                         } else offset.animateTo(0f, settle, v)
                     }
                 },
-                onDragCancel = { scope.launch { offset.animateTo(0f, com.khizrim.dialer.ui.theme.Motion.settle()) } },
+                onDragCancel = {
+                    scope.launch { hintAlpha.animateTo(0f, com.khizrim.dialer.ui.theme.Motion.exit(com.khizrim.dialer.ui.theme.Motion.FADE)) }
+                    scope.launch { offset.animateTo(0f, com.khizrim.dialer.ui.theme.Motion.settle()) }
+                },
             ) { change, amount ->
                 change.consume()
                 tracker.addPosition(change.uptimeMillis, change.position)
                 val max = if (onRight != null) threshold * 1.4f else 0f
                 val min = if (enabled) Float.NEGATIVE_INFINITY else 0f
-                scope.launch { offset.snapTo((offset.value + amount).coerceIn(min, max)) }
+                val next = (offset.value + amount).coerceIn(min, max)
+                scope.launch { offset.snapTo(next) }
+                if (hint != null) scope.launch { hintAlpha.snapTo(((-next) / threshold).coerceIn(0f, 1f)) }
+            }
+        }
+        .drawBehind {
+            // под строкой, не сдвигается вместе с ней: проявляется справа, пока строка уезжает влево
+            val a = hintAlpha.value
+            if (hint != null && a > 0f) {
+                val layout = measurer.measure(hint, hintStyle)
+                drawText(layout, alpha = a, topLeft = androidx.compose.ui.geometry.Offset(
+                    size.width - layout.size.width - 12.dp.toPx(), (size.height - layout.size.height) / 2f))
             }
         }
         .graphicsLayer {
