@@ -252,7 +252,8 @@ fun CallStrip(modifier: Modifier = Modifier) {
  * иначе пружинит обратно. Вправо не двигается: этот жест сознательно пустой.
  */
 fun Modifier.swipeAway(enabled: Boolean = true, onRight: (() -> Unit)? = null, onSwiped: () -> Unit): Modifier = if (!enabled && onRight == null) this else composed {
-    val offset = remember { androidx.compose.animation.core.Animatable(0f) }
+    // порог в пикселях: по умолчанию 0.01 px, и пружина «доезжает» лишние полсекунды
+    val offset = remember { androidx.compose.animation.core.Animatable(0f, visibilityThreshold = 0.5f) }
     val scope = androidx.compose.runtime.rememberCoroutineScope()
     val density = androidx.compose.ui.platform.LocalDensity.current
     val threshold = with(density) { 96.dp.toPx() }
@@ -275,8 +276,10 @@ fun Modifier.swipeAway(enabled: Boolean = true, onRight: (() -> Unit)? = null, o
                         } else if (enabled && (offset.value < -threshold || (v < -1500f && offset.value < 0f))) {
                             // строка уезжает за край со скоростью пальца и там остаётся: её убирает список,
                             // соседи смыкаются. Назад на место её не возвращаем — иначе она мигнёт перед исчезновением
-                            if (!reduced) offset.animateTo(-w[0], settle, v.coerceAtMost(0f))
+                            // список убирает её сразу: соседи смыкаются, пока она ещё уезжает, а не после
+                            // долгого хвоста пружины (иначе ~1 с на её месте пусто, а потом всё прыгает)
                             onSwiped()
+                            if (!reduced) offset.animateTo(-w[0], settle, v.coerceAtMost(0f))
                             // если строку так и не убрали (нет прав и т. п.) — через мгновение возвращаем
                             kotlinx.coroutines.delay(700)
                             offset.animateTo(0f, settle)
