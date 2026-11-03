@@ -240,4 +240,12 @@
     <string name="filter_all">All</string>
     <string name="filter_missed">Missed</string>
     <string name="recents_no_missed">No missed calls</string>
+    <string name="ob_restricted_title">Android blocked access</string>
+    <string name="ob_restricted_text">The app was installed from a file, so Android hides the default phone app permission. You only need to allow it once.</string>
+    <string name="ob_restricted_1">Open App info with the button below</string>
+    <string name="ob_restricted_2">Tap ⋮ in the top right corner</string>
+    <string name="ob_restricted_3">Choose “Allow restricted settings” and confirm</string>
+    <string name="ob_restricted_4">Come back and tap “Try again”</string>
+    <string name="ob_restricted_note">No ⋮ menu? Tap “Try again” once more and check again: the option appears only after Android has refused once. On Xiaomi it may be under “Other permissions”.</string>
+    <string name="ob_restricted_open">Open App info</string>
 </resources>

@@ -245,4 +245,12 @@
     <string name="filter_all">Все</string>
     <string name="filter_missed">Пропущенные</string>
     <string name="recents_no_missed">Пропущенных нет</string>
+    <string name="ob_restricted_title">Android закрыл доступ</string>
+    <string name="ob_restricted_text">Приложение установлено из файла, поэтому Android прячет разрешение для звонилки. Открыть его нужно один раз.</string>
+    <string name="ob_restricted_1">Откройте «О приложении» кнопкой ниже</string>
+    <string name="ob_restricted_2">Нажмите ⋮ в правом верхнем углу</string>
+    <string name="ob_restricted_3">Выберите «Разрешить ограниченные настройки» и подтвердите</string>
+    <string name="ob_restricted_4">Вернитесь сюда и нажмите «Попробовать снова»</string>
+    <string name="ob_restricted_note">Нет меню ⋮? Нажмите «Попробовать снова» ещё раз и загляните снова: пункт появляется только после первого отказа. На Xiaomi он может быть в «Других разрешениях».</string>
+    <string name="ob_restricted_open">Открыть «О приложении»</string>
 </resources>

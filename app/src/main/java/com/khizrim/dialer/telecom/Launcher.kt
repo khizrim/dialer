@@ -34,6 +34,14 @@ object Launcher {
         }
     }
 
+    /** Установлено не из магазина на Android 13+: система может молча отказать в роли звонилки. */
+    fun mayBeRestricted(context: Context): Boolean {
+        if (android.os.Build.VERSION.SDK_INT < 33) return false
+        return runCatching {
+            context.packageManager.getInstallSourceInfo(context.packageName).packageSource != android.content.pm.PackageInstaller.PACKAGE_SOURCE_STORE
+        }.getOrDefault(true)
+    }
+
     fun call(context: Context, number: String): String? {
         val uri = Uri.fromParts("tel", number, null)
         val tm = context.getSystemService(TelecomManager::class.java)

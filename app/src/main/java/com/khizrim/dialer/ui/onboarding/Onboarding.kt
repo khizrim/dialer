@@ -26,6 +26,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -59,9 +61,17 @@ fun Onboarding(vm: DialerViewModel) {
     val context = LocalContext.current
     val activity = context as? Activity
     val permissions = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { vm.markPermsAsked(); vm.reload() }
+    // Android 13+ прячет роль звонилки у приложений, установленных из файла («Ограниченные настройки»)
+    var restricted by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
     val role = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         vm.reload()
-        if (!Launcher.isDefaultDialer(context)) vm.skipRole()
+        if (!Launcher.isDefaultDialer(context)) {
+            if (Launcher.mayBeRestricted(context)) restricted = true else vm.skipRole()
+        } else restricted = false
+    }
+    fun askRole() {
+        val intent = Launcher.defaultDialerRequest(context)
+        if (intent == null) vm.skipRole() else runCatching { role.launch(intent) }.onFailure { vm.skipRole() }
     }
     val roleStep = !vm.isDefaultDialer && !vm.roleSkipped
     // спрашивали, отказали и система больше не покажет вопрос
@@ -81,6 +91,22 @@ fun Onboarding(vm: DialerViewModel) {
         verticalArrangement = Arrangement.Bottom,
     ) {
         when {
+            roleStep && restricted -> {
+                Text(stringResource(R.string.ob_restricted_title), style = OzType.namePerson, color = oz.fg, modifier = Modifier.semantics { heading() })
+                Text(stringResource(R.string.ob_restricted_text), style = OzType.body, color = oz.fg2, modifier = Modifier.padding(top = 12.dp, bottom = 16.dp))
+                listOf(R.string.ob_restricted_1, R.string.ob_restricted_2, R.string.ob_restricted_3, R.string.ob_restricted_4).forEachIndexed { i, s ->
+                    Row(Modifier.padding(vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                        Text("${i + 1}", style = OzType.body, color = oz.fg3)
+                        Text(stringResource(s), style = OzType.body, color = oz.fg)
+                    }
+                }
+                Text(stringResource(R.string.ob_restricted_note), style = OzType.small, color = oz.fg3, modifier = Modifier.padding(top = 8.dp, bottom = 24.dp))
+                MainButton(stringResource(R.string.ob_restricted_open), ::openSettings)
+                Row {
+                    TextAction(stringResource(R.string.try_again), oz.accent, ::askRole, modifier = Modifier.padding(top = 12.dp).offset(x = (-12).dp))
+                    TextAction(stringResource(R.string.not_now), oz.fg3, vm::skipRole, modifier = Modifier.padding(top = 12.dp))
+                }
+            }
             roleStep -> {
                 Text(stringResource(R.string.ob_step, 1, 2), style = OzType.label, color = oz.fg3)
                 Text("Ozero Phone", style = OzType.namePerson, color = oz.fg, modifier = Modifier.padding(top = 8.dp, bottom = 24.dp).semantics { heading() })
@@ -88,10 +114,7 @@ fun Onboarding(vm: DialerViewModel) {
                 Promise(R.drawable.ic_oz_bell_off, stringResource(R.string.ob_promise_quiet))
                 Promise(R.drawable.ic_oz_shield, stringResource(R.string.ob_promise_local))
                 Spacer(Modifier.height(32.dp))
-                MainButton(stringResource(R.string.ob_role_button)) {
-                    val intent = Launcher.defaultDialerRequest(context)
-                    if (intent == null) vm.skipRole() else runCatching { role.launch(intent) }.onFailure { vm.skipRole() }
-                }
+                MainButton(stringResource(R.string.ob_role_button), ::askRole)
                 TextAction(stringResource(R.string.not_now), oz.fg3, vm::skipRole, modifier = Modifier.padding(top = 12.dp).offset(x = (-12).dp))
             }
             denied -> {
