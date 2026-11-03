@@ -25,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.util.addPointerInputChange
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.remember
 import androidx.compose.ui.semantics.customActions
@@ -70,7 +71,7 @@ fun HomeScreen(vm: DialerViewModel) {
         awaitEachGesture {
             val down = awaitFirstDown(requireUnconsumed = false, pass = androidx.compose.ui.input.pointer.PointerEventPass.Initial)
             val tracker = androidx.compose.ui.input.pointer.util.VelocityTracker()
-            tracker.addPosition(down.uptimeMillis, down.position)
+            tracker.addPointerInputChange(down)
             var dy = 0f
             var dx = 0f
             var dragging = false
@@ -80,19 +81,9 @@ fun HomeScreen(vm: DialerViewModel) {
             while (true) {
                 val ev = awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Initial)
                 val ch = ev.changes.firstOrNull { it.id == down.id } ?: break
-                if (!ch.pressed) {
-                    released = true
-                    if (dragging) {
-                        ch.consume()
-                        val v = tracker.calculateVelocity().y
-                        if (stack == null) {
-                            if (dy < -threshold) vm.openTextSearch() else if (dy > threshold) vm.openRecents(fromHome = true)
-                        } else if (dy > 0f) stack.previewEnd(v) { vm.openRecents(fromHome = true) }
-                        else stack.previewEnd(-v) { vm.openTextSearch() }
-                    }
-                    break
-                }
-                tracker.addPosition(ch.uptimeMillis, ch.position)
+                // медленный кадр (первая сборка журнала) может принести остаток пути вместе с отпусканием:
+                // сначала учитываем весь путь и историю точек, потом решаем
+                tracker.addPointerInputChange(ch)
                 dy += ch.position.y - ch.previousPosition.y
                 dx += ch.position.x - ch.previousPosition.x
                 // горизонтальный жест — это смахивание строки, его отдаём строке
@@ -103,6 +94,17 @@ fun HomeScreen(vm: DialerViewModel) {
                     val h = stack?.height ?: 1f
                     if (dy > 0f) stack?.previewTo(journal, com.khizrim.dialer.ui.Edge.TOP, dy / h)
                     else stack?.previewTo(contacts, com.khizrim.dialer.ui.Edge.BOTTOM, -dy / h)
+                }
+                if (!ch.pressed) {
+                    released = true
+                    if (dragging) {
+                        val v = tracker.calculateVelocity().y
+                        if (stack == null) {
+                            if (dy < -threshold) vm.openTextSearch() else if (dy > threshold) vm.openRecents(fromHome = true)
+                        } else if (dy > 0f) stack.previewEnd(v) { vm.openRecents(fromHome = true) }
+                        else stack.previewEnd(-v) { vm.openTextSearch() }
+                    }
+                    break
                 }
             }
             if (dragging && !released) stack?.previewCancel()

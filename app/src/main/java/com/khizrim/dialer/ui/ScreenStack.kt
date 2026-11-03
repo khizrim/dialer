@@ -66,8 +66,8 @@ class ScreenStack(private val scope: CoroutineScope) {
     private var gesture: Gesture? = null
 
     private sealed interface Gesture
-    private class Preview(val layer: Layer) : Gesture
-    private class Dismiss(val top: Layer, val beneath: Layer) : Gesture
+    private class Preview(val layer: Layer) : Gesture { var fraction = 0f }
+    private class Dismiss(val top: Layer, val beneath: Layer) : Gesture { var fraction = 0f }
 
     val top: Layer? get() = layers.lastOrNull()
 
@@ -136,14 +136,16 @@ class ScreenStack(private val scope: CoroutineScope) {
             if (g is Preview) layers.remove(g.layer)
             Layer(route, edge, 0f).also { layers += it; gesture = Preview(it) }
         }
-        scope.launch { layer.shown.snapTo(fraction.coerceIn(0f, 1f)) }
+        val f = fraction.coerceIn(0f, 1f)
+        (gesture as? Preview)?.fraction = f
+        scope.launch { layer.shown.snapTo(f) }
     }
 
     /** Палец отпустили. [velocity] — px/с в сторону открытия. true — открываем, и вызывающий меняет экран. */
     fun previewEnd(velocity: Float, open: () -> Unit) {
         val g = gesture as? Preview ?: return
         gesture = null
-        if (Motion.commits(g.layer.shown.value, velocity, height)) {
+        if (Motion.commits(g.fraction, velocity, height)) {
             pendingVelocity = velocity / height; open()
         } else {
             g.layer.leaving = true
@@ -172,7 +174,9 @@ class ScreenStack(private val scope: CoroutineScope) {
             layers.add(layers.lastIndex, beneath)
             g = Dismiss(top, beneath); gesture = g
         }
-        scope.launch { g.top.shown.snapTo((1f - px / height).coerceIn(0f, 1f)) }
+        g.fraction = (px / height).coerceIn(0f, 1f)
+        val shown = 1f - g.fraction
+        scope.launch { g.top.shown.snapTo(shown) }
     }
 
     val dismissing: Boolean get() = gesture is Dismiss
@@ -181,7 +185,7 @@ class ScreenStack(private val scope: CoroutineScope) {
     fun dismissEnd(velocity: Float, close: () -> Unit) {
         val g = gesture as? Dismiss ?: return
         gesture = null
-        if (Motion.commits(1f - g.top.shown.value, velocity, height)) {
+        if (Motion.commits(g.fraction, velocity, height)) {
             pendingVelocity = -velocity / height; close()
         } else {
             scope.launch {

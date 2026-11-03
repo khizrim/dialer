@@ -111,11 +111,14 @@ fun BoxScope.SheetLayer(visible: Boolean, title: String, onDismiss: () -> Unit, 
                         onDragEnd = {
                             val v = tracker.calculateVelocity().y
                             val h = sheetHeight[0]
-                            if (Motion.commits(drag.value / h, v, h)) scope.launch {
-                                // доезжает за край со скоростью пальца, затем закрывается (уход уже за экраном)
-                                drag.animateTo(h, Motion.settle(), v)
-                                onDismiss()
-                            } else scope.launch { drag.animateTo(0f, Motion.settle(), v) }
+                            // решаем после того, как применились все сдвиги пальца
+                            scope.launch {
+                                if (Motion.commits(drag.value / h, v, h)) {
+                                    // доезжает за край со скоростью пальца, затем закрывается (уход уже за экраном)
+                                    drag.animateTo(h, Motion.settle(), v)
+                                    onDismiss()
+                                } else drag.animateTo(0f, Motion.settle(), v)
+                            }
                         },
                         onDragCancel = { scope.launch { drag.animateTo(0f, Motion.settle()) } },
                     ) { change, amount ->

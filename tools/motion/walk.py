@@ -58,48 +58,47 @@ def start(wait=6):
     sh("shell", "monkey", "-p", PKG, "-c", "android.intent.category.LAUNCHER", "1"); time.sleep(wait)
     nodes()
 
+def journal():
+    start(); tap("Журнал", wait=2.5)
+def contacts():
+    start(); swipe(540, 1700, 540, 900, 250, 2.5)
+def card():
+    start(); tap("Аня Смирнова", long=True, wait=2); tap("Открыть карточку", wait=2.5)
+
 def walk(theme):
     sh("shell", "cmd", "uimode", "night", "yes" if theme == "dark" else "no"); time.sleep(1.5)
     t = lambda n: f"{theme}-{n}"
-    # журнал: жест вниз со стопки, кнопка, возврат назад и жестом вверх
+    # каждый переход — с чистого запуска, чтобы сбой одного не ломал следующие
     start(); record(t("01-home-pull-down-journal-fast"), 4, lambda: swipe(540, 700, 540, 1600, 250, 2.2))
-    record(t("02-journal-back-home"), 4, lambda: back(2.2))
-    record(t("03-home-pull-down-journal-slow"), 7, lambda: slow_drag(540, 700, 1500, hold_at=0.8, wait=2.2))
-    record(t("04-journal-pull-up-home"), 5, lambda: slow_drag(540, 1800, 900, wait=2.2))
+    journal(); record(t("02-journal-back-home"), 4, lambda: back(2.2))
+    start(); record(t("03-home-pull-down-journal-slow"), 7, lambda: slow_drag(540, 700, 1500, hold_at=0.8, wait=2.2))
+    journal(); record(t("04-journal-pull-up-home"), 6, lambda: slow_drag(540, 1800, 900, wait=2.2))
     start(); record(t("05-home-tap-journal"), 4, lambda: tap("Журнал", wait=2.2))
-    record(t("06-journal-back-again"), 4, lambda: back(2.2))
-    record(t("07-home-pull-down-cancel"), 5, lambda: slow_drag(540, 900, 1050, hold_at=0.5, wait=2.0))
-    # контакты: жест вверх, кнопка, назад, тянуть вниз
+    journal(); record(t("06-journal-pull-up-fast"), 4, lambda: swipe(540, 1800, 540, 900, 200, 2.2))
+    start(); record(t("07-home-pull-down-cancel"), 5, lambda: slow_drag(540, 900, 1050, hold_at=0.5, wait=2.0))
     start(); record(t("08-home-pull-up-contacts-fast"), 4, lambda: swipe(540, 1700, 540, 900, 250, 2.2))
-    record(t("09-contacts-back-home"), 4, lambda: back(1.0) or back(2.0))
-    record(t("10-home-pull-up-contacts-slow"), 7, lambda: slow_drag(540, 1700, 900, hold_at=0.8, wait=2.2))
-    record(t("11-contacts-drag-down-close"), 6, lambda: (back(1.0), slow_drag(540, 600, 1900, wait=2.2)))
+    contacts(); record(t("09-contacts-back-home"), 4, lambda: back(1.0) or back(2.0))
+    start(); record(t("10-home-pull-up-contacts-slow"), 7, lambda: slow_drag(540, 1700, 900, hold_at=0.8, wait=2.2))
+    contacts(); back(1.0); record(t("11-contacts-drag-down-close"), 6, lambda: slow_drag(540, 600, 1900, wait=2.2))
     start(); record(t("12-home-tap-contacts"), 4, lambda: tap("Контакты", wait=2.2))
-    # настройки
     start(); record(t("13-home-to-settings"), 4, lambda: tap("Настройки", wait=2.2))
-    record(t("14-settings-back"), 4, lambda: back(2.2))
-    # меню человека и карточка
-    record(t("15-long-press-menu"), 5, lambda: tap("Мама", long=True, wait=2.2))
-    record(t("16-menu-drag-down"), 5, lambda: slow_drag(540, 1600, 2300, wait=2.0))
-    tap("Мама", long=True, wait=2)
+    start(); tap("Настройки", wait=2.2); record(t("14-settings-back"), 4, lambda: back(2.2))
+    start(); record(t("15-long-press-menu"), 5, lambda: tap("Аня Смирнова", long=True, wait=2.2))
+    record(t("16-menu-drag-down"), 5, lambda: slow_drag(540, 1700, 2300, wait=2.0))
+    start(); tap("Аня Смирнова", long=True, wait=2)
     record(t("17-menu-to-card"), 4, lambda: tap("Открыть карточку", wait=2.2))
     record(t("18-card-other-way-sheet"), 5, lambda: (tap("Другой способ", wait=1.8), back(1.8)))
-    record(t("19-card-drag-down"), 5, lambda: slow_drag(540, 900, 2000, wait=2.2))
-    # клавиатура
+    card(); record(t("19-card-drag-down"), 5, lambda: slow_drag(540, 900, 2000, wait=2.2))
+    card(); record(t("19b-card-back"), 4, lambda: back(2.2))
     start(); record(t("20-keypad-open-type"), 7, lambda: (tap("Открыть клавиатуру", wait=1.4), keys("8916"), time.sleep(1.2)))
-    record(t("21-keypad-erase-close"), 7, lambda: (keys("DEL" if False else ""), [sh("shell", "input", "keyevent", "KEYCODE_DEL") for _ in range(4)], time.sleep(0.8), back(2.0)))
+    record(t("21-keypad-erase-close"), 7, lambda: ([sh("shell", "input", "keyevent", "KEYCODE_DEL") for _ in range(4)], time.sleep(0.8), back(2.0)))
     start(); tap("Открыть клавиатуру", wait=1.6)
     record(t("22-keypad-drag-down"), 5, lambda: slow_drag(540, 1300, 2300, wait=2.0))
-    # уборка главной: смахнуть строку
-    start(); p = find("Аня Смирнова") or find("Мама")
+    start(); p = find("Аня Смирнова")
     if p: record(t("23-home-row-swipe-away"), 7, lambda: swipe(950, p[1], 120, p[1], 250, 4.5))
-    # журнал: удалить звонок свайпом, фильтр
-    start(); tap("Журнал", wait=2.2)
-    record(t("24-journal-row-swipe-delete"), 7, lambda: swipe(950, 1900, 120, 1900, 250, 4.5))
-    p = find("Пропущенные")
-    if p: record(t("25-journal-filter"), 6, lambda: (tap("Пропущенные", wait=1.8), tap("Все", wait=1.8)))
-    back(1.5)
-    # звонок: входящий -> разговор -> конец
+    journal(); record(t("24-journal-row-swipe-delete"), 7, lambda: swipe(950, 1900, 120, 1900, 250, 4.5))
+    journal()
+    if find("Пропущенные"): record(t("25-journal-filter"), 6, lambda: (tap("Пропущенные", wait=1.8), tap("Все", wait=1.8)))
     start(); record(t("26-incoming-answer-end"), 14, lambda: (subprocess.run(["adb", "emu", "gsm", "call", "+79161112233"]), time.sleep(3.5),
                                                          tap("Ответить", wait=3.5), subprocess.run(["adb", "emu", "gsm", "cancel", "+79161112233"]), time.sleep(4)))
     start(); record(t("27-cold-start"), 5, lambda: None)
