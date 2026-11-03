@@ -97,7 +97,7 @@ fun RecentsScreen(vm: DialerViewModel) {
                     )
                     is Item -> {
                         val r = l.record
-                        val title = l.person?.name ?: PhoneFormat.pretty(r.number)
+                        val title = l.person?.shownName ?: PhoneFormat.pretty(r.number)
                         val method = l.person?.let { vm.defaultOf(it) } ?: if (l.person == null) com.khizrim.dialer.model.Method.PHONE else null
                         val label = listOf(title, r.text(res), time.format(Date(r.date)), stringResource(method?.title ?: R.string.choose_method)).joinToString(", ")
                         Row(

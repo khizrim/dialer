@@ -194,6 +194,9 @@ object CallManager {
         return label?.takeIf { it.isNotBlank() } ?: ctx.getString(R.string.sim_n, index + 1)
     }
 
+    /** Экран звонка появился или ушёл: перевыпускаем уведомление (на экране — без всплывающего). */
+    fun screenShown() { main.post { refresh() } }
+
     private fun refresh() {
         val call = primary ?: return
         val number = number(call)
