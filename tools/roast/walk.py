@@ -126,13 +126,26 @@ rows = [b for t, d, x, y, b in nodes() if t and y > 400 and y < 2050]
 note(f"journal rows: {len(rows)}")
 jr = [y for t, d, x, y, b in nodes() if t.startswith("+7") and 1300 < y < 2000]
 jy = jr[-1] if jr else 1900; note(f"journal swipe row y={jy}")
-record("journal-swipe-row-left", 8, lambda: (sh("shell", "input", "swipe", "950", str(jy), "120", str(jy), "900"), time.sleep(3))); shot("journal-after-row-swipe")
+def fast(name):
+    with open(os.path.join(OUT, name + ".png"), "wb") as f:
+        f.write(subprocess.run(["adb", "exec-out", "screencap", "-p"], capture_output=True).stdout)
+def logrows(): return subprocess.run(["adb", "shell", "content query --uri content://call_log/calls --projection _id | wc -l"], capture_output=True, text=True).stdout.strip()
+note(f"journal rows before swipe: {logrows()}")
+sh("shell", "input", "swipe", "950", str(jy), "120", str(jy), "900"); t0 = time.time()
+time.sleep(0.3); fast("undo-0.3s"); note(f"t={time.time()-t0:.1f} rows={logrows()}")
+time.sleep(max(0, 1 - (time.time() - t0))); fast("undo-1s")
+d = [t or dd for t, dd, x, y, b in nodes() if any(k in (t + dd) for k in ("Undo", "Вернуть", "Deleted", "Удал"))]
+note(f"t={time.time()-t0:.1f} undo nodes: {d} rows={logrows()}")
+time.sleep(max(0, 2 - (time.time() - t0))); fast("undo-2s"); note(f"t={time.time()-t0:.1f} rows={logrows()}")
+time.sleep(max(0, 3.5 - (time.time() - t0))); fast("undo-3.5s"); note(f"t={time.time()-t0:.1f} rows={logrows()}")
+time.sleep(max(0, 5 - (time.time() - t0))); fast("undo-5s"); note(f"t={time.time()-t0:.1f} rows={logrows()}"); shot("journal-after-row-swipe")
 time.sleep(1); shot("journal-undo-toast")
 record("journal-pull-up-home", 6, lambda: swipe(1700, 800, 300, 2.5)); shot("journal-after-pull-up")
 start(); record("contacts-sheet-drag-down", 9, lambda: (swipe(1700, 900, 300, 2.5), shot("sheet-open"), drag(540, 1350, 2250, 400, 2.5)))
 shot("after-sheet-drag-down")
 start(); record("keypad-drag-down", 8, lambda: (tap(T["keypad"], wait=2), shot("keypad-before-drag"), drag(540, 1500, 2300, 400, 2.5)))
 shot("after-keypad-drag-down")
+start(); tap(T["keypad"], wait=2); drag(540, 700, 2000, 400, 2.5); shot("after-keypad-drag-from-suggestions")
 start(); tap("Мама", long=True, wait=2); tap(T["card"], wait=2.5); shot("person-2")
 num = [(x, y, t) for t, d, x, y, b in nodes() if t.startswith("+7")]
 note(f"card numbers: {num}")
