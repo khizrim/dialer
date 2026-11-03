@@ -1,5 +1,10 @@
 package com.khizrim.dialer.ui.onboarding
 
+import com.khizrim.dialer.ui.theme.raisedFill
+import com.khizrim.dialer.ui.theme.well
+import com.khizrim.dialer.ui.theme.lift
+import com.khizrim.dialer.ui.theme.OzShape
+
 import com.khizrim.dialer.R
 import android.Manifest
 import android.content.Intent
@@ -83,8 +88,8 @@ fun Onboarding(vm: DialerViewModel) {
             Modifier
                 .fillMaxWidth()
                 .height(56.dp)
-                .press({ next() }, shape = RoundedCornerShape(18.dp), pressColor = oz.accentFill)
-                .background(oz.accentFill, RoundedCornerShape(18.dp)),
+                .raisedFill(oz.accentFill, OzShape.main)
+                .press({ next() }, shape = OzShape.main, pressColor = Color.White.copy(alpha = .12f)),
             contentAlignment = Alignment.Center,
         ) {
             Text(if (roleStep) stringResource(R.string.ob_role_button) else stringResource(R.string.ob_perm_button), style = OzType.strong, color = Color.White)

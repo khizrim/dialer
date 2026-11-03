@@ -77,7 +77,7 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     var people by mutableStateOf<List<Person>>(emptyList()); private set
     private var byNumber: Map<String, Person> = emptyMap()
     private var byId: Map<Long, Person> = emptyMap()
-    private var calls: List<CallRecord> by mutableStateOf(emptyList())
+    private var calls: List<CallRecord> = emptyList()
     private var interactions: List<Interaction> = emptyList()
     var blocked by mutableStateOf<List<String>>(emptyList()); private set
 
@@ -141,6 +141,7 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
             calls = loaded.calls
             interactions = loaded.interactions
             blocked = loaded.blocked
+            recentCalls = loaded.calls.map { it to byNumber[Numbers.key(it.number)] }
             unknownCalls = loaded.calls.filter { byNumber[Numbers.key(it.number)] == null }.take(100)
             search = loaded.search
             refreshHits()
@@ -196,10 +197,13 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     fun openRecents() { screen = Screen.RECENTS }
 
     /** Полный журнал: каждая строка — звонок, с именем, если номер есть в контактах. */
-    val recentCalls: List<Pair<CallRecord, Person?>> get() = calls.map { it to byNumber[Numbers.key(it.number)] }
+    var recentCalls by mutableStateOf<List<Pair<CallRecord, Person?>>>(emptyList()); private set
 
-    /** Тап в журнале: перезвонить на тот же номер. */
-    fun callBack(r: CallRecord) { closeKeypad(); Launcher.call(ctx, r.number)?.let { say(it) } }
+    /** Тап в журнале: человеку — его обычным способом, незнакомому — звонок. */
+    fun callBack(r: CallRecord, p: Person?) {
+        if (p != null) { perform(p, defaultOf(p)); return }
+        closeKeypad(); Launcher.call(ctx, r.number)?.let { say(it) }
+    }
 
     fun openRecentMenu(r: CallRecord, p: Person?) {
         menu = MenuState(if (p != null) HomeEntry(p.key, p, null, r.date, null) else HomeEntry("n:" + Numbers.key(r.number), null, r.number, r.date, null), MenuContext.SEARCH)

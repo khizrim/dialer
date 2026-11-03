@@ -1,5 +1,10 @@
 package com.khizrim.dialer.ui.person
 
+import com.khizrim.dialer.ui.theme.raisedFill
+import com.khizrim.dialer.ui.theme.well
+import com.khizrim.dialer.ui.theme.lift
+import com.khizrim.dialer.ui.theme.OzShape
+
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -84,8 +89,8 @@ fun PersonScreen(vm: DialerViewModel, id: Long) {
                 Modifier
                     .fillMaxWidth()
                     .height(56.dp)
-                    .press({ vm.perform(p, method) }, shape = RoundedCornerShape(18.dp), pressColor = oz.accentFill)
-                    .background(oz.accentFill, RoundedCornerShape(18.dp)),
+                    .raisedFill(oz.accentFill, OzShape.main)
+                    .press({ vm.perform(p, method) }, shape = OzShape.main, pressColor = Color.White.copy(alpha = .12f)),
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically,
             ) {

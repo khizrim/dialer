@@ -108,7 +108,7 @@ fun ContactsScreen(vm: DialerViewModel) {
                                     Modifier
                                         .weight(1f)
                                         .height(56.dp)
-                                        .press({ vm.openPerson(p.id) }, shape = RoundedCornerShape(14.dp))
+                                        .press({ vm.openPerson(p.id) }, shape = RoundedCornerShape(16.dp))
                                         .padding(horizontal = 12.dp),
                                     contentAlignment = Alignment.CenterStart,
                                 ) {
@@ -215,7 +215,7 @@ fun UnknownScreen(vm: DialerViewModel) {
                     Modifier
                         .fillMaxWidth()
                         .height(56.dp)
-                        .press({ vm.callUnknown(c.number) }, onLongClick = { vm.openUnknownMenu(c.number) }, shape = RoundedCornerShape(14.dp)),
+                        .press({ vm.callUnknown(c.number) }, onLongClick = { vm.openUnknownMenu(c.number) }, shape = RoundedCornerShape(16.dp)),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Column(Modifier.weight(1f)) {
@@ -231,7 +231,7 @@ fun UnknownScreen(vm: DialerViewModel) {
                         Modifier
                             .fillMaxWidth()
                             .height(56.dp)
-                            .press({ vm.toggleSilenceUnknown() }, shape = RoundedCornerShape(14.dp), label = stringResource(R.string.silence_unknown)),
+                            .press({ vm.toggleSilenceUnknown() }, shape = RoundedCornerShape(16.dp), label = stringResource(R.string.silence_unknown)),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(stringResource(R.string.silence_unknown), style = OzType.list, color = oz.fg, modifier = Modifier.weight(1f))

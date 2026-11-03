@@ -31,6 +31,8 @@ data class OzColors(
     val danger: Color,
     val dangerFill: Color,
     val warn: Color,
+    /** Тёплый фон экрана «Похоже на спам». */
+    val warnSoft: Color,
     val press: Color,
     val scrim: Color,
     val toastAct: Color,
@@ -41,15 +43,15 @@ val LightOz = OzColors(
     bg = Color(0xFFFFFFFF), sheet = Color(0xFFFFFFFF), soft = Color(0xFFF2F5FA),
     fg = Color(0xFF142036), fg2 = Color(0xFF3D4A63), fg3 = Color(0xFF5B6680), line = Color(0xFFE3E9F1),
     accent = Color(0xFF1766D4), accentFill = Color(0xFF1A6FE0),
-    danger = Color(0xFFC2453F), dangerFill = Color(0xFFC2453F), warn = Color(0xFFA8551B),
+    danger = Color(0xFFC2453F), dangerFill = Color(0xFFC2453F), warn = Color(0xFFA8551B), warnSoft = Color(0xFFFBF1E8),
     press = Color(0x12142036), scrim = Color(0x52142036), toastAct = Color(0xFF6AB2FF), isDark = false,
 )
 
 val DarkOz = OzColors(
-    bg = Color(0xFF141923), sheet = Color(0xFF1F2532), soft = Color(0xFF1F2532),
+    bg = Color(0xFF141923), sheet = Color(0xFF1F2532), soft = Color(0xFF1B2130),
     fg = Color(0xFFE5E9F1), fg2 = Color(0xFFB9C2D3), fg3 = Color(0xFF8792A7), line = Color(0xFF2A3140),
     accent = Color(0xFF6AB2FF), accentFill = Color(0xFF1A6FE0),
-    danger = Color(0xFFF08A84), dangerFill = Color(0xFFC2453F), warn = Color(0xFFF0A46B),
+    danger = Color(0xFFF08A84), dangerFill = Color(0xFFC2453F), warn = Color(0xFFF0A46B), warnSoft = Color(0xFF2A2320),
     press = Color(0x14FFFFFF), scrim = Color(0x8C000000), toastAct = Color(0xFF1766D4), isDark = true,
 )
 
@@ -70,11 +72,15 @@ object OzType {
     private const val CV11 = "cv11, tnum"
     val body = TextStyle(fontFamily = Inter, fontSize = 16.sp, lineHeight = 24.sp, fontFeatureSettings = CV11)
     val small = TextStyle(fontFamily = Inter, fontSize = 14.sp, lineHeight = 20.sp, fontFeatureSettings = CV11)
-    val tiny = TextStyle(fontFamily = Inter, fontSize = 11.sp, lineHeight = 14.sp, letterSpacing = 1.sp)
+    val tiny = TextStyle(fontFamily = Inter, fontSize = 12.sp, lineHeight = 14.sp, fontWeight = FontWeight.Medium, letterSpacing = 1.4.sp)
     val list = TextStyle(fontFamily = Inter, fontSize = 17.sp, lineHeight = 24.sp, fontFeatureSettings = CV11)
     val digit = TextStyle(fontFamily = Inter, fontSize = 32.sp, lineHeight = 36.sp, fontFeatureSettings = CV11)
     val title = TextStyle(fontFamily = Inter, fontSize = 20.sp, lineHeight = 28.sp, fontWeight = FontWeight.SemiBold)
     val strong = body.copy(fontWeight = FontWeight.SemiBold)
+    /** Подписи кнопок звонка. */
+    val label = TextStyle(fontFamily = Inter, fontSize = 13.sp, lineHeight = 16.sp)
+    /** Номер на экране звонка: в одну строку. */
+    val callNumber = TextStyle(fontFamily = Inter, fontSize = 28.sp, lineHeight = 34.sp, fontFeatureSettings = CV11)
 
     private val name = TextStyle(fontFamily = Literata, fontWeight = FontWeight.Medium)
     val nameHome = name.copy(fontSize = 28.sp, lineHeight = 34.sp)

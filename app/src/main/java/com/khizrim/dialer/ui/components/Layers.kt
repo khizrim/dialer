@@ -1,5 +1,8 @@
 package com.khizrim.dialer.ui.components
 
+import com.khizrim.dialer.ui.theme.lift
+import com.khizrim.dialer.ui.theme.OzShape
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -83,7 +86,8 @@ fun BoxScope.SheetLayer(visible: Boolean, title: String, onDismiss: () -> Unit, 
         Column(
             Modifier
                 .fillMaxWidth()
-                .background(oz.sheet, RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
+                .lift(OzShape.sheetTop)
+                .background(oz.sheet, OzShape.sheetTop)
                 .clickable(remember { MutableInteractionSource() }, null, onClick = {})
                 .semantics { paneTitle = title }
                 .navigationBarsPadding()
@@ -207,8 +211,8 @@ fun BoxScope.ConfirmLayer(vm: DialerViewModel) {
                 .navigationBarsPadding()
                 .padding(start = 12.dp, end = 12.dp, bottom = 12.dp)
                 .fillMaxWidth()
-                .background(oz.sheet, RoundedCornerShape(24.dp))
-                .border(1.dp, oz.line, RoundedCornerShape(24.dp))
+                .lift(OzShape.sheet)
+                .background(oz.sheet, OzShape.sheet)
                 .clickable(remember { MutableInteractionSource() }, null, onClick = {})
                 .semantics { paneTitle = c.title }
                 .padding(24.dp),
@@ -221,8 +225,8 @@ fun BoxScope.ConfirmLayer(vm: DialerViewModel) {
                 Box(
                     Modifier
                         .heightIn(min = 44.dp)
-                        .press(vm::runConfirm, shape = RoundedCornerShape(22.dp), pressColor = oz.dangerFill)
-                        .background(oz.dangerFill, RoundedCornerShape(22.dp))
+                        .press(vm::runConfirm, shape = RoundedCornerShape(12.dp), pressColor = oz.dangerFill)
+                        .background(oz.dangerFill, RoundedCornerShape(12.dp))
                         .padding(horizontal = 16.dp),
                     contentAlignment = Alignment.Center,
                 ) { Text(c.verb, style = OzType.small.copy(fontWeight = FontWeight.SemiBold), color = Color.White) }
@@ -248,7 +252,7 @@ fun BoxScope.FloatToast(toast: ToastState?, bottom: androidx.compose.ui.unit.Dp)
             color = oz.bg,
             modifier = Modifier
                 .fillMaxWidth()
-                .background(oz.fg, RoundedCornerShape(14.dp))
+                .lift(OzShape.row).background(oz.fg, OzShape.row)
                 .semantics { liveRegion = LiveRegionMode.Polite }
                 .padding(horizontal = 16.dp, vertical = 14.dp),
         )
