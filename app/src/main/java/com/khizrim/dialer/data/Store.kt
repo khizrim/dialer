@@ -17,6 +17,10 @@ import java.util.Locale
 /** Запись журнала звонков. */
 data class CallRecord(val number: String, val type: Int, val date: Long, val duration: Long, val account: String? = null) {
     val missed: Boolean get() = type == CallLog.Calls.MISSED_TYPE
+    /** Обычный разговор (входящий или исходящий, который состоялся) — его не подписываем. */
+    val ordinary: Boolean get() = (type == CallLog.Calls.INCOMING_TYPE || type == CallLog.Calls.OUTGOING_TYPE) && duration > 0
+    /** Подпись только для необычного: пропущенный, не дозвонились, отклонён. */
+    fun note(res: Resources): String? = if (ordinary) null else text(res)
     fun text(res: Resources): String = when (type) {
         CallLog.Calls.INCOMING_TYPE -> Dates.withDuration(res, res.getString(R.string.h_incoming), duration)
         CallLog.Calls.OUTGOING_TYPE -> if (duration > 0) Dates.withDuration(res, res.getString(R.string.h_outgoing), duration) else res.getString(R.string.h_outgoing_no_answer)

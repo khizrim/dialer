@@ -26,6 +26,8 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import kotlinx.coroutines.launch
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
@@ -132,7 +134,21 @@ private fun highlight(text: String, range: IntRange?, color: androidx.compose.ui
 @Composable
 fun KeypadPanel(vm: DialerViewModel) {
     val oz = LocalOz.current
-    Column(Modifier.fillMaxWidth().background(oz.bg)) {
+    // панель тянут вниз — клавиатура закрывается; панель идёт за пальцем
+    val pull = remember { androidx.compose.animation.core.Animatable(0f) }
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    val limit = with(LocalDensity.current) { 72.dp.toPx() }
+    Column(
+        Modifier.fillMaxWidth()
+            .pointerInput(vm) {
+                androidx.compose.foundation.gestures.detectVerticalDragGestures(
+                    onDragEnd = { if (pull.value > limit) vm.closeKeypad(); scope.launch { pull.animateTo(0f, Motion.enter(Motion.MOVE)) } },
+                    onDragCancel = { scope.launch { pull.animateTo(0f) } },
+                ) { change, amount -> change.consume(); scope.launch { pull.snapTo((pull.value + amount).coerceAtLeast(0f)) } }
+            }
+            .graphicsLayer { translationY = pull.value }
+            .background(oz.bg),
+    ) {
         TypedNumber(vm)
         Column(Modifier.padding(start = 12.dp, end = 12.dp, top = 4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             KEYS.chunked(3).forEach { row ->

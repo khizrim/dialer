@@ -30,6 +30,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import kotlinx.coroutines.launch
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.composed
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -197,3 +200,39 @@ fun CallStrip(modifier: Modifier = Modifier) {
     )
 }
 
+
+
+/**
+ * Строку смахивают влево: она идёт за пальцем и гаснет; дальше 96 dp — уходит совсем и вызывает onSwiped,
+ * иначе пружинит обратно. Вправо не двигается: этот жест сознательно пустой.
+ */
+fun Modifier.swipeAway(enabled: Boolean = true, onSwiped: () -> Unit): Modifier = if (!enabled) this else composed {
+    val offset = remember { androidx.compose.animation.core.Animatable(0f) }
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val threshold = with(density) { 96.dp.toPx() }
+    val far = with(density) { 400.dp.toPx() }
+    val reduced = com.khizrim.dialer.ui.theme.LocalReducedMotion.current
+    this
+        .pointerInput(Unit) {
+            androidx.compose.foundation.gestures.detectHorizontalDragGestures(
+                onDragEnd = {
+                    scope.launch {
+                        if (offset.value < -threshold) {
+                            if (!reduced) offset.animateTo(-far, com.khizrim.dialer.ui.theme.Motion.exit(com.khizrim.dialer.ui.theme.Motion.FADE))
+                            onSwiped()
+                            offset.snapTo(0f)
+                        } else offset.animateTo(0f, com.khizrim.dialer.ui.theme.Motion.enter(com.khizrim.dialer.ui.theme.Motion.MOVE))
+                    }
+                },
+                onDragCancel = { scope.launch { offset.animateTo(0f) } },
+            ) { change, amount ->
+                change.consume()
+                scope.launch { offset.snapTo((offset.value + amount).coerceAtMost(0f)) }
+            }
+        }
+        .graphicsLayer {
+            translationX = offset.value
+            alpha = 1f - (-offset.value / (threshold * 2.5f)).coerceIn(0f, 0.7f)
+        }
+}

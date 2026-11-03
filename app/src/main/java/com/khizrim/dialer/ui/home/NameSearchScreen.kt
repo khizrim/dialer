@@ -23,6 +23,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
+import kotlinx.coroutines.launch
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
@@ -103,9 +106,20 @@ fun NameSearchScreen(vm: DialerViewModel) {
                 item(key = "none") { Text(stringResource(R.string.search_nothing), style = OzType.body, color = oz.fg3, modifier = Modifier.padding(12.dp)) }
             }
         }
-        // поле 52dp: обводка accent, радиус 26, лупа слева, крестик справа
+        // поле 52dp: обводка accent, радиус 26, лупа слева, крестик справа. Поле тянут вниз — шторка закрывается
+        val pull = remember { androidx.compose.animation.core.Animatable(0f) }
+        val scope = androidx.compose.runtime.rememberCoroutineScope()
+        val limit = with(androidx.compose.ui.platform.LocalDensity.current) { 72.dp.toPx() }
         Row(
-            Modifier.padding(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 16.dp).fillMaxWidth().height(52.dp)
+            Modifier
+                .pointerInput(vm) {
+                    androidx.compose.foundation.gestures.detectVerticalDragGestures(
+                        onDragEnd = { if (pull.value > limit) vm.closeTextSearch(); scope.launch { pull.animateTo(0f, com.khizrim.dialer.ui.theme.Motion.enter(com.khizrim.dialer.ui.theme.Motion.MOVE)) } },
+                        onDragCancel = { scope.launch { pull.animateTo(0f) } },
+                    ) { change, amount -> change.consume(); scope.launch { pull.snapTo((pull.value + amount).coerceAtLeast(0f)) } }
+                }
+                .graphicsLayer { translationY = pull.value }
+                .padding(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 16.dp).fillMaxWidth().height(52.dp)
                 .border(1.5.dp, oz.accent, RoundedCornerShape(26.dp)).padding(start = 16.dp, end = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {

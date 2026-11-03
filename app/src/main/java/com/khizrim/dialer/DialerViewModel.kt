@@ -138,6 +138,7 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     fun reload() {
         isDefaultDialer = Launcher.isDefaultDialer(ctx)
         viewModelScope.launch { sims = withContext(Dispatchers.IO) { Launcher.sims(ctx) } }
+        simForCalls = prefs.simForCalls
         hasContacts = granted(Manifest.permission.READ_CONTACTS)
         hasCallLog = granted(Manifest.permission.READ_CALL_LOG)
         callAlert = com.khizrim.dialer.telecom.CallReadiness.check(ctx, isDefaultDialer, prefs.xiaomiHintSeen, prefs.silenceUnknown)
@@ -277,6 +278,9 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     var sims by mutableStateOf<List<Pair<String, String>>>(emptyList()); private set
     var simForCalls by mutableStateOf<String?>(null); private set
     fun chooseSimForCalls(id: String?) { prefs.simForCalls = id; simForCalls = id }
+    /** Номер основной SIM в списке: выбранная для звонков, иначе первая. Подписываем только звонки не с неё. */
+    val mainSimIndex: Int get() = sims.indexOfFirst { it.first == simForCalls }.coerceAtLeast(0)
+    val hasMissed: Boolean get() = recentCalls.any { it.first.missed }
 
     /** Полный журнал: каждая строка — звонок, с именем, если номер есть в контактах. */
     var recentCalls by mutableStateOf<List<Pair<CallRecord, Person?>>>(emptyList()); private set
@@ -289,6 +293,36 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
 
     fun openRecentMenu(r: CallRecord, p: Person?) {
         menu = MenuState(if (p != null) HomeEntry(p.key, p, null, r.date, null) else HomeEntry("n:" + Numbers.key(r.number), null, r.number, r.date, null), MenuContext.SEARCH, r)
+    }
+
+    /** Смахнутый звонок: строка уже скрыта, из системного журнала удалим, когда пройдёт «Вернуть». */
+    private var pendingRecord: CallRecord? = null
+    private var pendingCalls: List<Pair<CallRecord, Person?>>? = null
+
+    fun swipeDeleteRecord(r: CallRecord) {
+        commitPendingRecord()
+        pendingCalls = recentCalls
+        pendingRecord = r
+        recentCalls = recentCalls.filterNot { it.first == r }
+        say(str(R.string.call_deleted), undo = true)
+    }
+
+    private fun commitPendingRecord() {
+        val r = pendingRecord ?: return
+        val before = pendingCalls
+        pendingRecord = null; pendingCalls = null
+        viewModelScope.launch {
+            val ok = withContext(Dispatchers.IO) {
+                runCatching {
+                    ctx.contentResolver.delete(
+                        android.provider.CallLog.Calls.CONTENT_URI,
+                        android.provider.CallLog.Calls.DATE + "=? AND " + android.provider.CallLog.Calls.NUMBER + "=?",
+                        arrayOf(r.date.toString(), r.number),
+                    ) > 0
+                }.getOrDefault(false)
+            }
+            if (!ok && before != null) { recentCalls = before; say(str(R.string.log_delete_failed)) }
+        }
     }
 
     /** Убрать одну строку журнала — быстрая уборка без «очистить всё». */
@@ -480,6 +514,16 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     fun openSheet(p: Person, mode: SheetMode) { menu = null; sheet = SheetState(mode, p.id) }
     fun closeSheet() { sheet = null }
 
+    /** Тап по номеру в карточке: звонок именно на этот номер. */
+    fun callNumberOf(p: Person, number: String) = perform(p, Method.PHONE, number)
+
+    fun copyNumber(number: String) {
+        val cm = ctx.getSystemService(android.content.ClipboardManager::class.java)
+        cm?.setPrimaryClip(android.content.ClipData.newPlainText(number, number))
+        // на Android 13+ система сама показывает, что скопировано
+        if (android.os.Build.VERSION.SDK_INT < 33) say(str(R.string.number_copied))
+    }
+
     fun pickInSheet(m: Method, number: String? = null) {
         val s = sheet ?: return
         val p = person(s.personId) ?: return
@@ -525,7 +569,9 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     fun history(p: Person): List<HistoryEntry> {
         val keys = p.phones.map { Numbers.key(it.number) }.toSet()
         val events = ArrayList<Triple<Long, String, Boolean>>()
-        calls.filter { Numbers.key(it.number) in keys }.take(12).forEach { events += Triple(it.date, it.text(res), it.missed) }
+        // у обычного разговора только время, подпись — у пропущенного и несостоявшегося
+        val tf = java.text.DateFormat.getTimeInstance(java.text.DateFormat.SHORT)
+        calls.filter { Numbers.key(it.number) in keys }.take(12).forEach { events += Triple(it.date, it.note(res) ?: tf.format(java.util.Date(it.date)), it.missed) }
         interactions.filter { it.key == p.key }.takeLast(12).forEach { events += Triple(it.at, it.method.label(ctx), false) }
         return events.sortedByDescending { it.first }.take(6).map { HistoryEntry(Dates.day(res, it.first), it.second, it.third) }
     }
@@ -603,16 +649,18 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     fun editInSystem() { editPerson?.let { Launcher.editContact(ctx, it)?.let { e -> say(e) } } }
 
     // ---------- быстрая уборка ----------
-    fun removeFromHome(key: String) {
+    fun removeFromHome(key: String, now: Boolean = false) {
         val at = home.indexOfFirst { it.key == key }
         if (at < 0) return
         val entry = home[at]
         menu = null
         viewModelScope.launch {
-            // сначала уходит лист меню, потом гаснет строка, потом соседи съезжают
-            delay(Motion.MOVE.toLong())
-            leaving = key
-            delay(Motion.FADE.toLong())
+            // сначала уходит лист меню, потом гаснет строка, потом соседи съезжают; смахнутая строка уже ушла
+            if (!now) {
+                delay(Motion.MOVE.toLong())
+                leaving = key
+                delay(Motion.FADE.toLong())
+            }
             home.removeAt(at)
             leaving = null
             prefs.hide(listOf(key))
@@ -624,6 +672,8 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
 
 
     fun undo() {
+        pendingCalls?.let { recentCalls = it }
+        pendingRecord = null; pendingCalls = null
         removed.sortedBy { it.first }.forEach { (at, e) ->
             prefs.unhide(e.key)
             home.add(minOf(at, home.size), e)
@@ -697,11 +747,12 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     // ---------- тост ----------
     fun say(text: String, undo: Boolean = false) {
         toastJob?.cancel()
+        if (toast?.undo == true && pendingRecord != null) commitPendingRecord()
         toast = ToastState(text, undo)
         toastJob = viewModelScope.launch {
             delay(if (undo) 4000 else 2600)
             toast = null
-            if (undo) { tidy = false; removed = emptyList() }
+            if (undo) { tidy = false; removed = emptyList(); commitPendingRecord() }
         }
     }
 

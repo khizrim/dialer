@@ -116,8 +116,14 @@ object ContactsSource {
     fun phoneLabelFor(context: Context, number: String): String? = runCatching {
         if (number.isBlank()) return null
         val uri = Uri.withAppendedPath(ContactsContract.PhoneLookup.CONTENT_FILTER_URI, Uri.encode(number))
-        context.contentResolver.query(uri, arrayOf(ContactsContract.PhoneLookup.TYPE, ContactsContract.PhoneLookup.LABEL), null, null, null)?.use { c ->
-            if (c.moveToFirst()) CommonDataKinds.Phone.getTypeLabel(context.resources, c.getInt(0), c.getString(1)).toString().lowercase() else null
+        context.contentResolver.query(uri, arrayOf(ContactsContract.PhoneLookup.TYPE, ContactsContract.PhoneLookup.LABEL, ContactsContract.PhoneLookup._ID), null, null, null)?.use { c ->
+            if (!c.moveToFirst()) return@use null
+            // тип номера («рабочий») говорит что-то, только если у человека номеров несколько
+            val count = context.contentResolver.query(
+                CommonDataKinds.Phone.CONTENT_URI, arrayOf(CommonDataKinds.Phone._ID),
+                CommonDataKinds.Phone.CONTACT_ID + "=?", arrayOf(c.getLong(2).toString()), null,
+            )?.use { it.count } ?: 0
+            if (count < 2) null else CommonDataKinds.Phone.getTypeLabel(context.resources, c.getInt(0), c.getString(1)).toString().lowercase()
         }
     }.getOrNull()
 }
