@@ -69,7 +69,7 @@ def record(name, seconds, actions):
     p = subprocess.Popen(["adb", "shell", "screenrecord", "--time-limit", str(seconds), "--bit-rate", "10000000", remote])
     time.sleep(1.0); actions(); p.wait(); time.sleep(1)
     sh("pull", remote, os.path.join(OUT, f"{name}.mp4")); note(f"video {name}")
-def start(wait=4):
+def start(wait=8):
     sh("shell", "am", "force-stop", PKG)
     sh("shell", "monkey", "-p", PKG, "-c", "android.intent.category.LAUNCHER", "1"); time.sleep(wait)
 
