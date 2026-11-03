@@ -49,6 +49,8 @@ import com.khizrim.dialer.data.TextHit
 import com.khizrim.dialer.ui.components.GhostIconButton
 import com.khizrim.dialer.ui.components.OzIcon
 import com.khizrim.dialer.ui.components.press
+import com.khizrim.dialer.ui.components.dismissOnDrag
+import com.khizrim.dialer.ui.components.dismissOnOverscroll
 import com.khizrim.dialer.ui.theme.LocalOz
 import com.khizrim.dialer.ui.theme.OzType
 
@@ -57,7 +59,9 @@ import com.khizrim.dialer.ui.theme.OzType
 fun NameSearchScreen(vm: DialerViewModel) {
     val oz = LocalOz.current
     val focus = remember { FocusRequester() }
-    LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
+    // клавиатуру поднимаем, только когда контакты точно открыли (жест дотянули или нажали), а не пока их тянут
+    val active = vm.screen == com.khizrim.dialer.Screen.SEARCH
+    LaunchedEffect(active) { if (active) runCatching { focus.requestFocus() } }
     val q = vm.textQuery
     val digits = q.filter { it.isDigit() }
     val numeric = digits.length >= 3 && q.none { it.isLetter() }
@@ -80,12 +84,14 @@ fun NameSearchScreen(vm: DialerViewModel) {
     androidx.compose.runtime.DisposableEffect(Unit) {
         onDispose { keyboard?.hide(); focusManager.clearFocus(force = true) }
     }
+    LaunchedEffect(active) { if (!active) { keyboard?.hide(); focusManager.clearFocus(force = true) } }
     LaunchedEffect(listState.isScrollInProgress) {
         if (listState.isScrollInProgress) { keyboard?.hide(); focusManager.clearFocus() }
     }
 
     Column(Modifier.fillMaxSize().imePadding()) {
-        LazyColumn(Modifier.weight(1f).fillMaxWidth().padding(horizontal = 12.dp), state = listState, reverseLayout = true) {
+        // докрутили до самого верха и тянут дальше вниз — контакты уезжают за пальцем
+        LazyColumn(Modifier.weight(1f).fillMaxWidth().dismissOnOverscroll { vm.closeTextSearch() }.padding(horizontal = 12.dp), state = listState, reverseLayout = true) {
             if (q.isBlank()) {
                 items(all, key = { "a" + it.id }) { p ->
                     HitRow(vm, com.khizrim.dialer.data.TextHit(p, null, MatchField.NAME, null, MatchVia.DIRECT, 0))
@@ -107,19 +113,10 @@ fun NameSearchScreen(vm: DialerViewModel) {
                 item(key = "none") { Text(stringResource(R.string.search_nothing), style = OzType.body, color = oz.fg3, modifier = Modifier.padding(12.dp)) }
             }
         }
-        // поле 52dp: обводка accent, радиус 26, лупа слева, крестик справа. Поле тянут вниз — шторка закрывается
-        val pull = remember { androidx.compose.animation.core.Animatable(0f) }
-        val scope = androidx.compose.runtime.rememberCoroutineScope()
-        val limit = with(androidx.compose.ui.platform.LocalDensity.current) { 72.dp.toPx() }
+        // поле 52dp: обводка accent, радиус 26, лупа слева, крестик справа. Поле тянут вниз — весь экран идёт за пальцем
         Row(
             Modifier
-                .pointerInput(vm) {
-                    detectVerticalDragGestures(
-                        onDragEnd = { if (pull.value > limit) vm.closeTextSearch(); scope.launch { pull.animateTo(0f, com.khizrim.dialer.ui.theme.Motion.enter(com.khizrim.dialer.ui.theme.Motion.MOVE)) } },
-                        onDragCancel = { scope.launch { pull.animateTo(0f) } },
-                    ) { change, amount -> change.consume(); scope.launch { pull.snapTo((pull.value + amount).coerceAtLeast(0f)) } }
-                }
-                .graphicsLayer { translationY = pull.value }
+                .dismissOnDrag { vm.closeTextSearch() }
                 .padding(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 16.dp).fillMaxWidth().height(52.dp)
                 .border(1.5.dp, oz.accent, RoundedCornerShape(26.dp)).padding(start = 16.dp, end = 4.dp),
             verticalAlignment = Alignment.CenterVertically,

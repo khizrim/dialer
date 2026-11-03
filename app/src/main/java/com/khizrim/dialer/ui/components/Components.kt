@@ -30,6 +30,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -253,27 +254,37 @@ fun Modifier.swipeAway(enabled: Boolean = true, onRight: (() -> Unit)? = null, o
     val scope = androidx.compose.runtime.rememberCoroutineScope()
     val density = androidx.compose.ui.platform.LocalDensity.current
     val threshold = with(density) { 96.dp.toPx() }
-    val far = with(density) { 400.dp.toPx() }
     val reduced = com.khizrim.dialer.ui.theme.LocalReducedMotion.current
+    val tracker = remember { androidx.compose.ui.input.pointer.util.VelocityTracker() }
+    val w = remember { floatArrayOf(1f) }
     this
+        .onWidth { w[0] = it }
         .pointerInput(Unit) {
             detectHorizontalDragGestures(
+                onDragStart = { tracker.resetTracking() },
                 onDragEnd = {
+                    val v = tracker.calculateVelocity().x
                     scope.launch {
+                        val settle = com.khizrim.dialer.ui.theme.Motion.settle<Float>()
                         if (offset.value > threshold && onRight != null) {
-                            // вправо — действие без удаления: строка возвращается на место
+                            // вправо — действие без удаления: строка спокойно возвращается на место
                             onRight()
-                            offset.animateTo(0f, com.khizrim.dialer.ui.theme.Motion.enter(com.khizrim.dialer.ui.theme.Motion.MOVE))
-                        } else if (enabled && offset.value < -threshold) {
-                            if (!reduced) offset.animateTo(-far, com.khizrim.dialer.ui.theme.Motion.exit(com.khizrim.dialer.ui.theme.Motion.FADE))
+                            offset.animateTo(0f, settle)
+                        } else if (enabled && (offset.value < -threshold || (v < -1500f && offset.value < 0f))) {
+                            // строка уезжает за край со скоростью пальца и там остаётся: её убирает список,
+                            // соседи смыкаются. Назад на место её не возвращаем — иначе она мигнёт перед исчезновением
+                            if (!reduced) offset.animateTo(-w[0], settle, v.coerceAtMost(0f))
                             onSwiped()
-                            offset.snapTo(0f)
-                        } else offset.animateTo(0f, com.khizrim.dialer.ui.theme.Motion.enter(com.khizrim.dialer.ui.theme.Motion.MOVE))
+                            // если строку так и не убрали (нет прав и т. п.) — через мгновение возвращаем
+                            kotlinx.coroutines.delay(700)
+                            offset.animateTo(0f, settle)
+                        } else offset.animateTo(0f, settle, v)
                     }
                 },
-                onDragCancel = { scope.launch { offset.animateTo(0f) } },
+                onDragCancel = { scope.launch { offset.animateTo(0f, com.khizrim.dialer.ui.theme.Motion.settle()) } },
             ) { change, amount ->
                 change.consume()
+                tracker.addPosition(change.uptimeMillis, change.position)
                 val max = if (onRight != null) threshold * 1.4f else 0f
                 val min = if (enabled) Float.NEGATIVE_INFINITY else 0f
                 scope.launch { offset.snapTo((offset.value + amount).coerceIn(min, max)) }
@@ -281,6 +292,9 @@ fun Modifier.swipeAway(enabled: Boolean = true, onRight: (() -> Unit)? = null, o
         }
         .graphicsLayer {
             translationX = offset.value
-            alpha = 1f - ((-offset.value).coerceAtLeast(0f) / (threshold * 2.5f)).coerceIn(0f, 0.7f)
+            alpha = 1f - ((-offset.value).coerceAtLeast(0f) / w[0]).coerceIn(0f, 1f)
         }
 }
+
+private fun Modifier.onWidth(block: (Float) -> Unit): Modifier =
+    this.then(Modifier.onSizeChanged { block(it.width.toFloat().coerceAtLeast(1f)) })

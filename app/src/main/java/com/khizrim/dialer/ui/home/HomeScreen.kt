@@ -25,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.util.addPointerInputChange
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.remember
 import androidx.compose.ui.semantics.customActions
@@ -61,31 +62,28 @@ import kotlinx.coroutines.launch
 fun HomeScreen(vm: DialerViewModel) {
     val oz = LocalOz.current
     val reduced = LocalReducedMotion.current
-    // стопку тянут вверх — контакты с поиском, вниз — журнал. Жест ловим раньше строк (Initial):
-    // после порога сдвига поглощаем касание, и нажатие на строку отменяется — свайп не звонит.
-    val density = LocalDensity.current
-    val threshold = with(density) { 72.dp.toPx() }
-    // стопка идёт за пальцем с сопротивлением и пружинит обратно — жест виден, пока его делают
-    val pull = remember { androidx.compose.animation.core.Animatable(0f) }
-    val scope = androidx.compose.runtime.rememberCoroutineScope()
-    val gestures = Modifier.pointerInput(vm) {
+    // стопку тянут вниз — сверху за пальцем 1:1 спускается журнал; вверх — снизу поднимаются контакты с поиском.
+    // Жест ловим раньше строк (Initial): после порога сдвига поглощаем касание, и нажатие на строку отменяется — свайп не звонит.
+    val stack = com.khizrim.dialer.ui.LocalScreenStack.current
+    val threshold = with(LocalDensity.current) { 72.dp.toPx() }
+    val gestures = Modifier.pointerInput(vm, stack) {
         val slop = viewConfiguration.touchSlop
         awaitEachGesture {
             val down = awaitFirstDown(requireUnconsumed = false, pass = androidx.compose.ui.input.pointer.PointerEventPass.Initial)
+            val tracker = androidx.compose.ui.input.pointer.util.VelocityTracker()
+            tracker.addPointerInputChange(down)
             var dy = 0f
             var dx = 0f
             var dragging = false
+            var released = false
+            val journal = com.khizrim.dialer.ui.Route(com.khizrim.dialer.Screen.RECENTS)
+            val contacts = com.khizrim.dialer.ui.Route(com.khizrim.dialer.Screen.SEARCH)
             while (true) {
                 val ev = awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Initial)
                 val ch = ev.changes.firstOrNull { it.id == down.id } ?: break
-                if (!ch.pressed) {
-                    if (dragging) {
-                        ch.consume()
-                        if (dy < -threshold) vm.openTextSearch() else if (dy > threshold) vm.openRecents(fromHome = true)
-                        scope.launch { pull.animateTo(0f, Motion.enter(Motion.MOVE)) }
-                    }
-                    break
-                }
+                // медленный кадр (первая сборка журнала) может принести остаток пути вместе с отпусканием:
+                // сначала учитываем весь путь и историю точек, потом решаем
+                tracker.addPointerInputChange(ch)
                 dy += ch.position.y - ch.previousPosition.y
                 dx += ch.position.x - ch.previousPosition.x
                 // горизонтальный жест — это смахивание строки, его отдаём строке
@@ -93,9 +91,23 @@ fun HomeScreen(vm: DialerViewModel) {
                 if (!dragging && kotlin.math.abs(dy) > slop) dragging = true
                 if (dragging) {
                     ch.consume()
-                    if (!reduced) scope.launch { pull.snapTo(dy * 0.35f) }
+                    val h = stack?.height ?: 1f
+                    if (dy > 0f) stack?.previewTo(journal, com.khizrim.dialer.ui.Edge.TOP, dy / h)
+                    else stack?.previewTo(contacts, com.khizrim.dialer.ui.Edge.BOTTOM, -dy / h)
+                }
+                if (!ch.pressed) {
+                    released = true
+                    if (dragging) {
+                        val v = tracker.calculateVelocity().y
+                        if (stack == null) {
+                            if (dy < -threshold) vm.openTextSearch() else if (dy > threshold) vm.openRecents(fromHome = true)
+                        } else if (dy > 0f) stack.previewEnd(v) { vm.openRecents(fromHome = true) }
+                        else stack.previewEnd(-v) { vm.openTextSearch() }
+                    }
+                    break
                 }
             }
+            if (dragging && !released) stack?.previewCancel()
         }
     }
     val searchLabel = stringResource(R.string.search_by_name)
@@ -104,7 +116,6 @@ fun HomeScreen(vm: DialerViewModel) {
             LazyColumn(
                 modifier = Modifier.weight(1f).fillMaxWidth()
                     .then(gestures)
-                    .graphicsLayer { translationY = pull.value }
                     .semantics { customActions = listOf(androidx.compose.ui.semantics.CustomAccessibilityAction(searchLabel) { vm.openTextSearch(); true }) }
                     .padding(horizontal = 12.dp),
                 verticalArrangement = Arrangement.Bottom,
@@ -196,8 +207,10 @@ fun HomeScreen(vm: DialerViewModel) {
                     }
                 }
             }
-            vm.callAlert?.let { CallAlertRow(vm, it) }
-            if (vm.showSearchHint && vm.home.isNotEmpty()) {
+            // необязательные строки появляются и уходят, раздвигая место плавно: стопка над ними не прыгает
+            val alert = com.khizrim.dialer.ui.components.rememberLast(vm.callAlert)
+            QuietRow(vm.callAlert != null) { alert?.let { CallAlertRow(vm, it) } }
+            QuietRow(vm.showSearchHint && vm.home.isNotEmpty()) {
                 Row(
                     Modifier.fillMaxWidth().press(vm::openTextSearch, shape = com.khizrim.dialer.ui.theme.OzShape.text).padding(horizontal = 24.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -206,7 +219,7 @@ fun HomeScreen(vm: DialerViewModel) {
                     Text(stringResource(R.string.search_hint), style = OzType.small, color = oz.fg3, modifier = Modifier.padding(start = 8.dp))
                 }
             }
-            if (vm.tidy) {
+            QuietRow(vm.tidy) {
                 TextAction(
                     stringResource(R.string.home_clear), oz.fg3, vm::askClearHome, style = OzType.small,
                     modifier = Modifier.padding(start = 12.dp, top = 4.dp),
@@ -233,7 +246,12 @@ fun HomeScreen(vm: DialerViewModel) {
                             TextAction(stringResource(R.string.undo), oz.toastAct, vm::undo, style = OzType.small.copy(fontWeight = FontWeight.SemiBold))
                         }
                     }
-                    if (t?.undo != true) {
+                    // ссылки и тост делят одно место: ссылки гаснут быстрее, чем проявляется тост, — без наложения и без рывка
+                    androidx.compose.animation.AnimatedVisibility(
+                        visible = t?.undo != true,
+                        enter = fadeIn(Motion.enter(Motion.MOVE, delay = Motion.PRESS)),
+                        exit = fadeOut(Motion.exit(Motion.PRESS)),
+                    ) {
                         Row {
                             TextAction(stringResource(R.string.journal), oz.fg2, { vm.openRecents(fromHome = true) }, modifier = Modifier.heightIn(min = 48.dp))
                             TextAction(stringResource(R.string.contacts), oz.fg2, vm::openTextSearch, modifier = Modifier.heightIn(min = 48.dp))
@@ -250,6 +268,17 @@ fun HomeScreen(vm: DialerViewModel) {
     }
 }
 
+
+/** Строка, которая то есть, то нет: раздвигает место и проявляется, уходит обратно. */
+@Composable
+private fun androidx.compose.foundation.layout.ColumnScope.QuietRow(visible: Boolean, content: @Composable () -> Unit) {
+    val reduced = LocalReducedMotion.current
+    androidx.compose.animation.AnimatedVisibility(
+        visible,
+        enter = if (reduced) fadeIn(Motion.enter(Motion.FADE)) else androidx.compose.animation.expandVertically(Motion.move(Motion.MOVE), expandFrom = Alignment.Top) + fadeIn(Motion.enter(Motion.MOVE, delay = 50)),
+        exit = if (reduced) fadeOut(Motion.exit(Motion.FADE)) else fadeOut(Motion.exit(Motion.PRESS)) + androidx.compose.animation.shrinkVertically(Motion.move(Motion.MOVE), shrinkTowards = Alignment.Top),
+    ) { content() }
+}
 
 /** Одна тихая строка, если входящие могут не показаться. Исчезает, когда всё исправлено. */
 @Composable

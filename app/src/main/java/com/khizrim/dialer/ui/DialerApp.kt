@@ -44,8 +44,10 @@ import com.khizrim.dialer.ui.theme.LocalReducedMotion
 import com.khizrim.dialer.ui.theme.Motion
 import com.khizrim.dialer.ui.theme.lift
 import com.khizrim.dialer.ui.theme.rememberReducedMotion
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.runtime.remember
+import kotlinx.coroutines.launch
 
-private data class Route(val screen: Screen, val personId: Long?)
 
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
@@ -58,78 +60,26 @@ fun DialerApp(vm: DialerViewModel = viewModel()) {
         if (!vm.ready) { Box(Modifier.fillMaxSize().background(oz.bg)); return@CompositionLocalProvider }
         if (vm.needsOnboarding) { Onboarding(vm); return@CompositionLocalProvider }
         Box(Modifier.fillMaxSize().background(oz.bg)) {
-            Box(Modifier.fillMaxSize().safeDrawingPadding()) {
-                // экраны: старый гаснет за 150 мс, новый проявляется с подъёмом 8 px за 200 мс
-                // касание, начатое до смены экрана, на новом (и на уходящем) уже ничего не нажимает
-                androidx.compose.runtime.LaunchedEffect(vm.screen, vm.personId, vm.keypadOpen) { com.khizrim.dialer.ui.components.TapGuard.gen++ }
-                AnimatedContent(
-                    targetState = Route(vm.screen, vm.personId),
-                    transitionSpec = {
-                        // спокойная смена экранов: перекрёстное растворение без паузы и без подпрыгивания
-                        // «через фон»: старый уходит за 90 мс, новый проявляется после — без двойной экспозиции
-                        val from = initialState.screen; val to = targetState.screen
-                        // журнал живёт над главной (его стягивают вниз), контакты — под ней (их вытягивают вверх):
-                        // такие переходы — сдвигом по той же оси, что и жест; новый экран въезжает целиком,
-                        // старый отъезжает на четверть и гаснет, чтобы тексты не накладывались
-                        val dir = when {
-                            reduced -> 0
-                            from == Screen.HOME && to == Screen.RECENTS -> -1   // журнал сверху
-                            from == Screen.RECENTS && to == Screen.HOME -> 1
-                            from == Screen.HOME && to == Screen.SEARCH -> 1     // контакты снизу
-                            from == Screen.SEARCH && to == Screen.HOME -> -1
-                            else -> 0
-                        }
-                        val move = androidx.compose.animation.core.tween<androidx.compose.ui.unit.IntOffset>(Motion.SHEET, 0, Motion.EnterEasing)
-                        when {
-                            dir == -1 && to != Screen.HOME -> slideInVertically(move) { -it } togetherWith
-                                (slideOutVertically(move) { it / 4 } + fadeOut(androidx.compose.animation.core.tween(Motion.FADE, 0, Motion.ExitEasing)))
-                            dir == 1 && to == Screen.HOME -> (slideInVertically(move) { it / 4 } + fadeIn(androidx.compose.animation.core.tween(Motion.MOVE, 60, Motion.EnterEasing))) togetherWith
-                                (slideOutVertically(move) { -it } + fadeOut(androidx.compose.animation.core.tween(Motion.MOVE, 0, Motion.ExitEasing)))
-                            dir == 1 -> slideInVertically(move) { it } togetherWith
-                                (slideOutVertically(move) { -it / 4 } + fadeOut(androidx.compose.animation.core.tween(Motion.FADE, 0, Motion.ExitEasing)))
-                            dir == -1 -> (slideInVertically(move) { -it / 4 } + fadeIn(androidx.compose.animation.core.tween(Motion.MOVE, 60, Motion.EnterEasing))) togetherWith
-                                (slideOutVertically(move) { it } + fadeOut(androidx.compose.animation.core.tween(Motion.MOVE, 0, Motion.ExitEasing)))
-                            else -> fadeIn(androidx.compose.animation.core.tween(210, 90, Motion.EnterEasing)) togetherWith fadeOut(androidx.compose.animation.core.tween(90, 0, Motion.ExitEasing))
-                        }
-                            .using(androidx.compose.animation.SizeTransform(clip = false) { _, _ -> androidx.compose.animation.core.snap() })
-                    },
-                    label = "screen",
-                    // якорь у низа: списки прижаты к большому пальцу, при смене экрана ничего не прыгает
-                    contentAlignment = androidx.compose.ui.Alignment.BottomCenter,
-                ) { r ->
-                    when (r.screen) {
-                        Screen.HOME -> HomeScreen(vm)
-                        Screen.CONTACTS -> ContactsScreen(vm)
-                        Screen.PERSON -> r.personId?.let { PersonScreen(vm, it) }
-                        Screen.BLOCKED -> BlockedScreen(vm)
-                        Screen.UNKNOWN -> com.khizrim.dialer.ui.contacts.UnknownScreen(vm)
-                        Screen.RECENTS -> com.khizrim.dialer.ui.recents.RecentsScreen(vm)
-                        Screen.SETTINGS -> com.khizrim.dialer.ui.settings.SettingsScreen(vm)
-                        Screen.EDIT -> com.khizrim.dialer.ui.person.EditContactScreen(vm)
-                        Screen.SEARCH -> com.khizrim.dialer.ui.home.NameSearchScreen(vm)
-                    }
-                }
-
-                // клавиатура = поиск: выезжает снизу за 300 мс, уходит за 200 мс
-                AnimatedVisibility(vm.keypadOpen, enter = EnterTransition.None, exit = ExitTransition.None) {
-                    Column(Modifier.fillMaxSize()) {
-                        SearchResults(
-                            vm,
-                            Modifier
-                                .weight(1f)
-                                .fillMaxWidth()
-                                .animateEnterExit(enter = fadeIn(Motion.enter(Motion.MOVE)), exit = fadeOut(Motion.exit(Motion.MOVE)))
-                                .background(oz.bg),
-                        )
-                        Box(
-                            Modifier.animateEnterExit(
-                                enter = if (reduced) fadeIn(Motion.enter(Motion.FADE)) else slideInVertically(Motion.enter(Motion.SHEET)) { it },
-                                exit = if (reduced) fadeOut(Motion.exit(Motion.FADE)) else slideOutVertically(Motion.exit(Motion.MOVE)) { it },
-                            ),
-                        ) { KeypadPanel(vm) }
-                    }
+            // экраны: непрозрачные слои, новый приходит со своей стороны поверх неподвижного старого (ScreenStack)
+            // касание, начатое до смены экрана, на новом (и на уходящем) уже ничего не нажимает
+            androidx.compose.runtime.LaunchedEffect(vm.screen, vm.personId, vm.keypadOpen) { com.khizrim.dialer.ui.components.TapGuard.gen++ }
+            val stack = rememberScreenStack()
+            ScreenStackHost(stack, Route(vm.screen, vm.personId), reduced) { r ->
+                when (r.screen) {
+                    Screen.HOME -> HomeScreen(vm)
+                    Screen.CONTACTS -> ContactsScreen(vm)
+                    Screen.PERSON -> r.personId?.let { PersonScreen(vm, it) }
+                    Screen.BLOCKED -> BlockedScreen(vm)
+                    Screen.UNKNOWN -> com.khizrim.dialer.ui.contacts.UnknownScreen(vm)
+                    Screen.RECENTS -> com.khizrim.dialer.ui.recents.RecentsScreen(vm)
+                    Screen.SETTINGS -> com.khizrim.dialer.ui.settings.SettingsScreen(vm)
+                    Screen.EDIT -> com.khizrim.dialer.ui.person.EditContactScreen(vm)
+                    Screen.SEARCH -> com.khizrim.dialer.ui.home.NameSearchScreen(vm)
                 }
             }
+
+            // клавиатура = поиск: такой же непрозрачный слой снизу; идёт за пальцем, когда её тянут вниз
+            KeypadLayer(vm, reduced)
 
             // идёт звонок, а человек в приложении: на главной плашка встроена в разметку (над избранными),
             // на остальных экранах — тихо внизу, над нижней панелью
@@ -158,6 +108,54 @@ fun DialerApp(vm: DialerViewModel = viewModel()) {
                 undoHere = vm.screen != Screen.HOME || vm.keypadOpen,
                 onUndo = vm::undo,
             )
+        }
+    }
+}
+
+@Composable
+private fun KeypadLayer(vm: DialerViewModel, reduced: Boolean) {
+    val oz = LocalOz.current
+    val shown = remember { androidx.compose.animation.core.Animatable(if (vm.keypadOpen) 1f else 0f, visibilityThreshold = 0.0002f) }
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    val velocity = remember { floatArrayOf(0f) }
+    val dragging = remember { booleanArrayOf(false) }
+    androidx.compose.runtime.LaunchedEffect(vm.keypadOpen) {
+        if (dragging[0]) return@LaunchedEffect
+        val v = velocity[0]; velocity[0] = 0f
+        val spec: androidx.compose.animation.core.AnimationSpec<Float> = when {
+            reduced -> Motion.enter(Motion.FADE)
+            v != 0f -> Motion.settle()
+            else -> Motion.move(Motion.SHEET)
+        }
+        shown.animateTo(if (vm.keypadOpen) 1f else 0f, spec, v)
+    }
+    if (!vm.keypadOpen && shown.value == 0f) return
+    androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize()) {
+        val h = with(LocalDensity.current) { maxHeight.toPx() }
+        val drag = remember(h) {
+            object : com.khizrim.dialer.ui.keypad.PanelDrag {
+                var total = 0f
+                override fun start() { dragging[0] = true; total = 0f }
+                override fun by(dy: Float) {
+                    total = (total + dy).coerceAtLeast(0f)
+                    if (!reduced) scope.launch { shown.snapTo(1f - total / h) }
+                }
+                override fun end(velocityPx: Float) {
+                    dragging[0] = false
+                    if (Motion.commits(total / h, velocityPx, h)) { velocity[0] = -velocityPx / h; vm.closeKeypad() }
+                    else scope.launch { shown.animateTo(1f, Motion.settle(), -velocityPx / h) }
+                }
+            }
+        }
+        Column(
+            Modifier
+                .fillMaxSize()
+                .graphicsLayer { if (reduced) alpha = shown.value else translationY = (1f - shown.value) * h }
+                .background(oz.bg)
+                .safeDrawingPadding(),
+        ) {
+            SearchResults(vm, Modifier.weight(1f).fillMaxWidth())
+            KeypadPanel(vm, drag)
         }
     }
 }
