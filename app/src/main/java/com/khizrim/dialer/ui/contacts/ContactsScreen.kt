@@ -204,6 +204,7 @@ fun UnknownScreen(vm: DialerViewModel) {
     val res = androidx.compose.ui.platform.LocalContext.current.resources
     val onText = stringResource(R.string.on)
     val offText = stringResource(R.string.off)
+    val externalBlocks = com.khizrim.dialer.callerid.rememberExternalBlocks(vm.unknownCalls.firstOrNull()?.date)
     Column(Modifier.fillMaxSize()) {
         LazyColumn(Modifier.weight(1f).fillMaxWidth().padding(horizontal = 24.dp), verticalArrangement = Arrangement.Bottom) {
             item(key = "title") {
@@ -224,7 +225,9 @@ fun UnknownScreen(vm: DialerViewModel) {
                 ) {
                     Column(Modifier.weight(1f)) {
                         Text(com.khizrim.dialer.data.PhoneFormat.pretty(c.number), style = OzType.list, color = oz.fg, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        val tag = com.khizrim.dialer.callerid.rememberCallerTag(c.number)
+                        val blockedBy = externalBlocks[c.date]
+                        val tag = if (blockedBy != null) stringResource(R.string.ext_cid_blocked_by, blockedBy)
+                        else com.khizrim.dialer.callerid.rememberCallerTag(c.number)
                         Text(
                             if (tag == null) c.text(res) else stringResource(R.string.cid_join, c.text(res), tag),
                             style = OzType.small, color = if (c.missed) oz.danger else oz.fg3,
@@ -251,6 +254,7 @@ fun UnknownScreen(vm: DialerViewModel) {
                         style = OzType.small, color = oz.fg3,
                     )
                     com.khizrim.dialer.callerid.SuspiciousCallsSetting(Modifier.padding(top = 16.dp))
+                    com.khizrim.dialer.callerid.ExternalCallerIdRow(Modifier.padding(top = 16.dp))
                 }
             }
         }

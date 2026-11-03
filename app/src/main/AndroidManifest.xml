@@ -12,6 +12,13 @@
 
     <uses-feature android:name="android.hardware.telephony" android:required="false" />
 
+    <!-- видеть установленные определители номера (Яндекс, Kaspersky Who Calls, …) -->
+    <queries>
+        <intent>
+            <action android:name="android.telecom.CallScreeningService" />
+        </intent>
+    </queries>
+
     <application
         android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"

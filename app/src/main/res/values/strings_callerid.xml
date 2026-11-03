@@ -19,4 +19,10 @@
     <string name="spam_action_label_text">They ring as usual, with a label.</string>
     <string name="spam_about">Suspicious means a spoofed number or a one-ring call from abroad. Carrier and region are looked up on your phone in the Russian numbering registry from %1$s. Numbers never leave your phone.</string>
     <string name="spam_about_nodate">Suspicious means a spoofed number or a one-ring call from abroad. Carrier and region are looked up on your phone. Numbers never leave your phone.</string>
+
+    <string name="ext_cid_title">Caller ID app</string>
+    <string name="ext_cid_none">None</string>
+    <string name="ext_cid_text">Yandex, Kaspersky Who Calls and others show their own card over the call. Pick one under «Caller ID &amp; spam app».</string>
+    <string name="ext_cid_text_none">Want Yandex caller ID too? Install the Yandex app, then pick it under «Caller ID &amp; spam app». Both protections work together.</string>
+    <string name="ext_cid_blocked_by">Blocked by %1$s</string>
 </resources>
