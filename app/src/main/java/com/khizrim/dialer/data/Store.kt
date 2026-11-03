@@ -178,7 +178,7 @@ object Dates {
 
     /** «Пропущенный, вчера» для подписи на главной; несколько подряд — «3 пропущенных, последний в 14:15». */
     fun missed(res: Resources, ts: Long, count: Int = 1): String =
-        if (count > 1) res.getQuantityString(R.plurals.missed_many, count, count, whenText(res, ts))
+        if (count > 1) res.getQuantityString(R.plurals.feed_missed_many, count, count, whenText(res, ts))
         else res.getString(R.string.missed_when, whenText(res, ts))
 
     fun whenText(res: Resources, ts: Long): String {
