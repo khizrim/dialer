@@ -133,8 +133,7 @@ fun NameSearchScreen(vm: DialerViewModel) {
             if (all.size >= 30) LetterRail(starts.map { it.first }, Modifier.align(Alignment.CenterEnd)) { i ->
                 scope.launch { indexState.scrollToItem(starts[i].second) }
             }
-        } else
-        LazyColumn(Modifier.weight(1f).fillMaxWidth().dismissOnOverscroll { vm.closeTextSearch() }.padding(horizontal = 12.dp), state = listState, reverseLayout = true) {
+        } else LazyColumn(Modifier.weight(1f).fillMaxWidth().dismissOnOverscroll { vm.closeTextSearch() }.padding(horizontal = 12.dp), state = listState, reverseLayout = true) {
             if (numeric) {
                 item(key = "call") {
                     Row(

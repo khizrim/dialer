@@ -91,11 +91,11 @@ fun PersonScreen(vm: DialerViewModel, id: Long) {
                     history.forEach { e ->
                         // звонок смахивают влево — он удаляется из журнала, пока виден тост, его можно вернуть
                         androidx.compose.runtime.key(e.record ?: e) {
-                        Row(Modifier.fillMaxWidth().swipeAway(enabled = canDelete && e.record != null, hint = deleteWord) { e.record?.let(vm::swipeDeleteRecord) }.padding(vertical = 6.dp)) {
-                            Text(e.day, style = OzType.time, color = oz.fg3, modifier = Modifier.width(56.dp))
-                            Spacer(Modifier.width(16.dp))
-                            Text(e.text, style = OzType.small, color = if (e.missed) oz.danger else oz.fg2)
-                        }
+                            Row(Modifier.fillMaxWidth().swipeAway(enabled = canDelete && e.record != null, hint = deleteWord) { e.record?.let(vm::swipeDeleteRecord) }.padding(vertical = 6.dp)) {
+                                Text(e.day, style = OzType.time, color = oz.fg3, modifier = Modifier.width(56.dp))
+                                Spacer(Modifier.width(16.dp))
+                                Text(e.text, style = OzType.small, color = if (e.missed) oz.danger else oz.fg2)
+                            }
                         }
                     }
                 }
