@@ -167,7 +167,22 @@ object CallManager {
     private fun autoPickSim(call: Call) {
         if (call.state != Call.STATE_SELECT_PHONE_ACCOUNT) return
         val accounts = simAccounts(call)
-        if (accounts.size == 1) call.phoneAccountSelected(accounts[0], false)
+        if (accounts.size == 1) { call.phoneAccountSelected(accounts[0], false); return }
+        // для этого номера SIM уже запомнили — не спрашиваем
+        val ctx = appContext ?: return
+        val saved = com.khizrim.dialer.data.Prefs(ctx).simFor(number(call)) ?: return
+        accounts.firstOrNull { it.id == saved }?.let { call.phoneAccountSelected(it, false) }
+    }
+
+    /** «SIM 2», если в телефоне две SIM и звонок идёт через одну из них. */
+    @android.annotation.SuppressLint("MissingPermission")
+    private fun currentSim(call: Call): String? {
+        val handle = call.details?.accountHandle ?: return null
+        val ctx = appContext ?: return null
+        val all = runCatching { ctx.getSystemService(TelecomManager::class.java)?.callCapablePhoneAccounts }.getOrNull().orEmpty()
+        if (all.size < 2) return null
+        val i = all.indexOfFirst { it == handle }.takeIf { it >= 0 } ?: return null
+        return ctx.getString(R.string.sim_n, i + 1)
     }
 
     private fun simLabel(handle: PhoneAccountHandle, index: Int): String {
@@ -222,6 +237,7 @@ object CallManager {
             routes = audio?.supportedRouteMask ?: 0,
             bluetoothName = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) audio?.activeBluetoothDevice?.let { btName(it) } else null,
             simChoice = simAccounts(call).takeIf { it.size > 1 }?.mapIndexed { i, h -> simLabel(h, i) },
+            sim = currentSim(call),
         )
         // тихий незнакомый звонок: без уведомления и без экрана
         if (call !in silenced) service?.let { CallNotifications.update(it, state, call) }
@@ -272,9 +288,10 @@ object CallManager {
         else if (other.details?.can(Call.Details.CAPABILITY_MERGE_CONFERENCE) == true) other.conference(call)
     }
 
-    fun chooseSim(index: Int) {
+    fun chooseSim(index: Int, remember: Boolean = false) {
         val call = visible.firstOrNull { it.state == Call.STATE_SELECT_PHONE_ACCOUNT } ?: return
         val handle = simAccounts(call).getOrNull(index) ?: return
+        if (remember) appContext?.let { com.khizrim.dialer.data.Prefs(it).setSimFor(number(call), handle.id) }
         call.phoneAccountSelected(handle, false)
     }
 

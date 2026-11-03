@@ -253,4 +253,5 @@
     <string name="ob_restricted_4">Вернитесь сюда и нажмите «Попробовать снова»</string>
     <string name="ob_restricted_note">Нет меню ⋮? Нажмите «Попробовать снова» ещё раз и загляните снова: пункт появляется только после первого отказа. На Xiaomi он может быть в «Других разрешениях».</string>
     <string name="ob_restricted_open">Открыть «О приложении»</string>
+    <string name="sim_remember">Запомнить для этого номера</string>
 </resources>

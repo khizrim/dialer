@@ -137,6 +137,7 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     /** Перечитываем всё при каждом возвращении в приложение. */
     fun reload() {
         isDefaultDialer = Launcher.isDefaultDialer(ctx)
+        sims = Launcher.sims(ctx)
         hasContacts = granted(Manifest.permission.READ_CONTACTS)
         hasCallLog = granted(Manifest.permission.READ_CALL_LOG)
         callAlert = com.khizrim.dialer.telecom.CallReadiness.check(ctx, isDefaultDialer, prefs.xiaomiHintSeen, prefs.silenceUnknown)

@@ -48,7 +48,7 @@ object Launcher {
         val allowed = context.checkSelfPermission(Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED
         if (allowed && tm != null) {
             return try {
-                tm.placeCall(uri, Bundle().apply { simHandle(context, tm)?.let { putParcelable(TelecomManager.EXTRA_PHONE_ACCOUNT_HANDLE, it) } })
+                tm.placeCall(uri, Bundle().apply { simHandle(context, tm, number)?.let { putParcelable(TelecomManager.EXTRA_PHONE_ACCOUNT_HANDLE, it) } })
                 null
             } catch (e: SecurityException) {
                 context.getString(R.string.err_call)
@@ -70,11 +70,12 @@ object Launcher {
         }
     }
 
-    /** Выбранная в настройках SIM, если она всё ещё в телефоне. */
+    /** SIM, запомненная для номера, иначе выбранная в настройках, если она всё ещё в телефоне. */
     @android.annotation.SuppressLint("MissingPermission")
-    private fun simHandle(context: Context, tm: TelecomManager): android.telecom.PhoneAccountHandle? {
-        val id = com.khizrim.dialer.data.Prefs(context).simForCalls ?: return null
-        return runCatching { tm.callCapablePhoneAccounts }.getOrNull()?.firstOrNull { it.id == id }
+    fun simHandle(context: Context, tm: TelecomManager, number: String? = null): android.telecom.PhoneAccountHandle? {
+        val prefs = com.khizrim.dialer.data.Prefs(context)
+        val accounts = runCatching { tm.callCapablePhoneAccounts }.getOrNull().orEmpty()
+        return listOfNotNull(number?.let { prefs.simFor(it) }, prefs.simForCalls).firstNotNullOfOrNull { id -> accounts.firstOrNull { it.id == id } }
     }
 
     /** Голосовая почта оператора. */

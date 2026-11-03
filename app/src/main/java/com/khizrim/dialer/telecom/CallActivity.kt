@@ -73,7 +73,7 @@ class CallActivity : ComponentActivity() {
             override fun endAndAnswer() = CallManager.endAndAnswer()
             override fun toggleHold() = CallManager.toggleHold()
             override fun swap() = CallManager.swap()
-            override fun chooseSim(index: Int) = CallManager.chooseSim(index)
+            override fun chooseSim(index: Int, remember: Boolean) = CallManager.chooseSim(index, remember)
             override fun setRoute(route: Int) = CallManager.setRoute(route)
             override fun merge() = CallManager.merge()
             override fun addContact() {

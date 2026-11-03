@@ -92,7 +92,10 @@ fun RecentsScreen(vm: DialerViewModel) {
                         ) {
                             Column(Modifier.weight(1f)) {
                                 Text(title, style = OzType.list, color = if (r.missed) oz.danger else oz.fg, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                Text(r.text(res), style = OzType.small, color = oz.fg3)
+                                // SIM в конце второй строки, только когда их две
+                                val simIdx = if (vm.sims.size > 1) vm.sims.indexOfFirst { it.first == r.account } else -1
+                                val second = if (simIdx >= 0) r.text(res) + "  " + stringResource(R.string.sim_n, simIdx + 1) else r.text(res)
+                                Text(second, style = OzType.small, color = oz.fg3)
                             }
                             Text(time.format(Date(r.date)), style = OzType.small, color = oz.fg3)
                         }

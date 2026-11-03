@@ -15,7 +15,7 @@ import java.util.Date
 import java.util.Locale
 
 /** Запись журнала звонков. */
-data class CallRecord(val number: String, val type: Int, val date: Long, val duration: Long) {
+data class CallRecord(val number: String, val type: Int, val date: Long, val duration: Long, val account: String? = null) {
     val missed: Boolean get() = type == CallLog.Calls.MISSED_TYPE
     fun text(res: Resources): String = when (type) {
         CallLog.Calls.INCOMING_TYPE -> Dates.withDuration(res, res.getString(R.string.h_incoming), duration)
@@ -31,12 +31,12 @@ data class CallRecord(val number: String, val type: Int, val date: Long, val dur
 object CallLogSource {
     fun load(context: Context, limit: Int = 500): List<CallRecord> = runCatching {
         val uri = CallLog.Calls.CONTENT_URI.buildUpon().appendQueryParameter(CallLog.Calls.LIMIT_PARAM_KEY, limit.toString()).build()
-        val projection = arrayOf(CallLog.Calls.NUMBER, CallLog.Calls.TYPE, CallLog.Calls.DATE, CallLog.Calls.DURATION)
+        val projection = arrayOf(CallLog.Calls.NUMBER, CallLog.Calls.TYPE, CallLog.Calls.DATE, CallLog.Calls.DURATION, CallLog.Calls.PHONE_ACCOUNT_ID)
         val out = ArrayList<CallRecord>()
         context.contentResolver.query(uri, projection, null, null, CallLog.Calls.DATE + " DESC")?.use { c ->
             while (c.moveToNext()) {
                 val number = c.getString(0)?.takeIf { it.isNotBlank() } ?: continue
-                out += CallRecord(number, c.getInt(1), c.getLong(2), c.getLong(3))
+                out += CallRecord(number, c.getInt(1), c.getLong(2), c.getLong(3), c.getString(4))
             }
         }
         out
@@ -60,6 +60,12 @@ class Prefs(context: Context) {
     fun numberFor(lookupKey: String): String? = sp.getString("num:$lookupKey", null)
     fun setNumber(lookupKey: String, number: String?) {
         sp.edit().apply { if (number == null) remove("num:$lookupKey") else putString("num:$lookupKey", number) }.apply()
+    }
+
+    /** SIM, запомненная для номера (id PhoneAccountHandle). Ключ — последние 10 цифр. */
+    fun simFor(number: String): String? = sp.getString("sim:" + Numbers.key(number), null)
+    fun setSimFor(number: String, id: String?) {
+        sp.edit().apply { if (id == null) remove("sim:" + Numbers.key(number)) else putString("sim:" + Numbers.key(number), id) }.apply()
     }
 
     fun hiddenAt(key: String): Long = sp.getLong("hid:$key", 0L)

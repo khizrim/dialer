@@ -248,4 +248,5 @@
     <string name="ob_restricted_4">Come back and tap “Try again”</string>
     <string name="ob_restricted_note">No ⋮ menu? Tap “Try again” once more and check again: the option appears only after Android has refused once. On Xiaomi it may be under “Other permissions”.</string>
     <string name="ob_restricted_open">Open App info</string>
+    <string name="sim_remember">Remember for this number</string>
 </resources>

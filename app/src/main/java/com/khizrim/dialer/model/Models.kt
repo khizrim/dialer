@@ -89,6 +89,8 @@ data class CallState(
     val bluetoothName: String? = null,
     /** Подписи SIM-карт, когда система спрашивает, с какой звонить. */
     val simChoice: List<String>? = null,
+    /** Через какую SIM идёт звонок, когда их две. */
+    val sim: String? = null,
     /** Определитель считает номер подозрительным: тёплый фон и подпись цветом warn. */
     val suspicious: Boolean = false,
     /** Звонок не прошёл: ошибка сети, оператор отказал. */

@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -80,7 +81,7 @@ interface CallActions {
     fun endAndAnswer()
     fun toggleHold()
     fun swap()
-    fun chooseSim(index: Int)
+    fun chooseSim(index: Int, remember: Boolean)
     fun setRoute(route: Int)
     fun merge()
     fun addCall()
@@ -104,13 +105,14 @@ fun CallScreen(c: CallState, actions: CallActions, locked: Boolean = false) {
     }
     val known = c.name != null
     val title = c.name ?: c.number.takeIf { it.isNotEmpty() }?.let { PhoneFormat.pretty(it) } ?: stringResource(R.string.hidden_number)
-    val sub = when (c.phase) {
+    val subBase = when (c.phase) {
         CallPhase.RINGING -> if (known) c.label ?: stringResource(R.string.mobile) else c.label ?: stringResource(R.string.not_in_contacts)
         CallPhase.DIALING -> if (c.simChoice != null) stringResource(R.string.choose_sim) else stringResource(R.string.calling)
         CallPhase.ACTIVE -> if (c.onHold) stringResource(R.string.on_hold) else
             stringResource(R.string.net_phone) + "  " + CallManager.timer(((now - c.connectedAt).coerceAtLeast(0)) / 1000)
         CallPhase.ENDED -> if (c.failed) stringResource(R.string.call_failed_text) else c.endText
     }
+    val sub = if (c.sim != null && c.phase != CallPhase.ENDED && c.simChoice == null) "$subBase  ${c.sim}" else subBase
     val inCall = c.phase == CallPhase.ACTIVE || c.phase == CallPhase.DIALING
 
     // «Похоже на спам»: тёплый фон сверху, спокойно, без тревожного красного
@@ -359,12 +361,30 @@ private fun OtherLineRow(o: com.khizrim.dialer.model.OtherLine, phase: CallPhase
 @Composable
 private fun SimChoice(labels: List<String>, actions: CallActions) {
     val oz = LocalOz.current
+    var remember by remember { mutableStateOf(true) }
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         labels.forEachIndexed { i, label ->
-            Box(
-                Modifier.fillMaxWidth().height(56.dp).press({ actions.chooseSim(i) }, shape = RoundedCornerShape(16.dp)).padding(horizontal = 16.dp),
-                contentAlignment = Alignment.CenterStart,
-            ) { Text(label, style = OzType.list, color = oz.fg) }
+            Row(
+                Modifier.fillMaxWidth().height(56.dp).press({ actions.chooseSim(i, remember) }, shape = RoundedCornerShape(16.dp)).padding(horizontal = 16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                OzIcon(R.drawable.ic_oz_sim, oz.fg2)
+                Text(label, style = OzType.list, color = oz.fg)
+            }
+        }
+        // «Запомнить для этого номера»: в следующий раз позвоним с той же SIM без вопроса
+        Row(
+            Modifier.fillMaxWidth().heightIn(min = 48.dp)
+                .press({ remember = !remember }, shape = RoundedCornerShape(16.dp), role = androidx.compose.ui.semantics.Role.Checkbox)
+                .padding(horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Box(Modifier.size(22.dp).border(1.5.dp, if (remember) oz.accent else oz.fg3, RoundedCornerShape(6.dp)), contentAlignment = Alignment.Center) {
+                if (remember) OzIcon(R.drawable.ic_oz_check, oz.accent, 16.dp)
+            }
+            Text(stringResource(R.string.sim_remember), style = OzType.body, color = oz.fg2)
         }
     }
 }
