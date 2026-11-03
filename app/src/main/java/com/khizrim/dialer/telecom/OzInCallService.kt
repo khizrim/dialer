@@ -20,6 +20,7 @@ import com.khizrim.dialer.callerid.SpamAction
 import com.khizrim.dialer.data.Prefs
 import com.khizrim.dialer.MainActivity
 import com.khizrim.dialer.R
+import com.khizrim.dialer.data.ContactsSource
 import com.khizrim.dialer.model.CallPhase
 import com.khizrim.dialer.model.CallState
 
