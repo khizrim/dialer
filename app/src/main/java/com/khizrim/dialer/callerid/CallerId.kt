@@ -68,13 +68,36 @@ object CallerId {
         return Classifier.classify(parsed, db(context), verificationFailed || (key.isNotEmpty() && key in spoofed))
     }
 
-    /** Подпись под номером на экране звонка: «МТС · Москва и область», «Похоже на спам». */
-    fun labelFor(context: Context, number: String?): String? = label(context, facts(context, number))
+    /** Имена от сети (CNAP) по номеру, пока жив процесс: их видит экранирование звонка. */
+    private val networkNames = ConcurrentHashMap<String, String>()
+
+    /**
+     * Запомнить имя, которое сеть передала вместе с входящим (Call.Details.callerDisplayName
+     * при PRESENTATION_ALLOWED). Это единственная «системная» подпись, доступная сторонней звонилке:
+     * её дают оператор и его антиспам («МТС Защитник», «Билайн Антиспам» и т. п.).
+     */
+    fun rememberNetworkName(number: String?, name: String?) {
+        val key = number.orEmpty().filter { it.isDigit() }
+        val usable = NetworkName.usable(name) ?: return
+        if (key.isNotEmpty()) networkNames[key] = usable
+    }
+
+    fun networkName(number: String?): String? = networkNames[number.orEmpty().filter { it.isDigit() }]
+
+    /** Подпись под номером на экране звонка: имя от сети, «МТС · Москва и область», «Похоже на спам». */
+    fun labelFor(context: Context, number: String?): String? {
+        val ours = label(context, facts(context, number))
+        val network = networkName(number) ?: return ours
+        if (NetworkName.looksLikeSpam(network)) return network
+        val region = shortLabel(context, facts(context, number))
+        return if (region.isNullOrBlank() || region == network) network else context.getString(R.string.cid_join, network, region)
+    }
 
     /** Короткая подпись для списков: «Москва и область», «Беларусь», «Похоже на спам». */
     fun shortLabelFor(context: Context, number: String?): String? = shortLabel(context, facts(context, number))
 
-    fun isSuspicious(context: Context, number: String?): Boolean = facts(context, number).suspicious
+    fun isSuspicious(context: Context, number: String?): Boolean =
+        facts(context, number).suspicious || NetworkName.looksLikeSpam(networkName(number))
 
     /**
      * Глушить ли входящий: «Не беспокоить незнакомым» или подозрительный номер при режиме «Глушить».
@@ -86,7 +109,8 @@ object CallerId {
         if (isRecentContact(context, n)) return false
         if (Prefs(context).silenceUnknownActive(context)) return true
         val prefs = CallerIdPrefs(context)
-        return prefs.action == SpamAction.SILENCE && actsOn(context, facts(context, n), prefs)
+        val strong = actsOn(context, facts(context, n), prefs) || NetworkName.looksLikeSpam(networkName(n))
+        return prefs.action == SpamAction.SILENCE && strong
     }
 
     /** Сами звонили на этот номер за неделю или с него звонят повторно за 3 минуты (см. [RecentContact]). */

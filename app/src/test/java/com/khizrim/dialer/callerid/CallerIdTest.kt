@@ -156,3 +156,20 @@ class RecentContactTest {
         assertFalse(RecentContact.exempt("", listOf(e("", 2, min)), now))
     }
 }
+
+class NetworkNameTest {
+    @Test fun usableNames() {
+        assertEquals("ООО Ромашка", NetworkName.usable("  ООО Ромашка "))
+        assertNull(NetworkName.usable("+7 (916) 123-45-67"))
+        assertNull(NetworkName.usable(""))
+        assertNull(NetworkName.usable(null))
+    }
+
+    @Test fun spamLabelsFromOperators() {
+        assertTrue(NetworkName.looksLikeSpam("Возможно спам"))
+        assertTrue(NetworkName.looksLikeSpam("Мошенники"))
+        assertTrue(NetworkName.looksLikeSpam("SPAM"))
+        assertFalse(NetworkName.looksLikeSpam("Сбербанк"))
+        assertFalse(NetworkName.looksLikeSpam(null))
+    }
+}

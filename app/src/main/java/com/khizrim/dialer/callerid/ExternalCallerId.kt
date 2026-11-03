@@ -59,7 +59,8 @@ object ExternalCallerId {
         val ready = apps.firstOrNull { it.ready }
         val pending = apps.firstOrNull()
         val intent = when {
-            ready != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q -> Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS)
+            // системный выбор «Определитель номера и спам»: там видно, что уже выбрано на телефоне
+            (ready != null || pending != null) && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q -> Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS)
             pending != null -> context.packageManager.getLaunchIntentForPackage(pending.pkg)
                 ?: Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", pending.pkg, null))
             else -> Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=$YANDEX"))
