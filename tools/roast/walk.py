@@ -61,7 +61,7 @@ def back(wait=1.5): sh("shell", "input", "keyevent", "KEYCODE_BACK"); time.sleep
 def swipe(y1, y2, ms=350, wait=1.5): sh("shell", "input", "swipe", "540", str(y1), "540", str(y2), str(ms)); time.sleep(wait)
 def hswipe(y, x1=950, x2=120, ms=300, wait=1.5): sh("shell", "input", "swipe", str(x1), str(y), str(x2), str(y), str(ms)); time.sleep(wait)
 def drag(x, y1, y2, ms=400, wait=1.5): sh("shell", "input", "swipe", str(x), str(y1), str(x), str(y2), str(ms)); time.sleep(wait)
-def calls(tag): note(f"telecom {tag}: " + subprocess.run(["adb", "shell", "dumpsys telecom | grep -c 'Call id='"], capture_output=True, text=True).stdout.strip())
+def calls(tag): note(f"call-log rows {tag}: " + subprocess.run(["adb", "shell", "content query --uri content://call_log/calls --projection _id | wc -l"], capture_output=True, text=True).stdout.strip() + " / in-call: " + subprocess.run(["adb", "shell", "dumpsys telecom | grep -c 'state=DIALING\\|state=CONNECTING\\|state=ACTIVE'"], capture_output=True, text=True).stdout.strip())
 def keys(s):
     for c in s: sh("shell", "input", "keyevent", f"KEYCODE_{c}"); time.sleep(0.25)
 def record(name, seconds, actions):
