@@ -164,18 +164,17 @@ private fun HitRow(vm: DialerViewModel, h: TextHit) {
         h.via == MatchVia.TRANSLIT -> stringResource(R.string.found_translit)
         else -> null
     }
-    Row(
-        Modifier.fillMaxWidth().heightIn(min = 60.dp)
-            .press({ vm.tapHit(p) }, onLongClick = { vm.openMenu(p) }, label = p.name + (where?.let { ", $it" } ?: ""))
-            .padding(horizontal = 12.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Column(
+            Modifier.weight(1f).heightIn(min = 60.dp)
+                .press({ vm.openPerson(p.id) }, onLongClick = { vm.openMenu(p) }, label = p.name + (where?.let { ", $it" } ?: ""))
+                .padding(horizontal = 12.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
             if (p.nameIsNumber) Text(p.shownName, style = OzType.number, color = oz.fg, maxLines = 1)
             else Text(name, style = OzType.nameSearch, color = oz.fg, maxLines = 1, overflow = TextOverflow.Ellipsis)
             if (where != null) Text(where, style = OzType.small, color = oz.fg3, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
-        if (method != com.khizrim.dialer.model.Method.PHONE) OzIcon(method?.icon ?: R.drawable.ic_oz_help, oz.fg3)
+        com.khizrim.dialer.ui.components.ReachButton(method, p.name) { vm.tapHit(p) }
     }
 }

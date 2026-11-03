@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="main_number">основной</string>
+    <string name="make_main">Сделать основным</string>
+    <string name="call_mic">Микрофон</string>
+    <string name="call_mic_off">Микрофон выкл.</string>
+    <string name="call_digits">Цифры</string>
+</resources>

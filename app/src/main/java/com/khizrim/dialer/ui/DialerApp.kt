@@ -106,7 +106,7 @@ fun DialerApp(vm: DialerViewModel = viewModel()) {
                 bottom = when { vm.keypadOpen -> 380.dp; barScreen(vm) -> 18.dp; else -> 16.dp },
                 end = if (barScreen(vm)) 84.dp else 12.dp,
                 undoHere = vm.screen != Screen.HOME || vm.keypadOpen,
-                onUndo = vm::undo,
+                onUndo = vm::toastTap,
             )
         }
     }
@@ -163,7 +163,7 @@ private fun KeypadLayer(vm: DialerViewModel, reduced: Boolean) {
 /** Где висит плашка звонка: над клавиатурой или над нижней панелью. */
 private fun floatBottom(vm: DialerViewModel): androidx.compose.ui.unit.Dp = when {
     vm.keypadOpen -> 380.dp
-    vm.screen == Screen.HOME && (vm.favorites.isNotEmpty() || vm.showSearchHint) -> 156.dp
+    vm.screen == Screen.HOME && vm.favorites.isNotEmpty() -> 156.dp
     else -> 96.dp
 }
 

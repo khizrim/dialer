@@ -42,7 +42,8 @@ enum class MenuContext { HOME, SEARCH }
 data class SheetState(val mode: SheetMode, val personId: Long)
 data class MenuState(val entry: HomeEntry, val context: MenuContext, val record: CallRecord? = null)
 data class ConfirmState(val title: String, val description: String, val verb: String, val run: () -> Unit)
-data class ToastState(val text: String, val undo: Boolean = false, val id: Long = System.nanoTime())
+/** [action] — подпись своей кнопки в тосте (вместо «Вернуть»); её нажатие идёт в [DialerViewModel.toastTap]. */
+data class ToastState(val text: String, val undo: Boolean = false, val action: String? = null, val id: Long = System.nanoTime())
 
 
 private class Loaded(
@@ -136,6 +137,7 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Перечитываем всё при каждом возвращении в приложение. */
     fun reload() {
+        offerDefault()
         isDefaultDialer = Launcher.isDefaultDialer(ctx)
         viewModelScope.launch { sims = withContext(Dispatchers.IO) { Launcher.sims(ctx) } }
         simForCalls = prefs.simForCalls
@@ -455,7 +457,6 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     var textHits by mutableStateOf<List<com.khizrim.dialer.data.TextHit>>(emptyList()); private set
     private var searchFrom = Screen.HOME
     /** Подсказка «Потяните стопку вверх» — первые 5 запусков, пока поиском не воспользовались. */
-    val showSearchHint: Boolean get() = prefs.searchHintShows <= 5 && !prefs.searchUsed
     fun countLaunch() { prefs.searchHintShows = prefs.searchHintShows + 1 }
 
     fun openTextSearch() {
@@ -547,8 +548,38 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
             sheet = null
             say(str(R.string.now_on_tap, m.label(ctx)))
         } else {
-            perform(p, m, number)
+            performOther(p, m, number)
         }
+    }
+
+    /** Связаться не основным способом; когда человек вернётся в приложение, тихо предложим сделать способ основным. */
+    fun performOther(p: Person, m: Method, number: String? = null) {
+        val before = defaultOf(p)
+        perform(p, m, number)
+        if (m != before) suggestDefault = p.id to m
+    }
+
+    private var suggestDefault: Pair<Long, Method>? = null
+    private var toastAction: (() -> Unit)? = null
+
+    private fun offerDefault() {
+        val (id, m) = suggestDefault ?: return
+        suggestDefault = null
+        val p = person(id) ?: return
+        if (defaultOf(p) == m) return
+        say(m.label(ctx), action = str(R.string.make_main)) {
+            prefs.setDefault(p.lookupKey, m)
+            defaultsVersion++
+            say(str(R.string.now_on_tap, m.label(ctx)))
+        }
+    }
+
+    /** Кнопка в тосте: «Вернуть» или своё действие. */
+    fun toastTap() {
+        val a = toastAction
+        if (toast?.undo == true || a == null) { undo(); return }
+        toastAction = null; toastJob?.cancel(); toast = null
+        a()
     }
 
     fun sheetFooter() {
@@ -758,12 +789,13 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     // ---------- тост ----------
-    fun say(text: String, undo: Boolean = false) {
+    fun say(text: String, undo: Boolean = false, action: String? = null, onAction: (() -> Unit)? = null) {
         toastJob?.cancel()
         if (toast?.undo == true && pendingRecord != null) commitPendingRecord()
-        toast = ToastState(text, undo)
+        toastAction = onAction
+        toast = ToastState(text, undo, action)
         toastJob = viewModelScope.launch {
-            delay(if (undo) 6000 else 2600)  // «Вернуть» живёт дольше: его надо успеть найти глазами
+            delay(if (undo || action != null) 6000 else 2600)  // «Вернуть» живёт дольше: его надо успеть найти глазами
             toast = null
             if (undo) { tidy = false; removed = emptyList(); commitPendingRecord() }
         }

@@ -229,14 +229,14 @@ private fun Active(c: CallState, actions: CallActions, onRoutes: () -> Unit) {
         // сетка 3×2: звук и микрофон сверху, линии и сообщение снизу
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceAround) {
             // микрофон: мгновенная смена иконки и цвета, без анимации формы
-            Toggle(if (c.muted) R.drawable.ic_oz_mic_off else R.drawable.ic_oz_mic, stringResource(R.string.mute), c.muted, actions::toggleMute)
+            Toggle(if (c.muted) R.drawable.ic_oz_mic_off else R.drawable.ic_oz_mic, stringResource(if (c.muted) R.string.call_mic_off else R.string.call_mic), c.muted, actions::toggleMute)
             if (c.hasRouteChoice) {
                 // есть наушники или Bluetooth: подпись говорит, куда идёт звук, тап открывает выбор
                 Toggle(R.drawable.ic_oz_speaker, routeLabel(c, c.route), c.route != CallState.ROUTE_EARPIECE, onRoutes)
             } else {
                 Toggle(R.drawable.ic_oz_speaker, stringResource(R.string.speaker), c.speaker, actions::toggleSpeaker)
             }
-            Toggle(R.drawable.ic_oz_grid, stringResource(R.string.keypad), c.dtmf != null, actions::toggleDtmf)
+            Toggle(R.drawable.ic_oz_grid, stringResource(R.string.call_digits), c.dtmf != null, actions::toggleDtmf)
         }
         Row(Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 28.dp), horizontalArrangement = Arrangement.SpaceAround) {
             if (two) {

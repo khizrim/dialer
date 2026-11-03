@@ -155,17 +155,20 @@ fun HomeScreen(vm: DialerViewModel) {
                                 alpha = 1f - progress
                                 translationX = if (reduced) 0f else shift * progress
                             }
-                            .fillMaxWidth()
-                            .heightIn(min = 64.dp)
-                            .press(
-                                onClick = { vm.tap(e) },
-                                onLongClick = { vm.openMenu(e, MenuContext.HOME) },
-                                label = e.title + ": " + stringResource(method?.title ?: R.string.choose_method) + (note?.let { ", $it" } ?: ""),
-                            )
-                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                            .fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Column(Modifier.weight(1f)) {
+                        // нажатие на имя — карточка (у незнакомого номера — его меню), значок справа — связаться
+                        Column(
+                            Modifier.weight(1f).heightIn(min = 64.dp)
+                                .press(
+                                    onClick = { if (p != null) vm.openPerson(p.id) else vm.openMenu(e, MenuContext.HOME) },
+                                    onLongClick = { vm.openMenu(e, MenuContext.HOME) },
+                                    label = e.title + (note?.let { ", $it" } ?: ""),
+                                )
+                                .padding(horizontal = 12.dp, vertical = 10.dp),
+                            verticalArrangement = Arrangement.Center,
+                        ) {
                             Text(
                                 e.title,
                                 style = if (p != null && !p.nameIsNumber) OzType.nameHome else OzType.numberHome,
@@ -175,8 +178,7 @@ fun HomeScreen(vm: DialerViewModel) {
                                 Text(note, style = OzType.small, color = oz.danger, modifier = Modifier.padding(top = 4.dp))
                             }
                         }
-                        // значок только когда тап делает не обычный звонок: одинаковая трубка у всех ничего не сообщает
-                        if (method != Method.PHONE) OzIcon(method?.icon ?: R.drawable.ic_oz_help, oz.fg3, modifier = Modifier.padding(start = 16.dp))
+                        com.khizrim.dialer.ui.components.ReachButton(method, e.title) { vm.tap(e) }
                     }
                 }
             }
@@ -195,13 +197,13 @@ fun HomeScreen(vm: DialerViewModel) {
                         val m = vm.defaultOf(p)
                         Row(
                             Modifier.heightIn(min = 56.dp)
-                                .press({ vm.perform(p, m) }, onLongClick = { vm.openMenu(p) }, shape = com.khizrim.dialer.ui.theme.OzShape.text,
+                                .press({ vm.perform(p, m) }, onLongClick = { vm.openPerson(p.id) }, shape = com.khizrim.dialer.ui.theme.OzShape.text,
                                     label = stringResource(R.string.favorite_label, p.name, stringResource(m?.title ?: R.string.choose_method)))
                                 .padding(horizontal = 12.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            // трубку не рисуем: она у всех одинаковая; значок только у тех, кому обычно пишут
-                            if (m != Method.PHONE) OzIcon(m?.icon ?: R.drawable.ic_oz_help, oz.fg3, 18.dp, modifier = Modifier.padding(end = 8.dp))
+                            // избранные — кнопки быстрого набора: значок способа у всех, трубка тоже
+                            OzIcon(m?.icon ?: R.drawable.ic_oz_swap, oz.fg3, 18.dp, modifier = Modifier.padding(end = 8.dp))
                             Text(vm.favLabel(p), style = OzType.nameList, color = oz.fg, maxLines = 1)
                         }
                     }
@@ -210,15 +212,6 @@ fun HomeScreen(vm: DialerViewModel) {
             // необязательные строки появляются и уходят, раздвигая место плавно: стопка над ними не прыгает
             val alert = com.khizrim.dialer.ui.components.rememberLast(vm.callAlert)
             QuietRow(vm.callAlert != null) { alert?.let { CallAlertRow(vm, it) } }
-            QuietRow(vm.showSearchHint && vm.home.isNotEmpty()) {
-                Row(
-                    Modifier.fillMaxWidth().press(vm::openTextSearch, shape = com.khizrim.dialer.ui.theme.OzShape.text).padding(horizontal = 24.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    OzIcon(R.drawable.ic_oz_search, oz.fg3, 16.dp)
-                    Text(stringResource(R.string.search_hint), style = OzType.small, color = oz.fg3, modifier = Modifier.padding(start = 8.dp))
-                }
-            }
             QuietRow(vm.tidy) {
                 TextAction(
                     stringResource(R.string.home_clear), oz.fg3, vm::askClearHome, style = OzType.small,

@@ -111,18 +111,16 @@ fun SearchResults(vm: DialerViewModel, modifier: Modifier = Modifier, drag: Pane
         items(results, key = { it.person.id }) { hit ->
             val p = hit.person
             val method = vm.defaultOf(p)
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .press(
-                        onClick = { vm.perform(p, method) },
-                        onLongClick = { vm.openMenu(p) },
-                        label = "${p.name}, ${hit.phone}: ${stringResource(method?.title ?: R.string.choose_method)}",
-                    )
-                    .padding(horizontal = 12.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column(Modifier.weight(1f)) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Column(
+                    Modifier.weight(1f)
+                        .press(
+                            onClick = { vm.openPerson(p.id) },
+                            onLongClick = { vm.openMenu(p) },
+                            label = "${p.name}, ${hit.phone}",
+                        )
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                ) {
                     if (p.nameIsNumber) {
                         // имя — это номер: одна строка с номером, без дубля
                         Text(highlight(hit.phone, hit.phoneRange, oz.accent), style = OzType.list.copy(fontSize = OzType.nameSearch.fontSize), color = oz.fg, maxLines = 1)
@@ -131,7 +129,7 @@ fun SearchResults(vm: DialerViewModel, modifier: Modifier = Modifier, drag: Pane
                         Text(highlight(hit.phone, hit.phoneRange, oz.accent), style = OzType.small, color = oz.fg3)
                     }
                 }
-                OzIcon(method?.icon ?: R.drawable.ic_oz_help, oz.fg3, modifier = Modifier.padding(start = 16.dp))
+                com.khizrim.dialer.ui.components.ReachButton(method, p.name) { vm.perform(p, method) }
             }
         }
         if (showAdd) {
