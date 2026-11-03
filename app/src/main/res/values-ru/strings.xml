@@ -190,4 +190,19 @@
     <string name="call_failed">Не удалось позвонить</string>
     <string name="call_failed_text">Нет сети или оператор не пропустил звонок. Попробуйте чуть позже.</string>
     <string name="try_again">Попробовать снова</string>
+    <string name="ob_step">%1$d из %2$d</string>
+    <string name="ob_promise_people">Люди, а не списки номеров</string>
+    <string name="ob_promise_quiet">Незнакомые могут звонить без звука</string>
+    <string name="ob_promise_local">Всё остаётся на телефоне</string>
+    <string name="ob_perm_title">Три доступа</string>
+    <string name="ob_perm_sub">Всё остаётся на телефоне.</string>
+    <string name="ob_access_contacts">Контакты</string>
+    <string name="ob_access_contacts_why">Чтобы показывать имена и способы связи</string>
+    <string name="ob_access_log">Журнал звонков</string>
+    <string name="ob_access_log_why">Чтобы недавние люди были под рукой</string>
+    <string name="ob_access_notif">Уведомления</string>
+    <string name="ob_access_notif_why">Чтобы показывать входящие и пропущенные</string>
+    <string name="ob_denied_title">Без контактов здесь пусто</string>
+    <string name="ob_denied_text">Откройте Настройки → Разрешения → Контакты и разрешите доступ. Звонить можно и без этого.</string>
+    <string name="ob_without_contacts">Звонить без контактов</string>
 </resources>

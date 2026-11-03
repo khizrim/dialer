@@ -191,4 +191,19 @@
     <string name="call_failed">Couldn\'t call</string>
     <string name="call_failed_text">No network or the operator refused. Try again in a moment.</string>
     <string name="try_again">Try again</string>
+    <string name="ob_step">%1$d of %2$d</string>
+    <string name="ob_promise_people">People, not lists of numbers</string>
+    <string name="ob_promise_quiet">Unknown callers can stay quiet</string>
+    <string name="ob_promise_local">Everything stays on your phone</string>
+    <string name="ob_perm_title">Three permissions</string>
+    <string name="ob_perm_sub">Everything stays on your phone.</string>
+    <string name="ob_access_contacts">Contacts</string>
+    <string name="ob_access_contacts_why">To show names and how to reach people</string>
+    <string name="ob_access_log">Call log</string>
+    <string name="ob_access_log_why">To keep recent people close</string>
+    <string name="ob_access_notif">Notifications</string>
+    <string name="ob_access_notif_why">To show incoming and missed calls</string>
+    <string name="ob_denied_title">Without contacts it\'s empty here</string>
+    <string name="ob_denied_text">Open Settings → Permissions → Contacts and allow access. Calls still work without it.</string>
+    <string name="ob_without_contacts">Call without contacts</string>
 </resources>

@@ -72,7 +72,19 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
 
     fun skipRole() { roleSkipped = true; prefs.roleSkipped = true }
 
-    val needsOnboarding: Boolean get() = !hasContacts || !hasCallLog || (!isDefaultDialer && !roleSkipped)
+    /** «Звонить без контактов»: пускаем в приложение без доступа к книге. */
+    var permsSkipped by mutableStateOf(prefs.permsSkipped)
+        private set
+
+    fun skipPerms() { permsSkipped = true; prefs.permsSkipped = true }
+
+    /** Уже спрашивали доступы хотя бы раз: если снова отказ, система сама не спросит. */
+    var permsAsked by mutableStateOf(prefs.permsAsked)
+        private set
+
+    fun markPermsAsked() { permsAsked = true; prefs.permsAsked = true }
+
+    val needsOnboarding: Boolean get() = ((!hasContacts || !hasCallLog) && !permsSkipped) || (!isDefaultDialer && !roleSkipped)
 
     var people by mutableStateOf<List<Person>>(emptyList()); private set
     private var byNumber: Map<String, Person> = emptyMap()

@@ -81,6 +81,14 @@ class Prefs(context: Context) {
         get() = sp.getString("simForCalls", null)
         set(v) { sp.edit().putString("simForCalls", v).apply() }
 
+    var permsSkipped: Boolean
+        get() = sp.getBoolean("permsSkipped", false)
+        set(v) { sp.edit().putBoolean("permsSkipped", v).apply() }
+
+    var permsAsked: Boolean
+        get() = sp.getBoolean("permsAsked", false)
+        set(v) { sp.edit().putBoolean("permsAsked", v).apply() }
+
     var roleSkipped: Boolean
         get() = sp.getBoolean("roleSkipped", false)
         set(v) { sp.edit().putBoolean("roleSkipped", v).apply() }
