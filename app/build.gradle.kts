@@ -49,9 +49,6 @@ android {
         checkReleaseBuilds = true
         // переводы проверяем, но отсутствующий перевод не валит сборку
         warning += listOf("MissingTranslation")
-        // все ошибки прямо в логе CI: артефакт с отчётом не всегда удобно скачать
-        textReport = true
-        textOutput = file("stdout")
         htmlReport = true
         sarifReport = true
     }
