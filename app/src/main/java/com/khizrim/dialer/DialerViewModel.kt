@@ -317,7 +317,12 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
         if (p != null) openPerson(p.id) else openRecents(missed = true)
     }
 
-    fun callNumber(number: String) { closeKeypad(); Launcher.call(ctx, number)?.let { say(it) } }
+    /** [sim] — id SIM для этого звонка (перезвон с той, на которую пришёл пропущенный). */
+    fun callNumber(number: String, sim: String? = null) {
+        closeKeypad()
+        val pinned = sim != null && sims.any { it.first == sim }
+        Launcher.call(ctx, number, sim = sim, pinned = pinned)?.let { say(it) }
+    }
     private var settingsFrom = Screen.HOME
     fun openSettings() {
         closeKeypad(); simForCalls = prefs.simForCalls

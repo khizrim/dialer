@@ -29,4 +29,8 @@
     <string name="card_dur_sec">%1$d s</string>
     <string name="card_dur_min">%1$d min</string>
     <string name="card_to_number">to %1$s</string>
+    <plurals name="missed_many_from">
+        <item quantity="one">%1$d missed call from %2$s</item>
+        <item quantity="other">%1$d missed calls from %2$s</item>
+    </plurals>
 </resources>

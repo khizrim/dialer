@@ -33,4 +33,10 @@
     <string name="card_dur_sec">%1$d с</string>
     <string name="card_dur_min">%1$d мин</string>
     <string name="card_to_number">на %1$s</string>
+    <plurals name="missed_many_from">
+        <item quantity="one">%1$d пропущенный от %2$s</item>
+        <item quantity="few">%1$d пропущенных от %2$s</item>
+        <item quantity="many">%1$d пропущенных от %2$s</item>
+        <item quantity="other">%1$d пропущенного от %2$s</item>
+    </plurals>
 </resources>
