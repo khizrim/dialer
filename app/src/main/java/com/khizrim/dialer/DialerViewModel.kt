@@ -137,6 +137,8 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Перечитываем всё при каждом возвращении в приложение. */
     fun reload() {
+        // вернулись в приложение — раскрытая группа «без звука» снова свёрнута
+        silentOpen = false
         offerDefault()
         isDefaultDialer = Launcher.isDefaultDialer(ctx)
         viewModelScope.launch { sims = withContext(Dispatchers.IO) { Launcher.sims(ctx) } }
@@ -194,9 +196,15 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
         val all = home.toList()
         val silent = all.filter(::isSilenced)
         val rest = all.filterNot(::isSilenced)
-        val list = if (silent.isEmpty() || silentOpen) all
-        else rest + HomeEntry("silent", null, null, silent.maxOf { it.lastAt }, null, silent = silent.size)
-        return (if (missedOnly) list.filter { it.missedNote != null } else list).sortedBy { it.lastAt }
+        val base = if (missedOnly) rest.filter { it.missedNote != null } else rest
+        if (silent.isEmpty()) return base.sortedBy { it.lastAt }
+        // незнакомые без звука никогда не вытесняют людей: одна строка-заголовок на месте последнего из них;
+        // раскрытая группа стоит сразу над заголовком (в прошлое), свежие ближе к нему
+        val header = HomeEntry("silent", null, null, silent.maxOf { it.lastAt }, null, silent = silent.size)
+        val sorted = (base + header).sortedBy { it.lastAt }
+        if (!silentOpen) return sorted
+        val at = sorted.indexOf(header)
+        return sorted.subList(0, at) + silent.sortedBy { it.lastAt }.map { it.copy(inSilentGroup = true) } + sorted.subList(at, sorted.size)
     }
     /** Незнакомый, чей звонок прошёл без звука (включено «Не беспокоить незнакомым»). */
     fun isSilenced(e: HomeEntry): Boolean = e.person == null && silenceUnknown && e.missedNote != null

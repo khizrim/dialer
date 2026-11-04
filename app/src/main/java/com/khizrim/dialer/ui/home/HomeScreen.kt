@@ -124,6 +124,8 @@ fun HomeScreen(vm: DialerViewModel) {
         buildList<Any> {
             var day: String? = null
             feed.asReversed().forEach { e ->
+                // строки раскрытой группы «без звука» идут подряд над заголовком, дни их не делят
+                if (e.inSilentGroup) { add(e); return@forEach }
                 val d = if (e.lastAt > 0L) com.khizrim.dialer.data.Dates.day(res, e.lastAt) else null
                 if (day != null && d != day) add(FeedDay(day!!))
                 day = d
@@ -177,7 +179,8 @@ fun HomeScreen(vm: DialerViewModel) {
                         ) {
                             OzIcon(R.drawable.ic_oz_moon, oz.fg3, 18.dp)
                             Text(pluralStringResource(R.plurals.silent_unknown, e.silent, e.silent), style = OzType.body, color = oz.fg2, modifier = Modifier.padding(start = 12.dp).weight(1f))
-                            OzIcon(R.drawable.ic_oz_chevron, oz.fg3, 18.dp)
+                            // раскрыта — стрелка смотрит вверх, туда, где лежат номера; нажатие сворачивает
+                            OzIcon(R.drawable.ic_oz_chevron_down, oz.fg3, 18.dp, Modifier.graphicsLayer { rotationZ = if (vm.silentOpen) 180f else -90f })
                         }
                         return@items
                     }
@@ -224,7 +227,8 @@ fun HomeScreen(vm: DialerViewModel) {
                                 style = if (p != null && !p.nameIsNumber) OzType.nameHome else OzType.numberHome,
                                 color = if (quiet) oz.fg2 else oz.fg, maxLines = 1, overflow = TextOverflow.Ellipsis,
                             )
-                            val second = if (quiet) stringResource(R.string.silenced) else note ?: e.note
+                            // в раскрытой группе дни не показаны, поэтому время рядом с «без звука»
+                            val second = if (quiet) stringResource(R.string.silenced) + (if (e.inSilentGroup) " · " + com.khizrim.dialer.data.Dates.whenText(res, e.lastAt) else "") else note ?: e.note
                             if (second != null) {
                                 Text(second, style = OzType.small, color = if (note != null && !quiet) oz.danger else oz.fg3, modifier = Modifier.padding(top = 4.dp))
                             }
