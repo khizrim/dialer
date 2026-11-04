@@ -39,6 +39,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
@@ -361,15 +362,13 @@ private data class FeedDay(val text: String)
 private fun Modifier.dock(): Modifier {
     val oz = LocalOz.current
     val shape = androidx.compose.foundation.shape.RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp)
-    val shade = if (oz.isDark) Color.Black.copy(alpha = .35f) else oz.fg.copy(alpha = .07f)
+    // тень по форме причала (со скруглёнными углами), а не прямоугольной полосой над ним
     return this
-        .drawBehind {
-            val h = 16.dp.toPx()
-            drawRect(
-                androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color.Transparent, shade), startY = -h, endY = 0f),
-                topLeft = androidx.compose.ui.geometry.Offset(0f, -h), size = androidx.compose.ui.geometry.Size(size.width, h),
-            )
-        }
+        .shadow(
+            10.dp, shape,
+            ambientColor = if (oz.isDark) Color.Black.copy(alpha = .45f) else oz.fg.copy(alpha = .10f),
+            spotColor = if (oz.isDark) Color.Black.copy(alpha = .5f) else oz.fg.copy(alpha = .12f),
+        )
         .clip(shape)
         .background(oz.sheet)
         .border(1.dp, oz.line, shape)

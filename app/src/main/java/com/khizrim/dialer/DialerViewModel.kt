@@ -211,7 +211,7 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     val homeHasMissed: Boolean get() = home.any { it.missedNote != null }
 
     private fun rebuildHome() {
-        class Acc(var last: Long = 0L, var lastMissed: Long = 0L, var lastOther: Long = 0L, var number: String? = null, var lastCall: CallRecord? = null) {
+        class Acc(var last: Long = 0L, var lastMissed: Long = 0L, var lastOther: Long = 0L, var number: String? = null, var lastCall: CallRecord? = null, var lastAct: com.khizrim.dialer.data.Interaction? = null) {
             val missedAt = ArrayList<Long>()
         }
         val acc = LinkedHashMap<String, Acc>()
@@ -227,6 +227,7 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
             val a = acc.getOrPut(i.key) { Acc() }
             a.last = maxOf(a.last, i.at)
             a.lastOther = maxOf(a.lastOther, i.at)
+            if (i.at >= (a.lastAct?.at ?: 0L)) a.lastAct = i
         }
         val personByKey = people.associateBy { it.key }
         val entries = acc.mapNotNull { (key, a) ->
@@ -236,7 +237,16 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
             val missed = if (a.lastMissed > a.lastOther) Dates.missed(res, a.lastMissed, a.missedAt.count { it > a.lastOther }) else null
             // исходящий без ответа — тоже стоит сказать; обычный звонок второй строки не получает
             val lc = a.lastCall
-            val note = if (missed == null && lc != null && lc.date == a.last && lc.type == android.provider.CallLog.Calls.OUTGOING_TYPE && lc.duration <= 0) str(R.string.outgoing_no_answer) else null
+            // направление видно только у исходящих: входящий отвеченный — обычный случай, без подписи
+            val act = a.lastAct
+            val note = when {
+                missed != null -> null
+                lc != null && lc.date == a.last && lc.type == android.provider.CallLog.Calls.OUTGOING_TYPE ->
+                    if (lc.duration <= 0) str(R.string.outgoing_no_answer) else str(R.string.h_outgoing)
+                // последним было наше действие через мессенджер: говорим, каким способом
+                act != null && act.at == a.last -> act.method.label(ctx)
+                else -> null
+            }
             HomeEntry(key, person, if (person == null) a.number else null, a.last, missed, note)
         }.sortedBy { it.lastAt }.takeLast(FEED_SIZE).ifEmpty {
             // истории ещё нет: показываем избранных, чтобы главная не была пустой
