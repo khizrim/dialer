@@ -10,6 +10,7 @@ import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.provider.CallLog.Calls
 import android.telecom.Call
 import android.telecom.CallAudioState
 import android.telecom.InCallService
@@ -199,11 +200,10 @@ object CallNotifications {
 
     /** Новые (непрочитанные) пропущенные из журнала, по номеру: сколько раз и когда последний. */
     private fun newMissed(context: Context): List<MissedGroup> = runCatching {
-        val c = android.provider.CallLog.Calls
         val rows = ArrayList<Triple<String, Long, String?>>()
         context.contentResolver.query(
-            c.CONTENT_URI, arrayOf(c.NUMBER, c.DATE, c.PHONE_ACCOUNT_ID),
-            "${c.TYPE} = ${c.MISSED_TYPE} AND ${c.NEW} = 1", null, "${c.DATE} DESC",
+            Calls.CONTENT_URI, arrayOf(Calls.NUMBER, Calls.DATE, Calls.PHONE_ACCOUNT_ID),
+            "${Calls.TYPE} = ${Calls.MISSED_TYPE} AND ${Calls.NEW} = 1", null, "${Calls.DATE} DESC",
         )?.use { cur -> while (cur.moveToNext() && rows.size < 200) rows += Triple(cur.getString(0).orEmpty(), cur.getLong(1), cur.getString(2)) }
         rows.filter { it.first.isNotBlank() }
             .groupBy { com.khizrim.dialer.data.Numbers.key(it.first) }
