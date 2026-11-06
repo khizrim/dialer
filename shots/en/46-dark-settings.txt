@@ -1,0 +1,26 @@
+(64, 191, 392, 316)	Settings	
+(64, 400, 390, 445)	Unknown numbers	
+(32, 456, 1048, 603)		Silence unknown callers
+(64, 504, 900, 555)	Silence unknown callers	
+(64, 603, 1016, 750)		Suspicious calls: Silence
+(64, 651, 888, 702)	Suspicious calls	
+(888, 654, 1016, 699)	Silence	
+(64, 750, 551, 795)	No ring, labelled in your log.	
+(64, 816, 1016, 914)	Number registry from 26 October 2026, all on your phone.	
+(64, 956, 1016, 1103)		Caller ID app: Phone
+(64, 1004, 905, 1055)	Caller ID app	
+(905, 1007, 1016, 1052)	Phone	
+(64, 1103, 634, 1148)	Shows its own card over the call.	
+(64, 1196, 410, 1247)	Blocked numbers	
+(64, 1358, 275, 1403)	Appearance	
+(32, 1414, 1048, 1561)		Short names in favourites
+(64, 1462, 900, 1513)	Short names in favourites	
+(64, 1609, 262, 1660)	Language	
+(733, 1612, 1016, 1657)	As on the phone	
+(64, 1771, 195, 1816)	Backup	
+(64, 1848, 637, 1899)	Save people settings to a file	
+(64, 1910, 642, 1955)	Ways to reach, numbers, blocked	
+(64, 1997, 428, 2048)	Restore from a file	
+(64, 2059, 969, 2104)	Matched by phone numbers, nothing else is touched	
+(64, 2188, 135, 2233)	App	
+(64, 2292, 323, 2295)	Clear call log	

@@ -1,0 +1,37 @@
+(42, 126, 529, 284)	Internet, AndroidWifi	Internet,AndroidWifi
+(163, 179, 418, 230)	Internet	
+(550, 126, 1037, 284)	Bluetooth, On	Bluetooth.
+(671, 179, 979, 230)	Bluetooth	
+(42, 305, 529, 463)	Flashlight, Off	Flashlight
+(163, 358, 471, 409)	Flashlight	
+(550, 305, 1037, 463)	Do Not Disturb, Off	Do Not Disturb.
+(671, 358, 979, 409)	Do Not Disturb	
+(179, 620, 362, 663)	Ozero Phone	
+(852, 568, 1038, 715)		Expand
+(894, 610, 933, 673)	6	
+(179, 694, 725, 745)	Missed call from Сергей Работа	
+(725, 694, 1006, 745)	+7 (495) 123-45-67	
+(179, 766, 569, 817)	Missed call from Дима	
+(569, 766, 1006, 817)	+7 (985) 123-45-67	
+(179, 838, 723, 889)	Missed call from Аня Смирнова	
+(723, 838, 1006, 889)	+7 (903) 555-66-77	
+(179, 910, 789, 961)	Missed call from +7 (499) 700-11-22	
+(179, 982, 572, 1033)	Missed call from Мама	
+(572, 982, 1006, 1033)	+7 (916) 111-22-33	
+(53, 1122, 207, 1248)	Silent	
+(179, 1305, 405, 1348)	Android System	
+(852, 1253, 1038, 1400)		Expand
+(894, 1295, 933, 1358)	2	
+(179, 1379, 561, 1430)	Serial console enabled	
+(561, 1379, 1006, 1430)	Performance is impacted. To disable, check bootloader.	
+(179, 1451, 840, 1502)	Configure AT Translated Set 2 keyboard	
+(840, 1451, 1006, 1502)	Tap to select language and layout	
+(84, 1581, 321, 1707)	Manage	Manage
+(759, 1581, 996, 1707)	Clear all	Clear all notifications.
+(50, 0, 138, 126)	5:52 	5:52 PM
+(159, 31, 481, 94)	Fri, Nov 6	
+(756, 34, 803, 92)		Speakerphone enabled.
+(810, 43, 849, 82)		Wifi signal full.
+(849, 34, 888, 92)		Phone signal full.
+(904, 32, 1027, 95)		Battery charging, 100 percent.
+(924, 32, 1027, 95)	100%	

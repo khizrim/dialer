@@ -1,0 +1,7 @@
+(63, 1341, 158, 1386)	1 of 2	
+(63, 1407, 568, 1532)	Ozero Phone	
+(163, 1620, 717, 1671)	People, not lists of numbers	
+(163, 1720, 785, 1771)	Unknown callers can stay quiet	
+(163, 1820, 795, 1871)	Everything stays on your phone	
+(298, 2027, 783, 2078)	Make default phone app	
+(64, 2191, 231, 2242)	Not now	

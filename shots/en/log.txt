@@ -1,0 +1,107 @@
+shot shots/en/01-home
+call zones start x: [('Мама', 642), ('Аня Смирнова', 642), ('Илья Петров', 642), ('Дима', 642), ('+7 (499) 700-11-22', 642), ('Папа', 642)]
+feed rows: [(200, 1807, 'Мама'), (200, 1589, 'Аня Смирнова'), (200, 1371, 'Илья Петров'), (200, 1153, 'Дима'), (200, 949, '+7 (499) 700-11-22'), (200, 626, 'Папа')]
+shot shots/en/02-after-vertical-swipes
+calls before/after vertical swipes: 11 -> 11
+shot shots/en/03-feed-pull-up-scrolls
+video pull-up-contacts
+shot shots/en/04-contacts-sheet
+shot shots/en/05-contacts-keyboard-hidden
+index bounds: [(1006, 390, 1080, 1875)]
+shot shots/en/06-index-tap-lower
+video index-scrub
+shot shots/en/07-index-after-scrub
+shot shots/en/08-contacts-scrolled
+call zones start x: [('Мама', 642), ('Аня Смирнова', 642), ('Илья Петров', 642), ('Дима', 642), ('+7 (499) 700-11-22', 642), ('Папа', 642)]
+rows: [(200, 1807, 'Мама'), (200, 1589, 'Аня Смирнова'), (200, 1371, 'Илья Петров'), (200, 1153, 'Дима'), (200, 949, '+7 (499) 700-11-22'), (200, 626, 'Папа')]
+video feed-row-right-tap
+shot shots/en/09-after-feed-right-tap
+right-third tap 'Мама': calls 11 -> 12 state=
+call zones start x: [('Мама', 642), ('Аня Смирнова', 642), ('Илья Петров', 642), ('Дима', 642), ('+7 (499) 700-11-22', 642), ('Папа', 642)]
+shot shots/en/10-after-feed-name-tap
+name tap 'Мама': calls 12 -> 12
+call zones start x: [('Мама', 642), ('Аня Смирнова', 642), ('Илья Петров', 642), ('Дима', 642), ('+7 (499) 700-11-22', 642), ('Папа', 642)]
+shot shots/en/11-after-unknown-name-tap
+call zones start x: [('Мама', 642), ('Аня Смирнова', 642), ('Илья Петров', 642), ('Дима', 642), ('+7 (499) 700-11-22', 642), ('Папа', 642)]
+shot shots/en/12-feed-row-menu
+tap Hide
+fast hide-0.5s
+fast hide-1.5s
+undo visible: ['Undo']
+tap Undo
+shot shots/en/13-after-undo
+call zones start x: [('Мама', 642), ('Аня Смирнова', 642), ('Илья Петров', 642), ('Дима', 642), ('+7 (499) 700-11-22', 642), ('Папа', 642)]
+fast feed-swipe-1s
+video feed-row-swipe-left
+shot shots/en/14-after-feed-swipe-left
+call zones start x: [('Мама', 642), ('Аня Смирнова', 642), ('Илья Петров', 642), ('Дима', 642), ('+7 (499) 700-11-22', 642), ('Катя Иванова', 642)]
+video feed-to-card
+shot shots/en/15-card
+card nodes: ['Mon', 'Outgoing', '1 min', 'Yesterday', 'Missed', 'Today', 'Incoming', '4 min', 'Today', 'Outgoing', '2 min', 'Today', 'Outgoing, no answer', 'Мама', 'Remove from favorites', 'Call +7 (916) 111-22-33', '+7 (916) 111-22-33', 'mobile', 'Phone call', 'What a tap on the name does', 'Send SMS', 'SMS', 'Edit contact']
+shot shots/en/16-card-scrolled
+card rows: [(121, 1201, 'Yesterday'), (121, 1278, 'Today'), (121, 1354, 'Today'), (121, 1430, 'Today')]
+video card-history-swipe
+shot shots/en/17-card-after-history-swipe
+video card-pull-down
+shot shots/en/18-after-card-pull-down
+tap Open keypad
+video keypad-open
+shot shots/en/19-keypad-empty
+shot shots/en/20-keypad-t9
+shot shots/en/21-keypad-number
+video keypad-pull-from-keys
+shot shots/en/22-after-keypad-pull-from-keys
+tap Open keypad
+shot shots/en/23-after-keypad-pull-from-suggestions
+tap Open keypad
+shot shots/en/24-keypad-paste-check
+tap Settings
+video to-settings
+shot shots/en/25-settings
+shot shots/en/26-settings-2
+shot shots/en/27-settings-3
+shot shots/en/28-incoming-strip
+strip: [(540, 1846)]
+fast strip-answer-1s
+shot shots/en/29-strip-after-answer
+telecom after strip answer: ACTIVE ACTIVE
+shot shots/en/30-call-ended
+shot shots/en/31-incoming-fullscreen
+answer nodes: [(838, 2230)]
+fast fullscreen-answer-1s
+shot shots/en/32-fullscreen-after-answer
+telecom after fullscreen answer: ACTIVE ACTIVE
+keyguard: mShowingDream=false mDreamingLockscreen=true
+    isKeyguardShowing=true
+shot shots/en/33-lock-answer-ringing
+lock-answer nodes: [(838, 2136), (838, 2230)]
+video lock-answer
+shot shots/en/34-lock-answer-after
+lock-answer: telecom=ACTIVE ACTIVE
+keyguard: mShowingDream=false mDreamingLockscreen=true
+    isKeyguardShowing=true
+shot shots/en/35-lock-decline-ringing
+lock-decline nodes: [(241, 2136), (241, 2230)]
+video lock-decline
+shot shots/en/36-lock-decline-after
+lock-decline: telecom=
+shot shots/en/37-missed-shade
+shot shots/en/38-missed-shade-expanded
+call back buttons: [(253, 1052), (253, 1468)]
+shot shots/en/39-callback-1
+callback 1: state=
+callback 1: last call-log row = Row: 0 number=+74951234567, type=2
+shot shots/en/40-shade-again
+call back now: []
+shot shots/en/41-incoming-unknown
+shot shots/en/42-after-unknown
+shot shots/en/43-dark-home
+tap Open keypad
+shot shots/en/44-dark-keypad
+shot shots/en/45-dark-contacts
+tap Settings
+shot shots/en/46-dark-settings
+shot shots/en/47-font130-home
+tap Open keypad
+shot shots/en/48-font130-keypad
+done

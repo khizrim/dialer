@@ -1,0 +1,47 @@
+(42, 126, 529, 284)	Internet, AndroidWifi	Internet,AndroidWifi
+(163, 179, 418, 230)	Internet	
+(550, 126, 1037, 284)	Bluetooth, On	Bluetooth.
+(671, 179, 979, 230)	Bluetooth	
+(42, 305, 529, 463)	Flashlight, Off	Flashlight
+(163, 358, 471, 409)	Flashlight	
+(550, 305, 1037, 463)	Do Not Disturb, Off	Do Not Disturb.
+(671, 358, 979, 409)	Do Not Disturb	
+(179, 620, 362, 663)	Ozero Phone	
+(891, 568, 1038, 715)		Collapse
+(184, 768, 244, 811)	now	
+(260, 776, 292, 808)		Alerted
+(891, 716, 1038, 863)		Collapse
+(179, 847, 996, 904)	Missed call from Сергей Работа	
+(179, 920, 996, 973)	+7 (495) 123-45-67	
+(147, 989, 359, 1115)	Call back	Call back
+(370, 989, 583, 1115)	Message	Message
+(184, 1184, 244, 1227)	now	
+(260, 1192, 292, 1224)		Alerted
+(891, 1132, 1038, 1279)		Collapse
+(179, 1263, 996, 1320)	Missed call from Дима	
+(179, 1336, 996, 1389)	+7 (985) 123-45-67	
+(147, 1405, 359, 1531)	Call back	Call back
+(370, 1405, 583, 1531)	Message	Message
+(179, 1600, 712, 1651)	Missed call from Аня Смирнова	
+(722, 1606, 733, 1649)	•	
+(743, 1606, 807, 1649)	41 minutes ago	
+(179, 1656, 891, 1709)	+7 (903) 555-66-77	
+(891, 1548, 1038, 1766)		Expand
+(179, 1815, 778, 1866)	Missed call from +7 (499) 700-11-22	
+(788, 1821, 799, 1864)	•	
+(809, 1821, 845, 1864)	5 hours ago	
+(891, 1767, 1038, 1914)		Expand
+(179, 1967, 561, 2018)	Missed call from Мама	
+(571, 1973, 582, 2016)	•	
+(592, 1973, 628, 2016)	1 day ago	
+(179, 2023, 891, 2076)	+7 (916) 111-22-33	
+(891, 1915, 1038, 2133)		Expand
+(891, 2134, 1038, 2316)		Expand
+(76, 2190, 134, 2316)		Android System notification: 
+(50, 0, 138, 126)	5:52 	5:52 PM
+(159, 31, 481, 94)	Fri, Nov 6	
+(756, 34, 803, 92)		Speakerphone enabled.
+(810, 43, 849, 82)		Wifi signal full.
+(849, 34, 888, 92)		Phone signal full.
+(904, 32, 1027, 95)		Battery charging, 100 percent.
+(924, 32, 1027, 95)	100%	

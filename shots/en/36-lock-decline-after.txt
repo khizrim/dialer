@@ -1,0 +1,10 @@
+(244, 603, 835, 1711)	05
+51	5:51
+(84, 207, 257, 256)	Fri, Nov 6	Fri, Nov 6
+(50, 0, 481, 128)	T-Mobile	
+(733, 44, 772, 83)		Wifi signal full.
+(772, 35, 811, 93)		Phone signal full.
+(827, 1, 948, 128)		Battery charging, 100 percent.
+(847, 1, 948, 128)	100%	
+(428, 2190, 651, 2316)	Charged	
+(446, 2018, 634, 2206)		Device locked

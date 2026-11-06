@@ -1,0 +1,5 @@
+shot shots/onb/01-onb-1-role
+tap Make default phone app
+shot shots/onb/02-onb-role-system-dialog
+tap Not now
+shot shots/onb/03-onb-2-perms

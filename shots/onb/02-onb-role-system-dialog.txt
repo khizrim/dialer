@@ -1,0 +1,6 @@
+(133, 981, 947, 1114)	Set Ozero Phone as your default phone app?	
+(259, 1190, 498, 1247)	Ozero Phone	
+(259, 1333, 378, 1390)	Phone	
+(259, 1390, 505, 1441)	Current default	
+(516, 1482, 690, 1624)	Cancel	
+(690, 1482, 978, 1624)	Set as default	

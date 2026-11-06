@@ -1,0 +1,23 @@
+(42, 126, 529, 284)	Internet, AndroidWifi	Internet,AndroidWifi
+(163, 179, 418, 230)	Internet	
+(550, 126, 1037, 284)	Bluetooth, On	Bluetooth.
+(671, 179, 979, 230)	Bluetooth	
+(42, 305, 529, 463)	Flashlight, Off	Flashlight
+(163, 358, 471, 409)	Flashlight	
+(550, 305, 1037, 463)	Do Not Disturb, Off	Do Not Disturb.
+(671, 358, 979, 409)	Do Not Disturb	
+(53, 568, 207, 694)	Silent	
+(179, 751, 405, 794)	Android System	
+(852, 699, 1038, 846)		Expand
+(894, 741, 933, 804)	2	
+(179, 825, 561, 876)	Serial console enabled	
+(561, 825, 1006, 876)	Performance is impacted. To disable, check bootloader.	
+(179, 897, 840, 948)	Configure AT Translated Set 2 keyboard	
+(840, 897, 1006, 948)	Tap to select language and layout	
+(84, 1027, 321, 1153)	Manage	Manage
+(50, 0, 138, 126)	5:53 	5:53 PM
+(159, 31, 481, 94)	Fri, Nov 6	
+(810, 43, 849, 82)		Wifi signal full.
+(849, 34, 888, 92)		Phone signal full.
+(904, 32, 1027, 95)		Battery charging, 100 percent.
+(924, 32, 1027, 95)	100%	

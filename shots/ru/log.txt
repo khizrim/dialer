@@ -1,0 +1,10 @@
+shot shots/ru/01-home
+call zones start x: []
+feed rows: []
+tap Открыть клавиатуру
+shot shots/ru/02-keypad
+video pull-contacts
+shot shots/ru/03-contacts
+call zones start x: []
+tap Настройки
+shot shots/ru/04-settings

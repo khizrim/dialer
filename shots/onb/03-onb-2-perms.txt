@@ -1,0 +1,10 @@
+(63, 1303, 165, 1348)	2 of 2	
+(63, 1369, 800, 1494)	Three permissions	
+(63, 1515, 707, 1566)	Everything stays on your phone.	
+(163, 1650, 342, 1701)	Contacts	
+(163, 1701, 871, 1746)	To show names and how to reach people	
+(163, 1788, 311, 1839)	Call log	
+(163, 1839, 655, 1884)	To keep recent people close	
+(163, 1926, 415, 1977)	Notifications	
+(163, 1977, 776, 2022)	To show incoming and missed calls	
+(407, 2175, 673, 2226)	Allow access	
