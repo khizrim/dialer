@@ -1,0 +1,58 @@
+name: Design roast shots
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [claude/project-thread-jzyps1]
+
+permissions:
+  contents: write
+
+jobs:
+  shots:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 17 }
+      - name: Free disk
+        run: sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL /usr/local/share/boost; df -h /
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules && sudo udevadm trigger --name-match=kvm
+      - name: Build debug APK
+        run: ./gradlew assembleDebug --no-daemon
+      - name: Walk screens in emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disk-size: 3000M
+          cores: 4
+          ram-size: 3072M
+          disable-animations: false
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          script: bash tools/roast/run.sh
+      - name: Frame sheets
+        if: always()
+        run: |
+          [ -d shots ] || exit 0
+          sudo apt-get -qq install -y ffmpeg >/dev/null || true
+          for v in $(find shots -name '*.mp4'); do ffmpeg -loglevel error -i "$v" -vf "fps=10,scale=216:-1,tile=10x3" -frames:v 1 "${v%.mp4}-sheet.png" || true; done
+          find shots -name '*.mp4' -delete
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: roast-shots, path: shots }
+      - name: Publish shots branch
+        if: always()
+        run: |
+          [ -d shots ] || exit 0
+          git config user.name ci; git config user.email ci@users.noreply.github.com
+          git checkout --orphan roast-shots
+          git rm -rq --cached . ; find . -mindepth 1 -maxdepth 1 ! -name shots ! -name .git -exec rm -rf {} +
+          git add shots; git commit -qm "roast shots ${GITHUB_SHA::7}"
+          git push -f origin roast-shots
