@@ -45,7 +45,7 @@ import java.util.Locale
 fun BlockedScreen(vm: DialerViewModel) {
     val oz = LocalOz.current
     Column(Modifier.fillMaxSize()) {
-        LazyColumn(Modifier.weight(1f).fillMaxWidth().padding(horizontal = 24.dp), verticalArrangement = Arrangement.Bottom) {
+        LazyColumn(Modifier.weight(1f).fillMaxWidth().padding(horizontal = 20.dp), verticalArrangement = Arrangement.Bottom) {
             item(key = "title") {
                 Text(stringResource(R.string.blocked_title), style = OzType.namePerson, color = oz.fg, modifier = Modifier.padding(bottom = 16.dp).semantics { heading() })
             }

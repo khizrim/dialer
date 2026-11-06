@@ -3,6 +3,8 @@ package com.khizrim.dialer.ui.components
 import com.khizrim.dialer.ui.theme.lift
 import com.khizrim.dialer.ui.theme.raisedFill
 import com.khizrim.dialer.ui.theme.OzShape
+import com.khizrim.dialer.ui.theme.Gap
+import androidx.compose.ui.draw.clip
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -29,8 +31,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -86,7 +88,7 @@ fun BoxScope.SheetLayer(visible: Boolean, title: String, onDismiss: () -> Unit, 
     val sheetHeight = remember { floatArrayOf(1f) }
     val scope = androidx.compose.runtime.rememberCoroutineScope()
     androidx.compose.runtime.LaunchedEffect(visible) { if (visible) drag.snapTo(0f) }
-    AnimatedVisibility(visible, enter = fadeIn(Motion.move(Motion.MOVE)), exit = fadeOut(Motion.move(Motion.MOVE))) {
+    AnimatedVisibility(visible, enter = fadeIn(Motion.move(Motion.SCRIM)), exit = fadeOut(Motion.move(Motion.SCRIM))) {
         Box(
             Modifier.fillMaxSize()
                 .graphicsLayer { alpha = 1f - (drag.value / sheetHeight[0]).coerceIn(0f, 1f) }
@@ -98,12 +100,16 @@ fun BoxScope.SheetLayer(visible: Boolean, title: String, onDismiss: () -> Unit, 
         visible,
         modifier = Modifier.align(Alignment.BottomCenter),
         enter = if (reduced) fadeIn(Motion.enter(Motion.FADE)) else slideInVertically(Motion.move(Motion.SHEET)) { it },
-        exit = if (reduced) fadeOut(Motion.exit(Motion.FADE)) else slideOutVertically(Motion.move(Motion.MOVE)) { it },
+        exit = if (reduced) fadeOut(Motion.exit(Motion.FADE)) else slideOutVertically(Motion.move(Motion.SHEET)) { it },
     ) {
         val tracker = remember { androidx.compose.ui.input.pointer.util.VelocityTracker() }
+        // как лист Ozero Mail: не шире 560dp, не выше 88% экрана, цвет страницы, без тени — его отделяет затемнение
+        val maxHeight = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp.dp * .88f
         Column(
             Modifier
+                .widthIn(max = 560.dp)
                 .fillMaxWidth()
+                .heightIn(max = maxHeight)
                 .onSizeChanged { sheetHeight[0] = it.height.toFloat().coerceAtLeast(1f) }
                 .graphicsLayer { translationY = drag.value }
                 .pointerInput(onDismiss) {
@@ -128,15 +134,14 @@ fun BoxScope.SheetLayer(visible: Boolean, title: String, onDismiss: () -> Unit, 
                         scope.launch { drag.snapTo((drag.value + amount).coerceAtLeast(0f)) }
                     }
                 }
-                .lift(OzShape.sheetTop)
-                .background(oz.sheet, OzShape.sheetTop)
+                .clip(OzShape.sheetTop)
+                .background(oz.bg)
                 .clickable(remember { MutableInteractionSource() }, null, onClick = {})
                 .semantics { paneTitle = title }
                 .navigationBarsPadding()
-                .padding(top = 12.dp, bottom = 16.dp),
+                .padding(top = 10.dp, bottom = 16.dp),
         ) {
-            Box(Modifier.align(Alignment.CenterHorizontally).size(36.dp, 4.dp).background(oz.line, RoundedCornerShape(2.dp)))
-            Spacer(Modifier.height(12.dp))
+            Box(Modifier.align(Alignment.CenterHorizontally).padding(bottom = 12.dp).size(36.dp, 4.dp).background(oz.handle, RoundedCornerShape(2.dp)))
             content()
         }
     }
@@ -156,21 +161,18 @@ fun BoxScope.MethodSheet(vm: DialerViewModel) {
         if (p == null) return@SheetLayer
         val current = vm.defaultOf(p)
         if (!setMode && reach != neutral) {
-            Text(reach, style = OzType.strong, color = oz.fg, modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 4.dp, bottom = 8.dp))
+            Text(reach, style = OzType.strong, color = oz.fg, modifier = Modifier.padding(start = Gap.sheet, end = Gap.sheet, top = 4.dp, bottom = 8.dp))
         } else {
-            Text(p.name, style = OzType.nameSearch, color = oz.fg, modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 4.dp))
-            Text(title, style = OzType.small, color = oz.fg3, modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 4.dp, bottom = 12.dp))
+            Text(p.name, style = OzType.nameSearch, color = oz.fg, modifier = Modifier.padding(start = Gap.sheet, end = Gap.sheet, top = 4.dp))
+            Text(title, style = OzType.small, color = oz.fg3, modifier = Modifier.padding(start = Gap.sheet, end = Gap.sheet, top = 4.dp, bottom = 12.dp))
         }
         // у телефона и SMS по строке на каждый номер: «Позвонить» и под ним «мобильный  +7 …»
         val chosen = vm.numberFor(p)
         val many = p.phones.size > 1
-        var first = true
         p.methods.forEach { m ->
             val perNumber = m == Method.PHONE || m == Method.SMS
             val numbers: List<com.khizrim.dialer.model.Phone?> = if (perNumber && p.phones.isNotEmpty()) p.phones else listOf(null)
             numbers.forEach { ph ->
-                if (!first) HorizontalDivider(thickness = 1.dp, color = oz.line)
-                first = false
                 val sub = ph?.let { (if (many) it.label + "  " else "") + com.khizrim.dialer.data.PhoneFormat.pretty(it.number) }
                 val selected = m == current && (ph == null || !many || ph.number == chosen)
                 MethodRow(m, stringResource(m.title), selected, sub) { vm.pickInSheet(m, ph?.number) }
@@ -183,7 +185,7 @@ fun BoxScope.MethodSheet(vm: DialerViewModel) {
             else -> null
         }
         if (!setMode && chatOnly != null) {
-            Row(Modifier.fillMaxWidth().padding(start = 24.dp, end = 12.dp, top = 8.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(Modifier.fillMaxWidth().padding(start = Gap.sheet, end = 12.dp, top = 8.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 OzIcon(R.drawable.ic_oz_swap, oz.fg3, size = 18.dp, modifier = Modifier.padding(top = 2.dp))
                 Column(Modifier.weight(1f)) {
                     Text(stringResource(R.string.sync_hint, chatOnly), style = OzType.small, color = oz.fg3)
@@ -191,7 +193,7 @@ fun BoxScope.MethodSheet(vm: DialerViewModel) {
                 }
             }
         }
-        HorizontalDivider(Modifier.padding(top = 4.dp), thickness = 1.dp, color = oz.line)
+        Spacer(Modifier.height(4.dp))
         SheetRow(if (setMode) stringResource(R.string.ask_every_time) else stringResource(R.string.make_default), oz.fg3, vm::sheetFooter)
     }
 }
@@ -202,12 +204,12 @@ private fun MethodRow(m: Method, label: String, selected: Boolean, sub: String? 
     Row(
         Modifier
             .fillMaxWidth()
-            .heightIn(min = 56.dp)
+            .heightIn(min = 52.dp)
             .press(onClick, shape = RoundedCornerShape(0.dp), role = Role.RadioButton)
             .semantics { this.selected = selected }
-            .padding(horizontal = 24.dp),
+            .padding(horizontal = Gap.sheet),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        horizontalArrangement = Arrangement.spacedBy(Gap.afterSlot),
     ) {
         OzIcon(m.icon, oz.fg2)
         Column(Modifier.weight(1f).padding(vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -225,9 +227,9 @@ private fun MethodRow(m: Method, label: String, selected: Boolean, sub: String? 
 private fun SheetRow(text: String, color: Color, onClick: () -> Unit, icon: Int? = null) {
     val oz = LocalOz.current
     Row(
-        Modifier.fillMaxWidth().heightIn(min = 56.dp).press(onClick, shape = RoundedCornerShape(0.dp)).padding(horizontal = 24.dp),
+        Modifier.fillMaxWidth().heightIn(min = 52.dp).press(onClick, shape = RoundedCornerShape(0.dp)).padding(horizontal = Gap.sheet),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        horizontalArrangement = Arrangement.spacedBy(Gap.afterSlot),
     ) {
         if (icon != null) OzIcon(icon, oz.fg3)
         Text(text, style = OzType.body, color = color)
@@ -243,7 +245,7 @@ fun BoxScope.SimPickSheet(vm: DialerViewModel) {
         if (pick == null) return@SheetLayer
         Text(
             pick.who, style = OzType.nameSearch, color = oz.fg, maxLines = 1,
-            modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 4.dp, bottom = 8.dp),
+            modifier = Modifier.padding(start = Gap.sheet, end = Gap.sheet, top = 4.dp, bottom = 8.dp),
         )
         val usual = vm.usualSim(pick.number)
         vm.sims.forEach { (id, label) ->
@@ -251,7 +253,7 @@ fun BoxScope.SimPickSheet(vm: DialerViewModel) {
             val slot = label.substringBefore(" · ")
             Column(
                 Modifier.fillMaxWidth().heightIn(min = 64.dp).press({ vm.callWithSim(id) }, shape = RoundedCornerShape(0.dp), label = label)
-                    .padding(horizontal = 24.dp, vertical = 10.dp),
+                    .padding(horizontal = Gap.sheet, vertical = 10.dp),
                 verticalArrangement = Arrangement.Center,
             ) {
                 Text(carrier, style = OzType.body.copy(fontSize = 18.sp), color = oz.fg, maxLines = 1)
@@ -277,7 +279,7 @@ fun BoxScope.PersonMenu(vm: DialerViewModel) {
             e.title,
             style = if (p != null) OzType.nameSearch else OzType.number,
             color = oz.fg,
-            modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 4.dp, bottom = 8.dp),
+            modifier = Modifier.padding(start = Gap.sheet, end = Gap.sheet, top = 4.dp, bottom = 8.dp),
         )
         if (p != null) {
             SheetRow(stringResource(R.string.other_way), oz.fg, { vm.openSheet(p, SheetMode.OTHER) }, R.drawable.ic_oz_swap)
@@ -350,26 +352,30 @@ fun BoxScope.ConfirmLayer(vm: DialerViewModel) {
 
 /** Плавающий тост для всего, кроме «Вернуть» (тот живёт в нижней панели главной). */
 @Composable
-fun BoxScope.FloatToast(toast: ToastState?, bottom: androidx.compose.ui.unit.Dp, end: androidx.compose.ui.unit.Dp = 12.dp, undoHere: Boolean = false, onUndo: () -> Unit = {}) {
+fun BoxScope.FloatToast(toast: ToastState?, bottom: androidx.compose.ui.unit.Dp, end: androidx.compose.ui.unit.Dp = Gap.bar, undoHere: Boolean = false, onUndo: () -> Unit = {}) {
     val oz = LocalOz.current
     // «Вернуть» на главной живёт в нижней панели, на остальных экранах — в этом тосте
     val visible = toast != null && (!toast.undo || undoHere)
     val t = rememberLast(if (visible) toast else null)
+    val density = androidx.compose.ui.platform.LocalDensity.current
     AnimatedVisibility(
         visible,
-        modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(start = 12.dp, end = end, bottom = bottom),
-        enter = fadeIn(Motion.enter(Motion.MOVE)), exit = fadeOut(Motion.exit(Motion.FADE)),
+        modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(start = Gap.bar, end = end, bottom = bottom),
+        // как тост Ozero Mail: проявляется и поднимается на 16dp
+        enter = fadeIn(Motion.enter(Motion.MOVE)) + slideInVertically(Motion.move(Motion.NOTE)) { with(density) { 16.dp.roundToPx() } },
+        exit = fadeOut(Motion.exit(Motion.FADE)),
     ) {
         Row(
             Modifier
+                .widthIn(max = 560.dp)
                 .fillMaxWidth()
                 .heightIn(min = 52.dp)
-                .lift(OzShape.row).background(oz.fg, OzShape.row)
+                .lift(OzShape.row).background(oz.toastBg, OzShape.row)
                 .semantics { liveRegion = LiveRegionMode.Polite }
                 .padding(start = 16.dp, end = if (t?.undo == true || t?.action != null) 6.dp else 16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(t?.text ?: "", style = OzType.small, color = oz.bg, modifier = Modifier.weight(1f).padding(vertical = 14.dp))
+            Text(t?.text ?: "", style = OzType.small, color = oz.toastFg, modifier = Modifier.weight(1f).padding(vertical = 14.dp))
             if (t?.undo == true || t?.action != null) TextAction(t.action ?: stringResource(R.string.undo), oz.toastAct, onUndo, style = OzType.small.copy(fontWeight = FontWeight.SemiBold))
         }
     }
@@ -384,11 +390,11 @@ fun BoxScope.SyncHelpSheet(vm: DialerViewModel) {
     val context = androidx.compose.ui.platform.LocalContext.current
     SheetLayer(vm.syncHelp != null, stringResource(R.string.sync_title, app.orEmpty()), vm::closeSyncHelp) {
         if (app == null) return@SheetLayer
-        Text(stringResource(R.string.sync_title, app), style = OzType.nameSearch, color = oz.fg, modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 4.dp, bottom = 12.dp))
+        Text(stringResource(R.string.sync_title, app), style = OzType.nameSearch, color = oz.fg, modifier = Modifier.padding(start = Gap.sheet, end = Gap.sheet, top = 4.dp, bottom = 12.dp))
         val steps = if (app == "Telegram") listOf(R.string.sync_tg_1, R.string.sync_tg_2, R.string.sync_tg_3, R.string.sync_back)
         else listOf(R.string.sync_wa_1, R.string.sync_wa_2, R.string.sync_wa_3, R.string.sync_back)
         steps.forEachIndexed { i, s ->
-            Row(Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            Row(Modifier.fillMaxWidth().padding(horizontal = Gap.sheet, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 Text("${i + 1}", style = OzType.body, color = oz.fg3)
                 Text(stringResource(s), style = OzType.body, color = oz.fg, modifier = Modifier.weight(1f))
             }
@@ -397,7 +403,7 @@ fun BoxScope.SyncHelpSheet(vm: DialerViewModel) {
         val launch = remember(pkg) { context.packageManager.getLaunchIntentForPackage(pkg) }
         if (launch != null) {
             Box(
-                Modifier.padding(start = 24.dp, end = 24.dp, top = 16.dp).fillMaxWidth().height(56.dp)
+                Modifier.padding(start = Gap.sheet, end = Gap.sheet, top = 16.dp).fillMaxWidth().height(56.dp)
                     .raisedFill(oz.accentFill, OzShape.main)
                     .press({ vm.closeSyncHelp(); runCatching { context.startActivity(launch) } }, shape = OzShape.main, pressColor = Color.White.copy(alpha = .12f)),
                 contentAlignment = Alignment.Center,

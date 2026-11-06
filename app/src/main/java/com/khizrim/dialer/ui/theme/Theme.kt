@@ -43,6 +43,11 @@ data class OzColors(
     val press: Color,
     val scrim: Color,
     val toastAct: Color,
+    /** Тост, как у Mail: тёмная плашка днём, светлая ночью. */
+    val toastBg: Color,
+    val toastFg: Color,
+    /** Ручка листа. */
+    val handle: Color,
     val isDark: Boolean,
 )
 
@@ -51,7 +56,8 @@ val LightOz = OzColors(
     fg = Color(0xFF142036), fg2 = Color(0xFF3D4A63), fg3 = Color(0xFF66728A), line = Color(0xFFE9EEF5),
     accent = Color(0xFF1A6FE0), accentFill = Color(0xFF2F8CFF),
     danger = Color(0xFFC94452), dangerFill = Color(0xFFDF5260), warn = Color(0xFFA8551B), warnSoft = Color(0xFFFBF1E8),
-    press = Color(0x12142036), scrim = Color(0x570A1428), toastAct = Color(0xFF6AB2FF), isDark = false,
+    press = Color(0x12142036), scrim = Color(0x570A1428), toastAct = Color(0xFF8CC2FF),
+    toastBg = Color(0xFF1B2639), toastFg = Color(0xFFF2F5FA), handle = Color(0xFFE3E9F2), isDark = false,
 )
 
 val DarkOz = OzColors(
@@ -60,7 +66,8 @@ val DarkOz = OzColors(
     accent = Color(0xFF6AB2FF), accentFill = Color(0xFF2F8CFF),
     // на кнопке «Сбросить» лежит белая трубка, поэтому заливка та же, что днём, а не светлый текстовый тон
     danger = Color(0xFFEE6672), dangerFill = Color(0xFFDF5260), warn = Color(0xFFF0A46B), warnSoft = Color(0xFF2A2320),
-    press = Color(0x14FFFFFF), scrim = Color(0x8C000000), toastAct = Color(0xFF1A6FE0), isDark = true,
+    press = Color(0x14FFFFFF), scrim = Color(0x8C000000), toastAct = Color(0xFF1A6FE0),
+    toastBg = Color(0xFFE5E9F1), toastFg = Color(0xFF141923), handle = Color(0xFF2B3343), isDark = true,
 )
 
 val LocalOz = staticCompositionLocalOf { LightOz }

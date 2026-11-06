@@ -1,5 +1,7 @@
 package com.khizrim.dialer.ui.components
 
+import com.khizrim.dialer.ui.theme.Gap
+
 import com.khizrim.dialer.ui.theme.raisedFill
 import com.khizrim.dialer.ui.theme.well
 import com.khizrim.dialer.ui.theme.lift
@@ -230,7 +232,8 @@ fun TextAction(
 @Composable
 fun BottomBar(content: @Composable RowScope.() -> Unit) {
     Row(
-        Modifier.fillMaxWidth().padding(start = 12.dp, end = 24.dp, top = 8.dp, bottom = 16.dp),
+        // поля как у причала Ozero Mail: 12 по бокам, 10 сверху, 12 снизу
+        Modifier.fillMaxWidth().padding(start = Gap.bar, end = Gap.bar, top = Gap.barTop, bottom = Gap.barBottom),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
         content = content,

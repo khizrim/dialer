@@ -125,7 +125,7 @@ fun CallScreen(c: CallState, actions: CallActions, locked: Boolean = false) {
     val bgBrush = if (c.suspicious) androidx.compose.ui.graphics.Brush.verticalGradient(0f to oz.warnSoft, .7f to oz.bg) else androidx.compose.ui.graphics.SolidColor(oz.bg)
     Box(Modifier.fillMaxSize().background(bgBrush)) {
         Column(
-            Modifier.fillMaxSize().safeDrawingPadding().padding(horizontal = 24.dp),
+            Modifier.fillMaxSize().safeDrawingPadding().padding(horizontal = 20.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             // после «Ответить» имя спокойно опускается на место разговора, а не перескакивает на 88 dp
