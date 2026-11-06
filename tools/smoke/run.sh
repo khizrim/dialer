@@ -21,6 +21,16 @@ adb emu gsm cancel +79161112233; shot 05-after 4
 adb emu gsm call +74997001122; sleep 6; adb emu gsm cancel +74997001122; sleep 3
 adb shell cmd statusbar expand-notifications; shot 06-missed 3
 adb shell cmd statusbar collapse
+# два пропущенных от разных номеров; «Перезвонить» одному оставляет уведомление второго
+adb shell input keyevent HOME
+adb emu gsm call +79851234567; sleep 6; adb emu gsm cancel +79851234567; sleep 4
+missed() { adb shell dumpsys notification --noredact | grep -c "tag=missed:" ; }
+echo "missed before: $(missed)" | tee $S/missed.txt
+adb shell am start -n $P/.MainActivity -a com.khizrim.dialer.CALL_BACK -d tel:+79851234567; sleep 5
+adb emu gsm cancel +79851234567; sleep 4
+adb shell input keyevent HOME; sleep 2
+echo "missed after call back: $(missed)" | tee -a $S/missed.txt
+adb shell dumpsys notification --noredact | grep "tag=missed:" | tee -a $S/missed.txt
 adb shell am start -a android.intent.action.CALL -d tel:+79035556677; shot 07-outgoing 5
 adb emu gsm cancel +79035556677; sleep 3
 adb shell monkey -p $P -c android.intent.category.LAUNCHER 1; shot 08-home-after 4
