@@ -1,0 +1,10 @@
+(53, 1349, 152, 1394)	2 of 2	
+(53, 1415, 653, 1504)	Three permissions	
+(53, 1525, 697, 1576)	Everything stays on your phone.	
+(153, 1660, 332, 1711)	Contacts	
+(153, 1711, 851, 1756)	To show names and how to reach people	
+(153, 1798, 301, 1849)	Call log	
+(153, 1849, 637, 1894)	To keep recent people close	
+(153, 1936, 405, 1987)	Notifications	
+(153, 1987, 756, 2032)	To show incoming and missed calls	
+(407, 2185, 673, 2236)	Allow access	

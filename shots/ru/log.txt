@@ -1,0 +1,9 @@
+shot shots/ru/01-home
+feed rows: []
+tap Открыть клавиатуру
+shot shots/ru/02-keypad
+video pull-contacts
+shot shots/ru/03-contacts
+fallback coords: Настройки
+tap Настройки
+shot shots/ru/04-settings

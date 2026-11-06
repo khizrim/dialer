@@ -1,0 +1,55 @@
+shot shots/en/01-home
+feed rows: []
+shot shots/en/02-card-sheet
+tap Contacts
+shot shots/en/03-contacts-button
+shot shots/en/04-card-from-contacts
+shot shots/en/05-after-vertical-swipes
+calls before/after vertical swipes: 11 -> 11
+video pull-up-contacts
+shot shots/en/06-contacts-sheet
+shot shots/en/07-contacts-keyboard-hidden
+index bounds: []
+shot shots/en/08-contacts-scrolled
+rows: []
+tap Open keypad
+video keypad-open
+shot shots/en/09-keypad-empty
+shot shots/en/10-keypad-t9
+shot shots/en/11-keypad-number
+video keypad-pull-from-keys
+shot shots/en/12-after-keypad-pull-from-keys
+tap Open keypad
+shot shots/en/13-after-keypad-pull-from-suggestions
+tap Open keypad
+shot shots/en/14-keypad-paste-check
+fallback coords: Settings
+tap Settings
+video to-settings
+shot shots/en/15-settings
+shot shots/en/16-settings-2
+shot shots/en/17-settings-3
+shot shots/en/18-incoming-strip
+strip: [(540, 1851)]
+fast strip-answer-1s
+shot shots/en/19-strip-after-answer
+telecom after strip answer: ACTIVE ACTIVE
+shot shots/en/20-call-ended
+shot shots/en/21-incoming-fullscreen
+answer nodes: [(848, 2230)]
+fast fullscreen-answer-1s
+shot shots/en/22-fullscreen-after-answer
+telecom after fullscreen answer: ACTIVE ACTIVE
+shot shots/en/23-incoming-unknown
+shot shots/en/24-after-unknown
+shot shots/en/25-dark-home
+tap Open keypad
+shot shots/en/26-dark-keypad
+shot shots/en/27-dark-contacts
+fallback coords: Settings
+tap Settings
+shot shots/en/28-dark-settings
+shot shots/en/29-font130-home
+tap Open keypad
+shot shots/en/30-font130-keypad
+done

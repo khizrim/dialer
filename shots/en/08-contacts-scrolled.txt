@@ -1,0 +1,28 @@
+(57, 725, 298, 1040)	Calendar	Calendar
+(298, 725, 540, 1040)	Camera	Camera
+(540, 725, 781, 1040)	Chrome	Chrome
+(781, 725, 1023, 1040)	Clock	Clock
+(57, 1040, 298, 1355)	Contacts	Contacts
+(298, 1040, 540, 1355)	Drive	Drive
+(540, 1040, 781, 1355)	Files	Files
+(781, 1040, 1023, 1355)	Gmail	Gmail
+(57, 1355, 298, 1670)	Google	Google
+(298, 1355, 540, 1670)	Maps	Maps
+(540, 1355, 781, 1670)	Messages	Messages
+(781, 1355, 1023, 1670)	Ozero Phone	Ozero Phone
+(57, 1670, 298, 1985)	Phone	Phone
+(298, 1670, 540, 1985)	Photos	Photos
+(540, 1670, 781, 1985)	Settings	Settings
+(781, 1670, 1023, 1985)	TMoble	TMoble
+(57, 1985, 298, 2300)	YouTube	YouTube
+(298, 1985, 540, 2300)	YT Music	YT Music
+(57, 328, 298, 611)	YouTube	YouTube
+(298, 328, 539, 611)	Settings	Settings
+(539, 328, 781, 611)	Photos	Photos
+(781, 328, 1023, 611)	Gmail	Gmail
+(98, 146, 982, 311)		Search
+(109, 165, 235, 291)		Google app
+(246, 156, 834, 301)	Search apps, web and more	
+(719, 165, 845, 291)		Voice search
+(845, 165, 971, 291)		Google Lens
+(0, 128, 1080, 2337)		Home
