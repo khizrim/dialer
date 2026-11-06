@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="cid_join">%1$s · %2$s</string>
+    <string name="cid_hidden">Hidden number</string>
+    <string name="cid_toll_free">Toll-free line</string>
+    <string name="cid_landline">Landline</string>
+    <string name="cid_virtual">Virtual number</string>
+    <string name="cid_foreign">International number</string>
+    <string name="cid_spam">Likely spam</string>
+    <string name="cid_spoofed">Likely spoofed number</string>
+    <string name="cid_search_web">Search the web</string>
+
+    <string name="spam_action_title">Suspicious calls</string>
+    <string name="spam_action_silence">Silence</string>
+    <string name="spam_action_reject">Decline</string>
+    <string name="spam_action_label">Label only</string>
+    <string name="spam_action_silence_text">No ring, labelled in your log.</string>
+    <string name="spam_action_reject_text">Declined, kept in your log.</string>
+    <string name="spam_action_label_text">Ring as usual, with a label.</string>
+    <string name="spam_about">Number registry from %1$s, all on your phone.</string>
+    <string name="spam_about_nodate">Number registry on your phone, nothing leaves it.</string>
+
+    <string name="ext_cid_title">Caller ID app</string>
+    <string name="ext_cid_none">None</string>
+    <string name="ext_cid_text">Shows its own card over the call.</string>
+    <string name="ext_cid_text_none">You can add Yandex or Kaspersky Who Calls.</string>
+    <string name="ext_cid_blocked_by">Blocked by %1$s</string>
+    <string name="spam_db_stale">Database is over 3 months old: unknown numbers are only labelled.</string>
+    <string name="ext_cid_off">%1$s · off</string>
+    <string name="ext_cid_text_off">Turn on caller ID in «%1$s», then pick it here.</string>
+</resources>

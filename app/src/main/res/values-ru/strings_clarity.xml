@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="main_number">основной</string>
+    <string name="make_main">Сделать основным</string>
+    <string name="call_mic">Микрофон</string>
+    <string name="call_mic_off">Микрофон выкл.</string>
+    <string name="call_digits">Цифры</string>
+    <string name="outgoing_no_answer">Исходящий, без ответа</string>
+    <plurals name="feed_missed_many">
+        <item quantity="one">%1$d пропущенный, последний %2$s</item>
+        <item quantity="few">%1$d пропущенных, последний %2$s</item>
+        <item quantity="many">%1$d пропущенных, последний %2$s</item>
+        <item quantity="other">%1$d пропущенных, последний %2$s</item>
+    </plurals>
+    <plurals name="silent_unknown">
+        <item quantity="one">%1$d незнакомый без звука</item>
+        <item quantity="few">%1$d незнакомых без звука</item>
+        <item quantity="many">%1$d незнакомых без звука</item>
+        <item quantity="other">%1$d незнакомых без звука</item>
+    </plurals>
+    <string name="silenced">без звука</string>
+    <string name="not_default_dialer">Ozero Phone не звонилка по умолчанию</string>
+    <string name="fix_it">Исправить</string>
+    <string name="paste_number">Вставить %1$s</string>
+    <string name="create_named">Создать контакт «%1$s»</string>
+    <string name="create_with_number">Создать контакт с этим номером</string>
+    <string name="sim_ask">SIM: спросить</string>
+    <string name="sim_switch">Сменить SIM</string>
+    <string name="way_call">Звонок</string>
+    <string name="way_video">Видео</string>
+    <string name="way_write">Написать</string>
+    <string name="way_sms">SMS</string>
+    <string name="card_dur_sec">%1$d с</string>
+    <string name="card_dur_min">%1$d мин</string>
+    <string name="card_to_number">на %1$s</string>
+    <plurals name="missed_many_from">
+        <item quantity="one">%1$d пропущенный от %2$s</item>
+        <item quantity="few">%1$d пропущенных от %2$s</item>
+        <item quantity="many">%1$d пропущенных от %2$s</item>
+        <item quantity="other">%1$d пропущенного от %2$s</item>
+    </plurals>
+    <string name="sim_usual">%1$s · обычно</string>
+</resources>

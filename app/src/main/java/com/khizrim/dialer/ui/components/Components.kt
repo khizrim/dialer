@@ -1,9 +1,15 @@
 package com.khizrim.dialer.ui.components
 
+import com.khizrim.dialer.ui.theme.raisedFill
+import com.khizrim.dialer.ui.theme.well
+import com.khizrim.dialer.ui.theme.lift
+import com.khizrim.dialer.ui.theme.OzShape
+
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -24,7 +30,19 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.changedToDownIgnoreConsumed
+import kotlinx.coroutines.launch
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.composed
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.text.drawText
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
@@ -64,6 +82,8 @@ private fun Modifier.ozPressImpl(
     val reduced = LocalReducedMotion.current
     val source = remember { MutableInteractionSource() }
     val pressed by source.collectIsPressedAsState()
+    val guard = remember { TapGuard.Touch() }
+    val guardOn = LocalTapGuard.current
     val scale by animateFloatAsState(
         targetValue = if (pressed && !reduced) 0.98f else 1f,
         animationSpec = Motion.enter(Motion.PRESS),
@@ -73,16 +93,57 @@ private fun Modifier.ozPressImpl(
         .graphicsLayer { scaleX = scale; scaleY = scale }
         .clip(shape)
         .background(if (pressed) pressColor ?: oz.press else Color.Transparent)
+        .pointerInput(Unit) { trackTouch(guard) }
         .combinedClickable(
             interactionSource = source,
             indication = null,
             role = role,
             onClickLabel = null,
-            onLongClickLabel = if (onLongClick != null) "Меню" else null,
-            onLongClick = onLongClick,
-            onClick = onClick,
+            onLongClickLabel = if (onLongClick != null) stringResource(R.string.menu) else null,
+            onLongClick = onLongClick?.let { l -> { if (!guardOn || guard.sameScreen()) l() } },
+            onClick = { if (!guardOn || guard.isTap()) onClick() },
         )
         .let { if (label != null) it.semantics { contentDescription = label } else it }
+}
+
+/**
+ * Нажатие считается только чистым касанием: палец не уехал дальше touch slop,
+ * никто выше (список, свайп стопки, шторка) не забрал движение и экран не сменился,
+ * пока палец был на стекле. Любой жест с движением вызовом не заканчивается.
+ */
+/** false на экране звонка: «Ответить» и «Сбросить» нажимаются всегда, их не глушит смена экрана в основном окне. */
+val LocalTapGuard = androidx.compose.runtime.staticCompositionLocalOf { true }
+
+object TapGuard {
+    /** Растёт при каждой смене экрана; касание, начатое на прошлом экране, не нажимает. */
+    @Volatile var gen = 0
+    class Touch {
+        var gen = 0; var moved = false; var active = false
+        // нажатие из TalkBack приходит без касания (active = false) — его не трогаем
+        fun isTap() = !active || (!moved && gen == TapGuard.gen)
+        fun sameScreen() = !active || gen == TapGuard.gen
+    }
+}
+
+private suspend fun androidx.compose.ui.input.pointer.PointerInputScope.trackTouch(t: TapGuard.Touch) {
+    val slop = viewConfiguration.touchSlop
+    awaitEachGesture {
+        val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+        t.gen = TapGuard.gen; t.moved = false; t.active = true
+        var dx = 0f; var dy = 0f
+        try { while (true) {
+            // Final — после всех: видно, если список или родительский жест забрал движение
+            val ev = awaitPointerEvent(PointerEventPass.Final)
+            val c = ev.changes.firstOrNull { it.id == down.id } ?: break
+            if (!c.pressed) break
+            dx += c.position.x - c.previousPosition.x; dy += c.position.y - c.previousPosition.y
+            // первое событие здесь — тот же down в Final pass, его кнопка уже поглотила сама.
+            // Любое следующее поглощённое событие значит, что движение забрал кто-то другой:
+            // список, свайп стопки или шторка, которая едет вместе с пальцем (тогда своя позиция
+            // строки не меняется, поэтому смотрим именно на поглощение, а не на сдвиг)
+            if ((c.isConsumed && !c.changedToDownIgnoreConsumed()) || dx * dx + dy * dy > slop * slop) t.moved = true
+        } } finally { t.active = false }
+    }
 }
 
 /** Используйте этот модификатор внутри @Composable. */
@@ -105,12 +166,13 @@ fun RoundButton(
     onClick: () -> Unit,
     size: Dp = 64.dp,
     iconSize: Dp = 26.dp,
+    onLongClick: (() -> Unit)? = null,
 ) {
     Box(
         Modifier
             .size(size)
-            .press(onClick, shape = CircleShape, pressColor = fill, label = label)
-            .background(fill, CircleShape),
+            .raisedFill(fill, CircleShape)
+            .press(onClick, onLongClick, shape = CircleShape, pressColor = Color.White.copy(alpha = .12f), label = label),
         contentAlignment = Alignment.Center,
     ) {
         OzIcon(icon, Color.White, iconSize)
@@ -132,6 +194,19 @@ fun GhostIconButton(
         Modifier.size(size).press(onClick, onLongClick, CircleShape, label = label),
         contentAlignment = Alignment.Center,
     ) { OzIcon(icon, tint, iconSize) }
+}
+
+/**
+ * Кнопка связи справа у строки: значок способа по умолчанию (трубка тоже), нажатие связывает.
+ * «Спрашивать каждый раз» — значок swap: по нажатию будет выбор.
+ */
+@Composable
+fun ReachButton(method: com.khizrim.dialer.model.Method?, who: String, onClick: () -> Unit) {
+    GhostIconButton(
+        method?.icon ?: R.drawable.ic_oz_swap,
+        stringResource(method?.title ?: R.string.choose_method) + ": " + who,
+        onClick, tint = LocalOz.current.fg3, size = 48.dp, iconSize = 22.dp,
+    )
 }
 
 /** Тихая текстовая кнопка. */
@@ -164,5 +239,110 @@ fun BottomBar(content: @Composable RowScope.() -> Unit) {
 
 @Composable
 fun KeypadFab(onClick: () -> Unit) {
-    RoundButton(R.drawable.ic_oz_grid, "Открыть клавиатуру", LocalOz.current.accentFill, onClick)
+    RoundButton(R.drawable.ic_oz_grid, stringResource(R.string.open_keypad), LocalOz.current.accentFill, onClick)
 }
+
+
+/** Плашка идущего звонка: «Звонок: X · Вернуться» или «Входящий: X · Ответить». Тап открывает экран звонка. */
+@androidx.compose.runtime.Composable
+fun CallStrip(modifier: Modifier = Modifier) {
+    val oz = com.khizrim.dialer.ui.theme.LocalOz.current
+    val live = com.khizrim.dialer.telecom.CallManager.state ?: return
+    if (live.phase == com.khizrim.dialer.model.CallPhase.ENDED) return
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val who = live.name ?: com.khizrim.dialer.data.PhoneFormat.pretty(live.number)
+    androidx.compose.material3.Text(
+        if (live.phase == com.khizrim.dialer.model.CallPhase.RINGING) androidx.compose.ui.res.stringResource(com.khizrim.dialer.R.string.incoming_strip, who)
+        else androidx.compose.ui.res.stringResource(com.khizrim.dialer.R.string.back_to_call, who),
+        style = com.khizrim.dialer.ui.theme.OzType.small,
+        color = oz.accent,
+        maxLines = 1,
+        modifier = modifier
+            .lift(OzShape.row)
+            .background(oz.sheet, com.khizrim.dialer.ui.theme.OzShape.row)
+            // входящий: надпись обещает «Ответить» — нажатие отвечает и открывает экран звонка
+            .clickable {
+                if (live.phase == com.khizrim.dialer.model.CallPhase.RINGING) com.khizrim.dialer.telecom.CallManager.answer()
+                context.startActivity(com.khizrim.dialer.telecom.CallActivity.intent(context))
+            }
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+    )
+}
+
+
+
+/**
+ * Строку смахивают влево: она идёт за пальцем и гаснет; дальше 96 dp — уходит совсем и вызывает onSwiped,
+ * иначе пружинит обратно. Вправо не двигается: этот жест сознательно пустой.
+ */
+fun Modifier.swipeAway(enabled: Boolean = true, hint: String? = null, onRight: (() -> Unit)? = null, onSwiped: () -> Unit): Modifier = if (!enabled && onRight == null) this else composed {
+    // порог в пикселях: по умолчанию 0.01 px, и пружина «доезжает» лишние полсекунды
+    val offset = remember { androidx.compose.animation.core.Animatable(0f, visibilityThreshold = 0.5f) }
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val threshold = with(density) { 96.dp.toPx() }
+    val reduced = com.khizrim.dialer.ui.theme.LocalReducedMotion.current
+    // серое слово из-под строки («Удалить», «Скрыть»): видно только пока её тянут влево, после жеста гаснет
+    val hintAlpha = remember { androidx.compose.animation.core.Animatable(0f) }
+    val measurer = androidx.compose.ui.text.rememberTextMeasurer()
+    val hintStyle = com.khizrim.dialer.ui.theme.OzType.small.copy(color = com.khizrim.dialer.ui.theme.LocalOz.current.fg3)
+    val tracker = remember { androidx.compose.ui.input.pointer.util.VelocityTracker() }
+    val w = remember { floatArrayOf(1f) }
+    this
+        .onWidth { w[0] = it }
+        .pointerInput(Unit) {
+            detectHorizontalDragGestures(
+                onDragStart = { tracker.resetTracking() },
+                onDragEnd = {
+                    val v = tracker.calculateVelocity().x
+                    scope.launch { hintAlpha.animateTo(0f, com.khizrim.dialer.ui.theme.Motion.exit(com.khizrim.dialer.ui.theme.Motion.FADE)) }
+                    scope.launch {
+                        val settle = com.khizrim.dialer.ui.theme.Motion.settle<Float>()
+                        if (offset.value > threshold && onRight != null) {
+                            // вправо — действие без удаления: строка спокойно возвращается на место
+                            onRight()
+                            offset.animateTo(0f, settle)
+                        } else if (enabled && (offset.value < -threshold || (v < -1500f && offset.value < 0f))) {
+                            // строка уезжает за край со скоростью пальца и там остаётся: её убирает список,
+                            // соседи смыкаются. Назад на место её не возвращаем — иначе она мигнёт перед исчезновением
+                            // список убирает её сразу: соседи смыкаются, пока она ещё уезжает, а не после
+                            // долгого хвоста пружины (иначе ~1 с на её месте пусто, а потом всё прыгает)
+                            onSwiped()
+                            if (!reduced) offset.animateTo(-w[0], settle, v.coerceAtMost(0f))
+                            // если строку так и не убрали (нет прав и т. п.) — через мгновение возвращаем
+                            kotlinx.coroutines.delay(700)
+                            offset.animateTo(0f, settle)
+                        } else offset.animateTo(0f, settle, v)
+                    }
+                },
+                onDragCancel = {
+                    scope.launch { hintAlpha.animateTo(0f, com.khizrim.dialer.ui.theme.Motion.exit(com.khizrim.dialer.ui.theme.Motion.FADE)) }
+                    scope.launch { offset.animateTo(0f, com.khizrim.dialer.ui.theme.Motion.settle()) }
+                },
+            ) { change, amount ->
+                change.consume()
+                tracker.addPosition(change.uptimeMillis, change.position)
+                val max = if (onRight != null) threshold * 1.4f else 0f
+                val min = if (enabled) Float.NEGATIVE_INFINITY else 0f
+                val next = (offset.value + amount).coerceIn(min, max)
+                scope.launch { offset.snapTo(next) }
+                if (hint != null) scope.launch { hintAlpha.snapTo(((-next) / threshold).coerceIn(0f, 1f)) }
+            }
+        }
+        .drawBehind {
+            // под строкой, не сдвигается вместе с ней: проявляется справа, пока строка уезжает влево
+            val a = hintAlpha.value
+            if (hint != null && a > 0f) {
+                val layout = measurer.measure(hint, hintStyle)
+                drawText(layout, alpha = a, topLeft = androidx.compose.ui.geometry.Offset(
+                    size.width - layout.size.width - 12.dp.toPx(), (size.height - layout.size.height) / 2f))
+            }
+        }
+        .graphicsLayer {
+            translationX = offset.value
+            alpha = 1f - ((-offset.value).coerceAtLeast(0f) / w[0]).coerceIn(0f, 1f)
+        }
+}
+
+private fun Modifier.onWidth(block: (Float) -> Unit): Modifier =
+    this.then(Modifier.onSizeChanged { block(it.width.toFloat().coerceAtLeast(1f)) })

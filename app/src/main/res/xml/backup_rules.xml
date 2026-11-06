@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Резервная копия только настроек людей: способы связи, номера, тихий режим. -->
+<full-backup-content>
+    <include domain="sharedpref" path="ozero.xml" />
+</full-backup-content>

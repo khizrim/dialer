@@ -30,7 +30,7 @@ object PhoneFormat {
     }
 
     fun formatTyping(raw: String, region: String): String {
-        if (raw.isEmpty() || raw.contains('*') || raw.contains('#')) return raw
+        if (raw.isEmpty() || raw.any { it in "*#,;" }) return raw
         if (raw[0] == '+') {
             val d = raw.substring(1)
             for (n in 1..minOf(3, d.length)) {
@@ -42,7 +42,10 @@ object PhoneFormat {
             }
             return raw
         }
-        for (rule in national[region] ?: national.getValue("RU")) {
+        // российская «8 …» узнаётся и при чужом регионе (SIM из роуминга, английский телефон)
+        val rules = (national[region] ?: emptyList()) + if (region != "RU") national.getValue("RU").filter { it.prefix == "8" } else emptyList()
+        if (rules.isEmpty()) return raw
+        for (rule in rules) {
             if (rule.prefix != null && !raw.startsWith(rule.prefix)) continue
             if (raw.length < rule.min) continue
             if (rule.prefix != null) {
@@ -53,6 +56,27 @@ object PhoneFormat {
             fill(rule.template, raw)?.let { return it }
         }
         return raw
+    }
+
+    /** Регион для маски: страна SIM-карты, иначе страна из настроек языка. Задаётся при старте. */
+    @Volatile var simRegion: String? = null
+
+    val defaultRegion: String
+        get() = (simRegion ?: java.util.Locale.getDefault().country).uppercase().ifEmpty { "RU" }
+
+    /** Страна по SIM или сети, например «RU». */
+    fun detectRegion(context: android.content.Context): String? {
+        val tm = context.getSystemService(android.telephony.TelephonyManager::class.java) ?: return null
+        return listOf(runCatching { tm.simCountryIso }.getOrNull(), runCatching { tm.networkCountryIso }.getOrNull())
+            .firstOrNull { !it.isNullOrBlank() }?.uppercase()
+    }
+
+    /** Сохранённый номер в аккуратном виде: +7 (916) 123-45-67. */
+    fun pretty(number: String, region: String = defaultRegion): String {
+        val raw = number.filter { it.isDigit() || it == '+' }
+        if (raw.isEmpty()) return number
+        val f = formatTyping(raw, region)
+        return if (f == raw && raw.length > 4) number else f
     }
 
     fun digits(s: String): String = s.filter { it.isDigit() }

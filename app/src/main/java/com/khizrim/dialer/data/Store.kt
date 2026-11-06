@@ -1,0 +1,224 @@
+package com.khizrim.dialer.data
+
+import android.content.ContentValues
+import android.content.Context
+import android.content.res.Resources
+import android.provider.BlockedNumberContract
+import android.provider.BlockedNumberContract.BlockedNumbers
+import android.provider.CallLog
+import com.khizrim.dialer.R
+import com.khizrim.dialer.model.Method
+import java.text.DateFormat
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
+
+/** Запись журнала звонков. */
+data class CallRecord(val number: String, val type: Int, val date: Long, val duration: Long, val account: String? = null) {
+    val missed: Boolean get() = type == CallLog.Calls.MISSED_TYPE
+    /** Обычный разговор (входящий или исходящий, который состоялся) — его не подписываем. */
+    val ordinary: Boolean get() = (type == CallLog.Calls.INCOMING_TYPE || type == CallLog.Calls.OUTGOING_TYPE) && duration > 0
+    /** Подпись только для необычного: пропущенный, не дозвонились, отклонён. */
+    fun note(res: Resources): String? = if (ordinary) null else text(res)
+    fun text(res: Resources): String = when (type) {
+        CallLog.Calls.INCOMING_TYPE -> Dates.withDuration(res, res.getString(R.string.h_incoming), duration)
+        CallLog.Calls.OUTGOING_TYPE -> if (duration > 0) Dates.withDuration(res, res.getString(R.string.h_outgoing), duration) else res.getString(R.string.h_outgoing_no_answer)
+        CallLog.Calls.MISSED_TYPE -> res.getString(R.string.h_missed)
+        CallLog.Calls.REJECTED_TYPE -> res.getString(R.string.h_rejected)
+        CallLog.Calls.BLOCKED_TYPE -> res.getString(R.string.h_blocked)
+        CallLog.Calls.VOICEMAIL_TYPE -> res.getString(R.string.h_voicemail)
+        else -> res.getString(R.string.h_call)
+    }
+}
+
+object CallLogSource {
+    fun load(context: Context, limit: Int = 500): List<CallRecord> = runCatching {
+        val uri = CallLog.Calls.CONTENT_URI.buildUpon().appendQueryParameter(CallLog.Calls.LIMIT_PARAM_KEY, limit.toString()).build()
+        val projection = arrayOf(CallLog.Calls.NUMBER, CallLog.Calls.TYPE, CallLog.Calls.DATE, CallLog.Calls.DURATION, CallLog.Calls.PHONE_ACCOUNT_ID)
+        val out = ArrayList<CallRecord>()
+        context.contentResolver.query(uri, projection, null, null, CallLog.Calls.DATE + " DESC")?.use { c ->
+            while (c.moveToNext()) {
+                val number = c.getString(0)?.takeIf { it.isNotBlank() } ?: continue
+                out += CallRecord(number, c.getInt(1), c.getLong(2), c.getLong(3), c.getString(4))
+            }
+        }
+        out
+    }.getOrDefault(emptyList())
+}
+
+/** Связь через мессенджер, которую журнал звонков не видит. Храним сами. */
+data class Interaction(val key: String, val method: Method, val at: Long)
+
+/** Локальные настройки: способ по умолчанию, скрытые с главной, история действий. */
+class Prefs(context: Context) {
+    private val sp = context.getSharedPreferences("ozero", Context.MODE_PRIVATE)
+
+    /** null: способ не выбран, берём первый подходящий. ASK: спрашивать каждый раз. */
+    fun defaultFor(lookupKey: String): String? = sp.getString("def:$lookupKey", null)
+    fun setDefault(lookupKey: String, method: Method?) {
+        sp.edit().putString("def:$lookupKey", method?.name ?: ASK).apply()
+    }
+
+    /** Номер, на который звонить и писать SMS, если у человека их несколько. */
+    fun numberFor(lookupKey: String): String? = sp.getString("num:$lookupKey", null)
+    fun setNumber(lookupKey: String, number: String?) {
+        sp.edit().apply { if (number == null) remove("num:$lookupKey") else putString("num:$lookupKey", number) }.apply()
+    }
+
+    /** SIM, запомненная для номера (id PhoneAccountHandle). Ключ — последние 10 цифр. */
+    fun simFor(number: String): String? = sp.getString("sim:" + Numbers.key(number), null)
+    fun setSimFor(number: String, id: String?) {
+        sp.edit().apply { if (id == null) remove("sim:" + Numbers.key(number)) else putString("sim:" + Numbers.key(number), id) }.apply()
+    }
+
+    /** Сколько раз подряд для номера звонили с одной не основной SIM: (id, n). На третий раз она запоминается. */
+    fun simStreak(number: String): Pair<String?, Int> {
+        val v = sp.getString("ss:" + Numbers.key(number), null) ?: return null to 0
+        return v.substringBeforeLast('|') to (v.substringAfterLast('|').toIntOrNull() ?: 0)
+    }
+    fun setSimStreak(number: String, id: String?, n: Int) {
+        sp.edit().apply { if (id == null) remove("ss:" + Numbers.key(number)) else putString("ss:" + Numbers.key(number), "$id|$n") }.apply()
+    }
+
+    fun hiddenAt(key: String): Long = sp.getLong("hid:$key", 0L)
+    fun hide(keys: Collection<String>, at: Long = System.currentTimeMillis()) {
+        val e = sp.edit()
+        keys.forEach { e.putLong("hid:$it", at) }
+        e.apply()
+    }
+    fun unhide(key: String) { sp.edit().remove("hid:$key").apply() }
+
+    fun interactions(): List<Interaction> = sp.getString("log", "").orEmpty().lines().mapNotNull { line ->
+        val parts = line.split('\t')
+        if (parts.size != 3) return@mapNotNull null
+        val m = runCatching { Method.valueOf(parts[1]) }.getOrNull() ?: return@mapNotNull null
+        Interaction(parts[0], m, parts[2].toLongOrNull() ?: return@mapNotNull null)
+    }
+
+    fun log(key: String, method: Method, at: Long = System.currentTimeMillis()) {
+        val lines = (interactions() + Interaction(key, method, at)).takeLast(200)
+        sp.edit().putString("log", lines.joinToString("\n") { "${it.key}\t${it.method.name}\t${it.at}" }).apply()
+    }
+
+    /** SIM для исходящих: null — спрашивать (или как решит система), иначе id PhoneAccountHandle. */
+    var simForCalls: String?
+        get() = sp.getString("simForCalls", null)
+        set(v) { sp.edit().putString("simForCalls", v).apply() }
+
+    var permsSkipped: Boolean
+        get() = sp.getBoolean("permsSkipped", false)
+        set(v) { sp.edit().putBoolean("permsSkipped", v).apply() }
+
+    var permsAsked: Boolean
+        get() = sp.getBoolean("permsAsked", false)
+        set(v) { sp.edit().putBoolean("permsAsked", v).apply() }
+
+    var roleSkipped: Boolean
+        get() = sp.getBoolean("roleSkipped", false)
+        set(v) { sp.edit().putBoolean("roleSkipped", v).apply() }
+
+    var searchHintShows: Int
+        get() = sp.getInt("searchHint", 0)
+        set(v) { sp.edit().putInt("searchHint", v).apply() }
+
+    var searchUsed: Boolean
+        get() = sp.getBoolean("searchUsed", false)
+        set(v) { sp.edit().putBoolean("searchUsed", v).apply() }
+
+    var xiaomiHintSeen: Boolean
+        get() = sp.getBoolean("xiaomiHint", false)
+        set(v) { sp.edit().putBoolean("xiaomiHint", v).apply() }
+
+    /** Глушим незнакомых, только если можем отличить знакомых: без доступа к контактам глушили бы всех. */
+    fun silenceUnknownActive(context: Context): Boolean =
+        silenceUnknown && context.checkSelfPermission(android.Manifest.permission.READ_CONTACTS) == android.content.pm.PackageManager.PERMISSION_GRANTED
+
+    /** Избранные на главной подписаны никнеймом из контакта («Мама»), если он есть. */
+    var favNickname: Boolean
+        get() = sp.getBoolean("favNickname", true)
+        set(v) { sp.edit().putBoolean("favNickname", v).apply() }
+
+    var silenceUnknown: Boolean
+        get() = sp.getBoolean("silenceUnknown", false)
+        set(v) { sp.edit().putBoolean("silenceUnknown", v).apply() }
+
+    companion object { const val ASK = "ASK" }
+}
+
+/** Системный чёрный список. Писать в него может только звонилка по умолчанию. */
+object Blocklist {
+    fun canUse(context: Context): Boolean = runCatching { BlockedNumberContract.canCurrentUserBlockNumbers(context) }.getOrDefault(false)
+
+    fun list(context: Context): List<String> = runCatching {
+        val out = ArrayList<String>()
+        context.contentResolver.query(BlockedNumbers.CONTENT_URI, arrayOf(BlockedNumbers.COLUMN_ORIGINAL_NUMBER), null, null, null)?.use { c ->
+            while (c.moveToNext()) c.getString(0)?.let { out += it }
+        }
+        out
+    }.getOrDefault(emptyList())
+
+    fun block(context: Context, number: String): Boolean = runCatching {
+        val values = ContentValues().apply { put(BlockedNumbers.COLUMN_ORIGINAL_NUMBER, number) }
+        context.contentResolver.insert(BlockedNumbers.CONTENT_URI, values) != null
+    }.getOrDefault(false)
+
+    fun unblock(context: Context, number: String): Boolean = runCatching {
+        BlockedNumberContract.unblock(context, number) > 0
+    }.getOrDefault(false)
+}
+
+object Dates {
+    private val locale: Locale get() = Locale.getDefault()
+
+    /** «Сегодня», «Вчера», «Пн», «12 окт». */
+    fun day(res: Resources, ts: Long, now: Long = System.currentTimeMillis()): String {
+        val a = Calendar.getInstance().apply { timeInMillis = ts }
+        val b = Calendar.getInstance().apply { timeInMillis = now }
+        val days = daysBetween(a, b)
+        return when {
+            days <= 0 -> res.getString(R.string.today)
+            days == 1 -> res.getString(R.string.yesterday)
+            days < 7 -> SimpleDateFormat("EE", locale).format(Date(ts)).replaceFirstChar { it.uppercase() }.trimEnd('.')
+            a.get(Calendar.YEAR) == b.get(Calendar.YEAR) -> SimpleDateFormat("d MMM", locale).format(Date(ts)).trimEnd('.')
+            else -> SimpleDateFormat("d MMM yyyy", locale).format(Date(ts))
+        }
+    }
+
+    /** «Пропущенный, вчера» для подписи на главной; несколько подряд — «3 пропущенных, последний в 14:15». */
+    fun missed(res: Resources, ts: Long, count: Int = 1): String =
+        if (count > 1) res.getQuantityString(R.plurals.feed_missed_many, count, count, whenText(res, ts))
+        else res.getString(R.string.missed_when, whenText(res, ts))
+
+    /** «16:05» за сегодня и вчера, иначе null: дальше в ленте хватает подписи дня. */
+    fun recentTime(ts: Long): String? {
+        if (ts <= 0L) return null
+        val days = daysBetween(Calendar.getInstance().apply { timeInMillis = ts }, Calendar.getInstance())
+        return if (days in 0..1) DateFormat.getTimeInstance(DateFormat.SHORT, locale).format(Date(ts)) else null
+    }
+
+    fun whenText(res: Resources, ts: Long): String {
+        val a = Calendar.getInstance().apply { timeInMillis = ts }
+        val days = daysBetween(a, Calendar.getInstance())
+        return when {
+            days <= 0 -> res.getString(R.string.at_time, DateFormat.getTimeInstance(DateFormat.SHORT, locale).format(Date(ts)))
+            days == 1 -> res.getString(R.string.yesterday_lower)
+            else -> day(res, ts)
+        }
+    }
+
+    fun withDuration(res: Resources, base: String, seconds: Long): String = when {
+        seconds <= 0 -> base
+        seconds < 60 -> res.getString(R.string.dur_sec, base, seconds.toInt())
+        else -> res.getString(R.string.dur_min, base, (seconds / 60).toInt())
+    }
+
+    private fun daysBetween(a: Calendar, b: Calendar): Int {
+        val x = a.clone() as Calendar
+        val y = b.clone() as Calendar
+        listOf(x, y).forEach {
+            it.set(Calendar.HOUR_OF_DAY, 0); it.set(Calendar.MINUTE, 0); it.set(Calendar.SECOND, 0); it.set(Calendar.MILLISECOND, 0)
+        }
+        return ((y.timeInMillis - x.timeInMillis) / 86_400_000L).toInt()
+    }
+}
