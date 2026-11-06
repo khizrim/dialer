@@ -107,7 +107,8 @@ fun NameSearchScreen(vm: DialerViewModel) {
         LaunchedEffect(indexState.isScrollInProgress) {
             if (indexState.isScrollInProgress) { keyboard?.hide(); focusManager.clearFocus() }
         }
-        if (q.isBlank()) Box(Modifier.weight(1f).fillMaxWidth()) {
+        Box(Modifier.weight(1f).fillMaxWidth()) {
+        if (q.isBlank()) Box(Modifier.fillMaxSize()) {
             // докрутили до самого верха и тянут дальше вниз — контакты уезжают за пальцем
             // где начинается каждая группа: для колонки букв справа
             val starts = remember(groups) { var i = 0; groups.map { (l, ps) -> (l to i).also { i += 1 + ps.size } } }
@@ -139,7 +140,7 @@ fun NameSearchScreen(vm: DialerViewModel) {
                     scope.launch { indexState.scrollToItem(starts[i].second) }
                 }
             }
-        } else LazyColumn(Modifier.weight(1f).fillMaxWidth().dismissOnOverscroll { vm.closeTextSearch() }.padding(horizontal = 8.dp), state = listState, reverseLayout = true) {
+        } else LazyColumn(Modifier.fillMaxSize().dismissOnOverscroll { vm.closeTextSearch() }.padding(horizontal = 8.dp), state = listState, reverseLayout = true) {
             if (numeric) {
                 item(key = "call") {
                     Row(
@@ -171,6 +172,12 @@ fun NameSearchScreen(vm: DialerViewModel) {
                 }
             }
         }
+        // над полем список мягко гаснет, а не обрезается по середине букв
+        Box(
+            Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(20.dp)
+                .background(androidx.compose.ui.graphics.Brush.verticalGradient(listOf(oz.bg.copy(alpha = 0f), oz.bg))),
+        )
+        }
         // поле 48dp на мягкой заливке без рамки, справа от него настройки. Поле тянут вниз — весь экран идёт за пальцем
         Row(
             Modifier.dismissOnDrag { vm.closeTextSearch() }.fillMaxWidth()
@@ -183,7 +190,7 @@ fun NameSearchScreen(vm: DialerViewModel) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             OzIcon(R.drawable.ic_oz_search, oz.fg3, 20.dp)
-            val hint = stringResource(R.string.search_by_name)
+            val hint = stringResource(R.string.search_all)
             Box(Modifier.weight(1f).padding(start = 12.dp)) {
                 BasicTextField(
                     value = q,

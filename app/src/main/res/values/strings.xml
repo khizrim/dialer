@@ -274,6 +274,7 @@
     <string name="edit_discard_text">Your changes to this contact will be lost.</string>
     <string name="edit_discard">Leave</string>
     <string name="call_to">Call %1$s</string>
+    <string name="search_all">Search</string>
     <string name="search_by_name">Search by name</string>
     <string name="search_hint">Swipe up for contacts and search</string>
     <string name="search_nothing">No one found</string>

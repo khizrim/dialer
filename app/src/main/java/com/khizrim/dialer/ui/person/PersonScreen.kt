@@ -3,7 +3,6 @@ package com.khizrim.dialer.ui.person
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.fillMaxHeight
 import com.khizrim.dialer.ui.theme.raisedFill
 import com.khizrim.dialer.ui.theme.well
@@ -101,15 +100,16 @@ fun PersonScreen(vm: DialerViewModel, id: Long) {
         ) {
             Box(Modifier.padding(top = 8.dp, bottom = 12.dp).align(Alignment.CenterHorizontally).width(36.dp).height(4.dp).background(oz.handle, RoundedCornerShape(2.dp)))
             Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
-                // фото только если оно есть, без кружков с буквами
-                p.photo?.let { ContactPhoto(it, Modifier.padding(bottom = 16.dp)) }
-                // имя и справа звезда избранного: залита, когда человек в избранном
+                // фото 48 dp в строку с именем, только если оно есть (без кружков с буквами): высота листа не прыгает.
+                // справа карандаш (системный редактор) и звезда избранного: залита, когда человек в избранном
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
+                    p.photo?.let { ContactPhoto(it, Modifier.padding(end = 12.dp)) }
                     Text(
                         p.shownName, style = if (p.nameIsNumber) OzType.namePerson.copy(fontFeatureSettings = "tnum") else OzType.namePerson, color = oz.fg,
                         modifier = Modifier.weight(1f).padding(top = 4.dp).semantics { heading() },
                     )
-                    if (!unknown) Box(Modifier.offset(x = 10.dp)) {
+                    if (!unknown) Row(Modifier.offset(x = 10.dp)) {
+                        GhostIconButton(R.drawable.ic_oz_edit, stringResource(R.string.edit_contact), { vm.editContact(p) }, tint = oz.fg3, size = 44.dp, iconSize = 20.dp)
                         GhostIconButton(
                             if (fav) R.drawable.ic_oz_star_on else R.drawable.ic_oz_star,
                             stringResource(if (fav) R.string.remove_favorite else R.string.add_favorite),
@@ -129,15 +129,15 @@ fun PersonScreen(vm: DialerViewModel, id: Long) {
                 if (!p.nameIsNumber || p.phones.size > 1) {
                     Column(Modifier.padding(top = 2.dp)) {
                         p.phones.take(3).forEach { ph ->
-                            Row(
+                            // тип номера («Домашний») — серым под номером и только когда номеров несколько
+                            Column(
                                 Modifier.fillMaxWidth()
                                     .press({ vm.callNumberOf(p, ph.number) }, onLongClick = { vm.copyNumber(ph.number) }, shape = OzShape.text,
                                         label = stringResource(R.string.call_to, com.khizrim.dialer.data.PhoneFormat.pretty(ph.number)))
                                     .padding(vertical = 3.dp),
-                                verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                Text(com.khizrim.dialer.data.PhoneFormat.pretty(ph.number), style = OzType.time, color = oz.fg3, maxLines = 1, modifier = Modifier.weight(1f))
-                                if (ph.label.isNotBlank() && p.phones.size > 1) Text(ph.label, style = OzType.meta, color = oz.fg3, maxLines = 1)
+                                Text(com.khizrim.dialer.data.PhoneFormat.pretty(ph.number), style = OzType.time, color = oz.fg3, maxLines = 1)
+                                if (ph.label.isNotBlank() && p.phones.size > 1) Text(ph.label.replaceFirstChar { it.uppercase() }, style = OzType.meta, color = oz.fg3, maxLines = 1)
                             }
                         }
                     }
@@ -170,29 +170,32 @@ fun PersonScreen(vm: DialerViewModel, id: Long) {
                         )
                     }
                 }
-                // другие способы: значок (у мессенджера с меткой WA / TG) над коротким словом — «Звонок», «Видео», «Написать»;
-                // шесть влезают в ширину, больше — листаются
-                val others = p.methods.filter { it != method }
-                if (others.isNotEmpty()) {
-                    val few = others.size <= 6
-                    Row(
-                        Modifier.fillMaxWidth().padding(top = 4.dp).then(if (few) Modifier else Modifier.horizontalScroll(rememberScrollState())),
-                        horizontalArrangement = if (few && others.size > 2) Arrangement.SpaceBetween else Arrangement.spacedBy(20.dp),
-                    ) {
-                        others.forEach { m ->
-                            Column(
-                                Modifier.press({ vm.performOther(p, m) }, shape = OzShape.text, label = stringResource(m.title)).padding(horizontal = 4.dp, vertical = 12.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                            ) {
-                                com.khizrim.dialer.ui.components.MethodMark(m, size = 22.dp)
-                                Spacer(Modifier.height(4.dp))
-                                Text(stringResource(m.short), style = OzType.meta, color = oz.fg2, maxLines = 1)
+                // способы по приложениям: «Телефон», «WhatsApp», «Telegram» — имя один раз, справа его глифы
+                // (звонок, видео, чат). Синий глиф — способ на главной кнопке. Нажатие связывает, долгое — делает основным
+                if (p.methods.size > 1) {
+                    val apps = p.methods.groupBy { if (it.brand == null || it == com.khizrim.dialer.model.Method.SMS) null else it.brand }
+                    Column(Modifier.fillMaxWidth().padding(top = 12.dp)) {
+                        apps.forEach { (brand, ms) ->
+                            Row(Modifier.fillMaxWidth().heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Text(brand ?: stringResource(R.string.net_phone), style = OzType.body.copy(fontSize = 15.sp), color = oz.fg2, maxLines = 1, modifier = Modifier.weight(1f))
+                                Row(Modifier.offset(x = 12.dp)) {
+                                    ms.forEach { m ->
+                                        Box(
+                                            Modifier.size(48.dp).press(
+                                                { if (m == method) vm.perform(p, m) else vm.performOther(p, m) },
+                                                onLongClick = { vm.makeDefault(p, m) }, shape = OzShape.text, label = stringResource(m.title),
+                                            ),
+                                            contentAlignment = Alignment.Center,
+                                        ) { OzIcon(m.icon, if (m == method) oz.accent else oz.fg2, 22.dp) }
+                                    }
+                                }
                             }
                         }
                     }
                 }
                 // ниже — тихие строки во всю ширину между волосяными линиями
-                if (!unknown) {
+                // «Обычно … Сменить» — только когда есть из чего выбирать, то есть у человека есть мессенджер
+                if (!unknown && p.methods.any { it.brand != null && it != com.khizrim.dialer.model.Method.SMS }) {
                     CardRow(
                         stringResource(R.string.card_usual, stringResource(method?.title ?: R.string.choose_method)),
                         action = stringResource(R.string.card_change),
@@ -231,8 +234,6 @@ fun PersonScreen(vm: DialerViewModel, id: Long) {
                     CardRow(stringResource(R.string.add_to_contacts), chevron = 0f) { vm.addToContacts(n) }
                     CardRow(stringResource(R.string.block), chevron = 0f) { vm.askBlock(n) }
                     CardRow(stringResource(R.string.cid_search_web), chevron = 0f) { vm.searchWeb(n) }
-                } else {
-                    CardRow(stringResource(R.string.edit_contact), chevron = 0f) { vm.editContact(p) }
                 }
             }
             // пока виден тост, лист приподнимается, чтобы он ничего не закрыл
@@ -273,7 +274,7 @@ private fun ContactPhoto(uri: String, modifier: Modifier = Modifier) {
     }
     // место под фото занято сразу, а само фото проявляется, когда загрузится: имя под ним не подпрыгивает
     val alpha by androidx.compose.animation.core.animateFloatAsState(if (bitmap != null) 1f else 0f, Motion.enter(Motion.MOVE), label = "photo")
-    Box(modifier.size(72.dp).graphicsLayer { this.alpha = alpha }) {
-        bitmap?.let { Image(it, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.size(72.dp).clip(CircleShape)) }
+    Box(modifier.size(48.dp).graphicsLayer { this.alpha = alpha }) {
+        bitmap?.let { Image(it, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.size(48.dp).clip(CircleShape)) }
     }
 }

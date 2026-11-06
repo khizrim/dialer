@@ -210,7 +210,7 @@ fun ReachButton(method: com.khizrim.dialer.model.Method?, who: String, onClick: 
             .press(onClick, shape = RoundedCornerShape(12.dp), label = stringResource(method?.title ?: R.string.choose_method) + ": " + who)
             .padding(horizontal = 10.dp),
         contentAlignment = Alignment.Center,
-    ) { MethodMark(method) }
+    ) { MethodMark(method, tint = LocalOz.current.fg3) }
 }
 
 /**

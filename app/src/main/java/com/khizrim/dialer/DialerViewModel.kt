@@ -696,6 +696,13 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    /** Долгое нажатие на способ в карточке: он становится основным. */
+    fun makeDefault(p: Person, m: Method) {
+        prefs.setDefault(p.lookupKey, m)
+        defaultsVersion++
+        say(str(R.string.now_on_tap, m.label(ctx)))
+    }
+
     /** Связаться не основным способом; когда человек вернётся в приложение, тихо предложим сделать способ основным. */
     fun performOther(p: Person, m: Method, number: String? = null) {
         val before = defaultOf(p)
