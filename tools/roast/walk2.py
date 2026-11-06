@@ -107,6 +107,13 @@ if sys.argv[1] == "short":
     start(); tap(T["settings"], wait=2.5); shot("settings")
     sys.exit(0)
 
+# 0. карточка листом и контакты по кнопке
+r = feed_rows(); y = r[-1][1] if r else 1688
+sh("shell", "input", "tap", "150", str(y)); time.sleep(2.5); shot("card-sheet"); back(2)
+start(); tap(T.get("contacts", "Contacts"), wait=2.5); back(1.2); shot("contacts-button")
+r2 = [(t, x, y) for t, d, x, y, b in nodes() if t and y > 400 and y < 1800 and len(t) > 3]
+if r2: sh("shell", "input", "tap", "200", str(r2[0][2])); time.sleep(2.5); shot("card-from-contacts"); back(2)
+back(); back()
 # 1. лента: вертикальные свайпы не звонят
 c0 = logrows()
 for y1, y2 in [(1500, 1700), (1800, 1500), (1400, 1650), (1650, 1350)]: swipe(y1, y2, 250, 0.8)
