@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -213,44 +214,47 @@ fun HomeScreen(vm: DialerViewModel) {
                             }
                             .fillMaxWidth(),
                     ) {
-                        // всё, что правее имени (но не меньше 104 dp у края), на всю высоту строки — «связаться»
-                        Box(
-                            Modifier.matchParentSize()
-                                .press(
-                                    onClick = { vm.tap(e) },
-                                    // долгое нажатие на трубку при двух SIM — выбор SIM на этот звонок, иначе меню
-                                    onLongClick = { if (!(if (p != null) vm.askSim(p) else vm.askSim(e.number, e.title))) vm.openMenu(e, MenuContext.HOME) },
-                                    label = stringResource(method?.title ?: R.string.choose_method) + ": " + e.title,
-                                ),
-                        )
-                        Row(Modifier.fillMaxWidth().padding(end = 104.dp), verticalAlignment = Alignment.CenterVertically) {
-                            // нажатие на имя — карточка (у незнакомого номера — такая же карточка номера)
-                            Column(
-                                Modifier.weight(1f, fill = false).heightIn(min = 64.dp)
+                        // текст строки на всю ширину (кроме значка): длинный номер не режется ради зоны звонка
+                        Column(
+                            Modifier.fillMaxWidth().heightIn(min = 64.dp).padding(start = 12.dp, end = 48.dp, top = 10.dp, bottom = 10.dp),
+                            verticalArrangement = Arrangement.Center,
+                        ) {
+                            Text(
+                                e.title,
+                                style = if (p != null && !p.nameIsNumber) OzType.nameHome else OzType.numberHome,
+                                color = if (quiet) oz.fg2 else oz.fg, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                            )
+                            // в раскрытой группе дни не показаны, поэтому время рядом с «без звука»
+                            val second = when {
+                                quiet -> stringResource(R.string.silenced) + (if (e.inSilentGroup) " · " + com.khizrim.dialer.data.Dates.whenText(res, e.lastAt) else "")
+                                note != null -> note // в «Пропущенный, 14:15» время уже есть
+                                e.note != null -> e.note + (time?.let { " · $it" } ?: "")
+                                else -> time
+                            }
+                            if (second != null) {
+                                Text(second, style = OzType.small, color = if (note != null && !quiet) oz.danger else oz.fg3, modifier = Modifier.padding(top = 4.dp))
+                            }
+                        }
+                        // зоны нажатия поверх текста и независимо от длины имени:
+                        // левые ~60 % — карточка, правые ~40 % (не меньше 104 dp) — «связаться»
+                        Row(Modifier.matchParentSize()) {
+                            Box(
+                                Modifier.weight(0.6f).fillMaxHeight()
                                     .press(
                                         onClick = { if (p != null) vm.openPerson(p.id) else e.number?.let(vm::openNumber) ?: vm.openMenu(e, MenuContext.HOME) },
                                         onLongClick = { vm.openMenu(e, MenuContext.HOME) },
                                         label = e.title + ((note ?: e.note)?.let { ", $it" } ?: ""),
-                                    )
-                                    .padding(horizontal = 12.dp, vertical = 10.dp),
-                                verticalArrangement = Arrangement.Center,
-                            ) {
-                                Text(
-                                    e.title,
-                                    style = if (p != null && !p.nameIsNumber) OzType.nameHome else OzType.numberHome,
-                                    color = if (quiet) oz.fg2 else oz.fg, maxLines = 1, overflow = TextOverflow.Ellipsis,
-                                )
-                                // в раскрытой группе дни не показаны, поэтому время рядом с «без звука»
-                                val second = when {
-                                    quiet -> stringResource(R.string.silenced) + (if (e.inSilentGroup) " · " + com.khizrim.dialer.data.Dates.whenText(res, e.lastAt) else "")
-                                    note != null -> note // в «Пропущенный, 14:15» время уже есть
-                                    e.note != null -> e.note + (time?.let { " · $it" } ?: "")
-                                    else -> time
-                                }
-                                if (second != null) {
-                                    Text(second, style = OzType.small, color = if (note != null && !quiet) oz.danger else oz.fg3, modifier = Modifier.padding(top = 4.dp))
-                                }
-                            }
+                                    ),
+                            )
+                            Box(
+                                Modifier.weight(0.4f).widthIn(min = 104.dp).fillMaxHeight()
+                                    .press(
+                                        onClick = { vm.tap(e) },
+                                        // долгое нажатие на трубку при двух SIM — выбор SIM на этот звонок, иначе меню
+                                        onLongClick = { if (!(if (p != null) vm.askSim(p) else vm.askSim(e.number, e.title))) vm.openMenu(e, MenuContext.HOME) },
+                                        label = stringResource(method?.title ?: R.string.choose_method) + ": " + e.title,
+                                    ),
+                            )
                         }
                         // значок способа у края: крупнее и темнее, само нажатие ловит вся правая зона
                         OzIcon(method?.icon ?: R.drawable.ic_oz_swap, oz.fg2, 24.dp, Modifier.align(Alignment.CenterEnd).padding(end = 12.dp))
