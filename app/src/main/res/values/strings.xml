@@ -296,4 +296,12 @@
         <item quantity="other">Missed %d times</item>
     </plurals>
     <string name="keypad_more">%d more</string>
+    <string name="call_more">More</string>
+    <string name="card_usual">Usually: %s</string>
+    <string name="card_change">Change</string>
+    <string name="card_history">History</string>
+    <plurals name="card_calls">
+        <item quantity="one">%d call</item>
+        <item quantity="other">%d calls</item>
+    </plurals>
 </resources>

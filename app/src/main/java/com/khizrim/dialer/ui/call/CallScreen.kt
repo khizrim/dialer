@@ -104,6 +104,7 @@ fun CallScreen(c: CallState, actions: CallActions, locked: Boolean = false) {
     val reduced = LocalReducedMotion.current
     var confirmBlock by remember { mutableStateOf(false) }
     var routePicker by remember { mutableStateOf(false) }
+    var moreSheet by remember { mutableStateOf(false) }
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
     LaunchedEffect(c.phase) {
         while (c.phase == CallPhase.ACTIVE) { now = System.currentTimeMillis(); delay(500) }
@@ -128,26 +129,23 @@ fun CallScreen(c: CallState, actions: CallActions, locked: Boolean = false) {
             Modifier.fillMaxSize().safeDrawingPadding().padding(horizontal = 20.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            // после «Ответить» имя спокойно опускается на место разговора, а не перескакивает на 88 dp
-            val top by androidx.compose.animation.core.animateDpAsState(
-                if (c.phase == CallPhase.RINGING) 72.dp else 160.dp,
-                if (LocalReducedMotion.current) androidx.compose.animation.core.snap() else Motion.move(Motion.SHEET), label = "call-top",
-            )
-            Spacer(Modifier.height(top))
-            Text(
-                title,
-                style = if (known) OzType.nameCall else OzType.callNumber,
-                maxLines = if (known) 2 else 1,
-                softWrap = known,
-                color = oz.fg,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.semantics { heading() },
-            )
-            Text(sub, style = OzType.time, color = if (c.suspicious && c.phase == CallPhase.RINGING) oz.warn else oz.fg3, modifier = Modifier.padding(top = 12.dp).semantics { liveRegion = LiveRegionMode.Polite })
-            c.other?.let { OtherLineRow(it, c.phase, actions) }
+            c.other?.let { Box(Modifier.padding(top = 16.dp)) { OtherLineRow(it, c.phase, actions) } }
             Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                 if (c.simChoice != null) SimChoice(c.simChoice, actions)
                 else if (inCall && c.dtmf != null) Dtmf(c.dtmf, actions)
+            }
+            // имя слева прямо над кнопками: прочитал и нажал, глаза не бегают через весь экран.
+            // На входящем, в разговоре и после него оно стоит на одном месте — после «Ответить» экран не прыгает
+            Column(Modifier.fillMaxWidth().padding(start = 8.dp, end = 8.dp, bottom = 32.dp)) {
+                Text(
+                    title,
+                    style = if (known) OzType.nameCall else OzType.callNumber,
+                    maxLines = if (known) 2 else 1,
+                    softWrap = known,
+                    color = oz.fg,
+                    modifier = Modifier.semantics { heading() },
+                )
+                Text(sub, style = OzType.time, color = if (c.suspicious && c.phase == CallPhase.RINGING) oz.warn else oz.fg3, modifier = Modifier.padding(top = 6.dp).semantics { liveRegion = LiveRegionMode.Polite })
             }
             // после «Ответить» кнопки гаснут за 150 мс, управление поднимается на 8 px за 200 мс
             AnimatedContent(
@@ -163,10 +161,13 @@ fun CallScreen(c: CallState, actions: CallActions, locked: Boolean = false) {
             ) { phase ->
                 when (phase) {
                     0 -> Ringing(actions, known, secondLine = c.other != null, locked = locked, onBlock = { confirmBlock = true })
-                    1 -> Active(c, actions, onRoutes = { routePicker = true })
+                    1 -> Active(c, actions, onRoutes = { routePicker = true }, onMore = { moreSheet = true })
                     else -> Ended(c, actions, onBlock = { confirmBlock = true })
                 }
             }
+        }
+        if (moreSheet) {
+            MoreSheet(c, actions, onDone = { moreSheet = false })
         }
         if (routePicker) {
             RoutePicker(c, onPick = { routePicker = false; actions.setRoute(it) }, onCancel = { routePicker = false })
@@ -185,14 +186,15 @@ fun CallScreen(c: CallState, actions: CallActions, locked: Boolean = false) {
 private fun Ringing(actions: CallActions, known: Boolean, secondLine: Boolean, locked: Boolean, onBlock: () -> Unit) {
     val oz = LocalOz.current
     Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-        Row(Modifier.fillMaxWidth().padding(bottom = 28.dp), horizontalArrangement = Arrangement.SpaceAround) {
+        // быстрые действия — кнопки со значком над тем кругом, к которому они ближе: SMS над «Отклонить», напомнить — над «Ответить»
+        Row(Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, bottom = 20.dp), horizontalArrangement = if (secondLine) Arrangement.Center else Arrangement.SpaceBetween) {
             if (secondLine) {
                 // второй звонок во время разговора: «Ответить» удержит текущий
                 TextAction(stringResource(R.string.end_and_answer), oz.fg2, actions::endAndAnswer, style = OzType.small)
             } else {
-                TextAction(stringResource(R.string.send_sms), oz.fg2, actions::quickSms, style = OzType.small)
-                if (known) TextAction(stringResource(R.string.remind), oz.fg2, actions::remind, style = OzType.small)
-                else TextAction(stringResource(R.string.block), oz.fg2, onBlock, style = OzType.small)
+                Toggle(R.drawable.ic_oz_sms, stringResource(R.string.send_sms), false, actions::quickSms, switch = false, modifier = Modifier.widthIn(min = 96.dp))
+                if (known) Toggle(R.drawable.ic_oz_remind, stringResource(R.string.remind), false, actions::remind, switch = false, modifier = Modifier.widthIn(min = 96.dp))
+                else Toggle(R.drawable.ic_oz_ban, stringResource(R.string.block), false, onBlock, switch = false, modifier = Modifier.widthIn(min = 96.dp))
             }
         }
         Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 24.dp), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -287,31 +289,30 @@ private fun LabeledRound(icon: Int, label: String, fill: Color, onClick: () -> U
 }
 
 @Composable
-private fun Active(c: CallState, actions: CallActions, onRoutes: () -> Unit) {
+private fun Active(c: CallState, actions: CallActions, onRoutes: () -> Unit, onMore: () -> Unit) {
     val oz = LocalOz.current
     val two = c.other != null && !c.other.ringing
-    Column(Modifier.fillMaxWidth().padding(horizontal = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        // сетка 3×2: звук и микрофон сверху, линии и сообщение снизу
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceAround) {
+    Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+        // одна линия: то, что нужно в каждом разговоре. Удержать, добавить и написать — в «Ещё».
+        // Идёт второй звонок — «Поменять» и «Объединить» встают в линию сами, пока они нужны
+        Row(Modifier.fillMaxWidth().padding(bottom = 28.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+            val cell = Modifier.weight(1f)
             // микрофон: мгновенная смена иконки и цвета, без анимации формы
-            Toggle(if (c.muted) R.drawable.ic_oz_mic_off else R.drawable.ic_oz_mic, stringResource(if (c.muted) R.string.call_mic_off else R.string.call_mic), c.muted, actions::toggleMute)
+            Toggle(if (c.muted) R.drawable.ic_oz_mic_off else R.drawable.ic_oz_mic, stringResource(if (c.muted) R.string.call_mic_off else R.string.call_mic), c.muted, actions::toggleMute, modifier = cell)
             if (c.hasRouteChoice) {
                 // есть наушники или Bluetooth: подпись говорит, куда идёт звук, тап открывает выбор
-                Toggle(R.drawable.ic_oz_speaker, routeLabel(c, c.route), c.route != CallState.ROUTE_EARPIECE, onRoutes)
+                Toggle(R.drawable.ic_oz_speaker, routeLabel(c, c.route), c.route != CallState.ROUTE_EARPIECE, onRoutes, modifier = cell)
             } else {
-                Toggle(R.drawable.ic_oz_speaker, stringResource(R.string.speaker), c.speaker, actions::toggleSpeaker)
+                Toggle(R.drawable.ic_oz_speaker, stringResource(R.string.speaker), c.speaker, actions::toggleSpeaker, modifier = cell)
             }
-            Toggle(R.drawable.ic_oz_grid, stringResource(R.string.call_digits), c.dtmf != null, actions::toggleDtmf)
-        }
-        Row(Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 28.dp), horizontalArrangement = Arrangement.SpaceAround) {
             if (two) {
-                Toggle(R.drawable.ic_oz_swap, stringResource(R.string.swap), false, actions::swap, switch = false)
-                Toggle(R.drawable.ic_oz_users, stringResource(R.string.merge), false, actions::merge, enabled = c.canMerge, switch = false)
+                Toggle(R.drawable.ic_oz_swap, stringResource(R.string.swap), false, actions::swap, switch = false, modifier = cell)
+                if (c.canMerge) Toggle(R.drawable.ic_oz_users, stringResource(R.string.merge), false, actions::merge, switch = false, modifier = cell)
             } else {
-                Toggle(R.drawable.ic_oz_pause, stringResource(if (c.onHold) R.string.resume else R.string.hold), c.onHold, actions::toggleHold, enabled = c.canHold && c.phase == CallPhase.ACTIVE)
-                Toggle(R.drawable.ic_oz_plus, stringResource(R.string.add_call), false, actions::addCall, enabled = !c.onHold && c.phase == CallPhase.ACTIVE, switch = false)
+                Toggle(R.drawable.ic_oz_grid, stringResource(R.string.call_digits), c.dtmf != null, actions::toggleDtmf, modifier = cell)
             }
-            Toggle(R.drawable.ic_oz_sms, stringResource(R.string.write), false, actions::message, enabled = c.number.isNotEmpty(), switch = false)
+            // на удержании «Ещё» светится: там кнопка «Продолжить»
+            Toggle(R.drawable.ic_oz_more, stringResource(R.string.call_more), c.onHold, onMore, switch = false, modifier = cell)
         }
         Box(
             Modifier
@@ -324,15 +325,50 @@ private fun Active(c: CallState, actions: CallActions, onRoutes: () -> Unit) {
     }
 }
 
+/** «Ещё» в разговоре: редкие действия словами, лист снизу. Недоступное не показываем. */
+@Composable
+private fun MoreSheet(c: CallState, actions: CallActions, onDone: () -> Unit) {
+    val oz = LocalOz.current
+    val two = c.other != null && !c.other.ringing
+    val rows = buildList {
+        if (two) add(Triple(R.drawable.ic_oz_grid, R.string.call_digits, actions::toggleDtmf))
+        if (c.canHold && c.phase == CallPhase.ACTIVE && !two) add(Triple(R.drawable.ic_oz_pause, if (c.onHold) R.string.resume else R.string.hold, actions::toggleHold))
+        if (!c.onHold && c.phase == CallPhase.ACTIVE && !two) add(Triple(R.drawable.ic_oz_plus, R.string.add_call, actions::addCall))
+        if (c.number.isNotEmpty()) add(Triple(R.drawable.ic_oz_sms, R.string.write, actions::message))
+    }
+    Box(Modifier.fillMaxSize().background(oz.scrim).press(onDone, shape = RoundedCornerShape(0.dp), pressColor = oz.scrim)) {
+        Column(
+            Modifier
+                .align(Alignment.BottomCenter)
+                .safeDrawingPadding()
+                .padding(12.dp)
+                .fillMaxWidth()
+                .lift(OzShape.sheet)
+                .press({}, shape = OzShape.sheet, pressColor = oz.sheet)
+                .background(oz.sheet, OzShape.sheet)
+                .padding(vertical = 12.dp),
+        ) {
+            rows.forEach { (icon, label, act) ->
+                Row(
+                    Modifier.fillMaxWidth().height(56.dp).press({ onDone(); act() }, shape = RoundedCornerShape(16.dp)).padding(horizontal = 22.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    OzIcon(icon, oz.fg2, 22.dp)
+                    Text(stringResource(label), style = OzType.list, color = oz.fg, modifier = Modifier.padding(start = 16.dp))
+                }
+            }
+        }
+    }
+}
+
 /** Кнопка звонка: круг 64dp без заливки, включённая — в «лунке» и цветом. Недоступная — бледная. */
 @Composable
-private fun Toggle(icon: Int, label: String, on: Boolean, onClick: () -> Unit, enabled: Boolean = true, switch: Boolean = true) {
+private fun Toggle(icon: Int, label: String, on: Boolean, onClick: () -> Unit, enabled: Boolean = true, switch: Boolean = true, modifier: Modifier = Modifier.width(96.dp)) {
     val oz = LocalOz.current
     val color = if (on) oz.accent else oz.fg
     val stateText = stringResource(if (on) R.string.state_on else R.string.state_off)
     Column(
-        Modifier
-            .width(96.dp)
+        modifier
             .graphicsLayer { alpha = if (enabled) 1f else .38f }
             .press(if (enabled) onClick else ({}), shape = OzShape.row, role = if (switch) Role.Switch else Role.Button, label = label)
             .let { m -> if (switch) m.semantics { stateDescription = stateText } else m }

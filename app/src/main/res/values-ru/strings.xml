@@ -303,4 +303,14 @@
         <item quantity="other">Пропущенный, %d раза</item>
     </plurals>
     <string name="keypad_more">ещё %d</string>
+    <string name="call_more">Ещё</string>
+    <string name="card_usual">Обычно: %s</string>
+    <string name="card_change">Сменить</string>
+    <string name="card_history">История</string>
+    <plurals name="card_calls">
+        <item quantity="one">%d звонок</item>
+        <item quantity="few">%d звонка</item>
+        <item quantity="many">%d звонков</item>
+        <item quantity="other">%d звонка</item>
+    </plurals>
 </resources>
