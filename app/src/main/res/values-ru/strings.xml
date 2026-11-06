@@ -85,7 +85,6 @@
     <string name="yesterday">Вчера</string>
     <string name="yesterday_lower">вчера</string>
     <string name="at_time">в %1$s</string>
-    <string name="missed_when">Пропущенный, %1$s</string>
     <string name="h_incoming">Входящий</string>
     <string name="h_outgoing">Исходящий</string>
     <string name="h_outgoing_no_answer">Исходящий, без ответа</string>
@@ -297,4 +296,11 @@
     <string name="log_cleared">Журнал очищен</string>
     <string name="log_clear_failed">Не получилось очистить журнал</string>
     <string name="hide">Скрыть</string>
+    <plurals name="feed_missed_times">
+        <item quantity="one">Пропущенный, %d раз</item>
+        <item quantity="few">Пропущенный, %d раза</item>
+        <item quantity="many">Пропущенный, %d раз</item>
+        <item quantity="other">Пропущенный, %d раза</item>
+    </plurals>
+    <string name="keypad_more">ещё %d</string>
 </resources>

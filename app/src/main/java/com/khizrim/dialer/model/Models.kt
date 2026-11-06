@@ -33,6 +33,12 @@ enum class Method(@DrawableRes val icon: Int, @StringRes val title: Int, val bra
     }
 
     fun label(context: Context): String = context.getString(title)
+
+    /** Короткая метка мессенджера рядом со значком: трубка WhatsApp и трубка сети иначе неотличимы. У сети и SMS её нет. */
+    val tag: String? get() = when (brand) {
+        "WhatsApp" -> "WA"; "Telegram" -> "TG"; "Signal" -> "SG"; "Viber" -> "VB"; else -> null
+    }
+
     fun network(context: Context): String = brand ?: context.getString(R.string.net_phone)
 }
 

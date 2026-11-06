@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -204,11 +205,25 @@ fun GhostIconButton(
  */
 @Composable
 fun ReachButton(method: com.khizrim.dialer.model.Method?, who: String, onClick: () -> Unit) {
-    GhostIconButton(
-        method?.icon ?: R.drawable.ic_oz_swap,
-        stringResource(method?.title ?: R.string.choose_method) + ": " + who,
-        onClick, tint = LocalOz.current.fg3, size = 48.dp, iconSize = 22.dp,
-    )
+    Box(
+        Modifier.heightIn(min = 48.dp).widthIn(min = 48.dp)
+            .press(onClick, shape = RoundedCornerShape(12.dp), label = stringResource(method?.title ?: R.string.choose_method) + ": " + who)
+            .padding(horizontal = 10.dp),
+        contentAlignment = Alignment.Center,
+    ) { MethodMark(method) }
+}
+
+/**
+ * Значок способа у правого края строки и, если это мессенджер, его короткое имя мелко справа («WA», «TG»).
+ * Звонок по сети без подписи: он обычный и не требует пояснения.
+ */
+@Composable
+fun MethodMark(method: com.khizrim.dialer.model.Method?, tint: Color = LocalOz.current.fg2, size: Dp = 22.dp) {
+    val tag = method?.tag
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        OzIcon(method?.icon ?: R.drawable.ic_oz_swap, tint, size)
+        if (tag != null) Text(tag, style = OzType.channel, color = LocalOz.current.fg3, modifier = Modifier.padding(start = 3.dp))
+    }
 }
 
 /** Тихая текстовая кнопка. */
