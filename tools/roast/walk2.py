@@ -238,7 +238,11 @@ expand_all(); shot("missed-shade-expanded")
 cb = [(x, y) for t, d, x, y, b in nodes() if t in ("Call back", "Перезвонить") or d in ("Call back", "Перезвонить")]
 note(f"call back buttons: {cb}")
 for n, (x, y) in enumerate(cb[:2]):
-    if n: sh("shell", "cmd", "statusbar", "expand-notifications"); time.sleep(2); expand_all(); cb2 = [(xx, yy) for t, d, xx, yy, b in nodes() if t in ("Call back", "Перезвонить")]; note(f"call back now: {cb2}"); x, y = (cb2 or [(x, y)])[0]
+    if n:
+        sh("shell", "cmd", "statusbar", "expand-notifications"); time.sleep(2.5); shot("shade-again"); expand_all()
+        cb2 = [(xx, yy) for t, d, xx, yy, b in nodes() if t in ("Call back", "Перезвонить")]; note(f"call back now: {cb2}")
+        if not cb2: break
+        x, y = cb2[0]
     sh("shell", "input", "tap", str(x), str(y)); time.sleep(4); shot(f"callback-{n+1}")
     note(f"callback {n+1}: state={tstate()}")
     hangup(); time.sleep(3); note(f"callback {n+1}: last call-log row = {lastnum()}")
