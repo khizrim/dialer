@@ -105,7 +105,12 @@ fun PersonScreen(vm: DialerViewModel, id: Long) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
                     p.photo?.let { ContactPhoto(it, Modifier.padding(end = 12.dp)) }
                     Text(
-                        p.shownName, style = if (p.nameIsNumber) OzType.namePerson.copy(fontFeatureSettings = "tnum") else OzType.namePerson, color = oz.fg,
+                        p.shownName, style = when {
+                            p.nameIsNumber -> OzType.namePerson.copy(fontFeatureSettings = "tnum")
+                            // длинное слово («Константинопольская») не влезает в строку и рвётся посередине — тогда имя мельче
+                            (p.shownName.split(' ').maxOfOrNull { it.length } ?: 0) > 13 -> OzType.namePerson.copy(fontSize = 22.sp, lineHeight = 28.sp)
+                            else -> OzType.namePerson
+                        }, color = oz.fg,
                         modifier = Modifier.weight(1f).padding(top = 4.dp).semantics { heading() },
                     )
                     if (!unknown) Row(Modifier.offset(x = 10.dp)) {
