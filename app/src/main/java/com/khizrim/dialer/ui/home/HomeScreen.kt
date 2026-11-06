@@ -224,11 +224,11 @@ fun HomeScreen(vm: DialerViewModel) {
                                 ),
                         )
                         Row(Modifier.fillMaxWidth().padding(end = 104.dp), verticalAlignment = Alignment.CenterVertically) {
-                            // нажатие на имя — карточка (у незнакомого номера — его меню)
+                            // нажатие на имя — карточка (у незнакомого номера — такая же карточка номера)
                             Column(
                                 Modifier.weight(1f, fill = false).heightIn(min = 64.dp)
                                     .press(
-                                        onClick = { if (p != null) vm.openPerson(p.id) else vm.openMenu(e, MenuContext.HOME) },
+                                        onClick = { if (p != null) vm.openPerson(p.id) else e.number?.let(vm::openNumber) ?: vm.openMenu(e, MenuContext.HOME) },
                                         onLongClick = { vm.openMenu(e, MenuContext.HOME) },
                                         label = e.title + ((note ?: e.note)?.let { ", $it" } ?: ""),
                                     )

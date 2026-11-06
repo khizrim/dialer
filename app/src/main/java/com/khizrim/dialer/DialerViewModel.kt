@@ -271,7 +271,20 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     // ---------- навигация ----------
-    fun person(id: Long): Person? = byId[id]
+    fun person(id: Long): Person? = byId[id] ?: numberCards[id]
+
+    /** Незнакомый номер открывается такой же карточкой, как человек: id отрицательный, способы — звонок и SMS. */
+    private val numberCards = HashMap<Long, Person>()
+    fun openNumber(number: String) {
+        val key = Numbers.key(number)
+        val id = -1L - (key.hashCode().toLong() and 0x7fffffffL)
+        numberCards[id] = Person(
+            id, "n:$key", number, listOf(com.khizrim.dialer.model.Phone(number, "")),
+            listOf(com.khizrim.dialer.model.Channel(Method.PHONE), com.khizrim.dialer.model.Channel(Method.SMS)), null, false,
+        )
+        openPerson(id)
+    }
+    fun isNumberCard(p: Person): Boolean = p.id < 0
 
     /** Незнакомые и заблокированные открываются из настроек или из уведомления: назад — туда, откуда пришли. */
     private var listFrom = Screen.HOME
