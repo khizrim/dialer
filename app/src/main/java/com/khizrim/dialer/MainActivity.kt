@@ -35,6 +35,7 @@ class MainActivity : ComponentActivity() {
 
     /** Открыли «Перезвонить» из уведомления: остальные пропущенные остаются в шторке, пока человек сам не откроет приложение. */
     private var keepMissed = false
+    private var callBackAt = 0L
 
     override fun onResume() {
         super.onResume()
@@ -45,7 +46,8 @@ class MainActivity : ComponentActivity() {
     override fun onStop() {
         super.onStop()
         // экран звонка поверх — это ещё тот же перезвон; ушли из приложения после него — следующий запуск уберёт сводки
-        if (!com.khizrim.dialer.telecom.CallManager.hasVisibleCall) keepMissed = false
+        // (звонок ещё может не дойти до Telecom, когда экран звонка уже закрыл нас, поэтому первые секунды не считаем)
+        if (!com.khizrim.dialer.telecom.CallManager.hasVisibleCall && android.os.SystemClock.elapsedRealtime() - callBackAt > 15_000) keepMissed = false
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -63,6 +65,7 @@ class MainActivity : ComponentActivity() {
             // «Перезвонить» из уведомления о пропущенном
             intent?.action == CallNotifications.ACTION_CALL_BACK && tel != null -> {
                 keepMissed = true
+                callBackAt = android.os.SystemClock.elapsedRealtime()
                 CallNotifications.clearMissed(this, tel)
                 vm.callNumber(tel, intent.getStringExtra(CallNotifications.EXTRA_SIM))
             }
