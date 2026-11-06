@@ -29,7 +29,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
-data class Route(val screen: Screen, val personId: Long? = null)
+data class Route(val screen: Screen, val personId: Long? = null) {
+    /** Лист по содержимому: экран под ним остаётся виден и притенён (карточка человека). */
+    val isSheet: Boolean get() = screen == Screen.PERSON
+}
 
 /** С какой стороны экран приходит и куда уходит. */
 enum class Edge(val sign: Float) { TOP(-1f), BOTTOM(1f) }
@@ -68,7 +71,7 @@ class ScreenStack(private val scope: CoroutineScope) {
 
     private sealed interface Gesture
     private class Preview(val layer: Layer) : Gesture { var fraction = 0f }
-    private class Dismiss(val top: Layer, val beneath: Layer) : Gesture { var fraction = 0f }
+    private class Dismiss(val top: Layer, val beneath: Layer, val added: Boolean = true) : Gesture { var fraction = 0f }
 
     val top: Layer? get() = layers.lastOrNull()
 
@@ -123,7 +126,9 @@ class ScreenStack(private val scope: CoroutineScope) {
     /** Под верхним, когда он встал на место, ничего не держим: старые экраны не рисуются и не считаются. */
     private fun trim() {
         val top = layers.lastOrNull() ?: return
-        layers.removeAll { it !== top }
+        // под листом экран остаётся: он виден за листом
+        val under = if (top.route.isSheet) layers.getOrNull(layers.lastIndex - 1) else null
+        layers.removeAll { it !== top && it !== under }
         settled = true
     }
 
@@ -171,9 +176,9 @@ class ScreenStack(private val scope: CoroutineScope) {
         if (g !is Dismiss) {
             if (!settled || reduced) return
             val back = backRoute ?: return
-            val beneath = Layer(back, trail[trail.lastIndex - 1].second, 1f)
-            layers.add(layers.lastIndex, beneath)
-            g = Dismiss(top, beneath); gesture = g
+            val existing = layers.getOrNull(layers.lastIndex - 1)?.takeIf { it.route == back }
+            val beneath = existing ?: Layer(back, trail[trail.lastIndex - 1].second, 1f).also { layers.add(layers.lastIndex, it) }
+            g = Dismiss(top, beneath, added = existing == null); gesture = g
         }
         g.fraction = (px / height).coerceIn(0f, 1f)
         val shown = 1f - g.fraction
@@ -191,7 +196,7 @@ class ScreenStack(private val scope: CoroutineScope) {
         } else {
             scope.launch {
                 g.top.shown.animateTo(1f, Motion.settle(), -velocity / height)
-                if (gesture == null && layers.lastOrNull() === g.top) layers.remove(g.beneath)
+                if (gesture == null && layers.lastOrNull() === g.top && g.added) layers.remove(g.beneath)
             }
         }
     }
@@ -220,6 +225,7 @@ fun ScreenStackHost(stack: ScreenStack, route: Route, reduced: Boolean, content:
             layers.forEachIndexed { index, layer ->
                 key(layer.id) {
                     val above = layers.getOrNull(index + 1)
+                    val sheet = layer.route.isSheet
                     Box(
                         Modifier
                             .fillMaxSize()
@@ -228,14 +234,16 @@ fun ScreenStackHost(stack: ScreenStack, route: Route, reduced: Boolean, content:
                                 if (reduced) alpha = s
                                 else translationY = layer.edge.sign * (1f - s) * h
                             }
-                            .background(oz.bg)
+                            .then(if (sheet) Modifier else Modifier.background(oz.bg))
                             .drawWithContent {
                                 drawContent()
-                                // накрытый экран притеняется не больше чем на треть затемнения листов: глубина без шума
+                                // накрытый экран притеняется не больше чем на треть затемнения листов: глубина без шума;
+                                // под листом — полное затемнение, как под любым листом
                                 val cover = above?.shown?.value ?: 0f
-                                if (cover > 0f && !reduced) drawRect(oz.scrim.copy(alpha = oz.scrim.alpha * 0.35f * cover))
+                                val k = if (above?.route?.isSheet == true) 1f else 0.35f
+                                if (cover > 0f && (!reduced || k == 1f)) drawRect(oz.scrim.copy(alpha = oz.scrim.alpha * k * cover))
                             }
-                            .safeDrawingPadding(),
+                            .then(if (sheet) Modifier else Modifier.safeDrawingPadding()),
                     ) { content(layer.route) }
                 }
             }

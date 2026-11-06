@@ -22,6 +22,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -42,6 +43,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
@@ -82,7 +84,11 @@ fun SearchResults(vm: DialerViewModel, modifier: Modifier = Modifier, drag: Pane
     val oz = LocalOz.current
     val reduced = LocalReducedMotion.current
     // лучшее совпадение ближе к клавиатуре, под большим пальцем
-    val results = vm.hits.asReversed()
+    val all = vm.hits.asReversed()
+    // над номером один самый вероятный человек; остальные — по «ещё N», пока набор не изменится
+    // раскрыли — список остаётся раскрытым, пока набирают, и не прыгает от каждой цифры; сбрасывается, когда набор стёрт
+    var more by remember(vm.keypad.isEmpty()) { androidx.compose.runtime.mutableStateOf(false) }
+    val results = if (more || all.size <= 1) all else all.takeLast(1)
     val showAdd = results.isEmpty() && PhoneFormat.digits(vm.keypad).length >= 3
     // подсказки и клавиатура — один лист: тянут вниз дальше края списка — весь слой идёт за пальцем 1:1,
     // отпустили — доезжает со скоростью пальца или возвращается (MOTION-v2)
@@ -110,6 +116,14 @@ fun SearchResults(vm: DialerViewModel, modifier: Modifier = Modifier, drag: Pane
         }
     }
     LazyColumn(modifier.nestedScroll(pullDown).padding(horizontal = 8.dp), verticalArrangement = Arrangement.Bottom) {
+        if (!more && all.size > 1) {
+            item(key = "more") {
+                Text(
+                    stringResource(R.string.keypad_more, all.size - 1), style = OzType.meta, color = oz.fg3,
+                    modifier = Modifier.heightIn(min = 44.dp).press({ more = true }, shape = com.khizrim.dialer.ui.theme.OzShape.text).padding(horizontal = 12.dp, vertical = 13.dp),
+                )
+            }
+        }
         items(results, key = { it.person.id }) { hit ->
             val p = hit.person
             val method = vm.defaultOf(p)
@@ -121,14 +135,16 @@ fun SearchResults(vm: DialerViewModel, modifier: Modifier = Modifier, drag: Pane
                             onLongClick = { vm.openMenu(p) },
                             label = "${p.name}, ${hit.phone}",
                         )
-                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                        .heightIn(min = 52.dp)
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalArrangement = Arrangement.Center,
                 ) {
                     if (p.nameIsNumber) {
                         // имя — это номер: одна строка с номером, без дубля
-                        Text(highlight(hit.phone, hit.phoneRange, oz.accent), style = OzType.list.copy(fontSize = OzType.nameSearch.fontSize), color = oz.fg, maxLines = 1)
+                        Text(highlight(hit.phone, hit.phoneRange, oz.accent), style = OzType.rowNumber, color = oz.fg, maxLines = 1)
                     } else {
-                        Text(highlight(p.name, hit.nameRange, oz.accent), style = OzType.nameSearch, color = oz.fg, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        Text(highlight(hit.phone, hit.phoneRange, oz.accent), style = OzType.small, color = oz.fg3)
+                        Text(highlight(p.name, hit.nameRange, oz.accent), style = OzType.row, color = oz.fg, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(highlight(hit.phone, hit.phoneRange, oz.accent), style = OzType.meta, color = oz.fg3, modifier = Modifier.padding(top = 2.dp))
                     }
                 }
                 com.khizrim.dialer.ui.components.ReachButton(method, p.name) { vm.perform(p, method) }
@@ -220,9 +236,12 @@ fun Modifier.keypadPull(drag: PanelDrag, panelTop: () -> Float): Modifier = comp
 fun KeypadPanel(vm: DialerViewModel, onTop: (Float) -> Unit = {}) {
     val oz = LocalOz.current
     // тягу вниз ловит неподвижный слой снаружи (keypadPull): так шаг пальца не искажает сдвиг самой панели
+    val hideLabel = stringResource(R.string.hide_keypad)
     Column(
         Modifier.fillMaxWidth()
             .onGloballyPositioned { onTop(it.positionInWindow().y) }
+            // свернуть свайпом вниз; для экранного диктора то же действие в меню
+            .semantics { customActions = listOf(androidx.compose.ui.semantics.CustomAccessibilityAction(hideLabel) { vm.closeKeypad(); true }) }
     ) {
         TypedNumber(vm)
         Column(Modifier.padding(start = 12.dp, end = 12.dp, top = 4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -238,9 +257,8 @@ fun KeypadPanel(vm: DialerViewModel, onTop: (Float) -> Unit = {}) {
             Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, top = 12.dp, bottom = if (twoSims) 0.dp else 16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                GhostIconButton(R.drawable.ic_oz_chevron_down, stringResource(R.string.hide_keypad), vm::closeKeypad, tint = oz.fg2, size = 56.dp)
-            }
+            // слева пусто: клавиатуру сворачивают свайпом вниз, кнопка повторяла бы жест
+            Box(Modifier.weight(1f))
             Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
                 val label = if (vm.keypad.isEmpty()) stringResource(R.string.call) else stringResource(R.string.call_number, PhoneFormat.formatTyping(vm.keypad, vm.region))
                 RoundButton(R.drawable.ic_oz_phone, label, oz.accentFill, vm::callTyped, onLongClick = { vm.askSim(vm.keypad, PhoneFormat.formatTyping(vm.keypad, vm.region)) })

@@ -85,7 +85,6 @@
     <string name="yesterday">Вчера</string>
     <string name="yesterday_lower">вчера</string>
     <string name="at_time">в %1$s</string>
-    <string name="missed_when">Пропущенный, %1$s</string>
     <string name="h_incoming">Входящий</string>
     <string name="h_outgoing">Исходящий</string>
     <string name="h_outgoing_no_answer">Исходящий, без ответа</string>
@@ -154,6 +153,7 @@
     <string name="alert_notifications">Уведомления выключены, входящие могут не показаться</string>
     <string name="alert_full_screen">Разрешите звонки на весь экран, чтобы видеть их на блокировке</string>
     <string name="alert_xiaomi">На Xiaomi разрешите «Экран блокировки» и «Всплывающие окна»</string>
+    <string name="alert_call_log">Нет доступа к журналу звонков, лента не видит, кто звонил</string>
     <string name="alert_fix">Исправить</string>
     <string name="alert_open">Открыть</string>
     <string name="err_call_permission">Разрешите звонки в настройках, чтобы звонить из Ozero Phone</string>
@@ -280,6 +280,7 @@
     <string name="edit_discard_text">Изменения в контакте пропадут.</string>
     <string name="edit_discard">Выйти</string>
     <string name="call_to">Позвонить на %1$s</string>
+    <string name="search_all">Поиск</string>
     <string name="search_by_name">Искать по имени</string>
     <string name="search_hint">Проведите вверх: контакты и поиск</string>
     <string name="search_nothing">Никого не нашлось</string>
@@ -297,4 +298,21 @@
     <string name="log_cleared">Журнал очищен</string>
     <string name="log_clear_failed">Не получилось очистить журнал</string>
     <string name="hide">Скрыть</string>
+    <plurals name="feed_missed_times">
+        <item quantity="one">Пропущенный, %d раз</item>
+        <item quantity="few">Пропущенный, %d раза</item>
+        <item quantity="many">Пропущенный, %d раз</item>
+        <item quantity="other">Пропущенный, %d раза</item>
+    </plurals>
+    <string name="keypad_more">ещё %d</string>
+    <string name="call_more">Ещё</string>
+    <string name="card_usual">Обычно: %s</string>
+    <string name="card_change">Сменить</string>
+    <string name="card_history">История</string>
+    <plurals name="card_calls">
+        <item quantity="one">%d звонок</item>
+        <item quantity="few">%d звонка</item>
+        <item quantity="many">%d звонков</item>
+        <item quantity="other">%d звонка</item>
+    </plurals>
 </resources>

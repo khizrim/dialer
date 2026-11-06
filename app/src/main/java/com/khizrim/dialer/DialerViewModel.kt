@@ -251,17 +251,25 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
             val act = a.lastAct
             val note = when {
                 missed != null -> null
+                // направление показывает стрелка у времени; словами — только «без ответа»
                 lc != null && lc.date == a.last && lc.type == android.provider.CallLog.Calls.OUTGOING_TYPE ->
-                    if (lc.duration <= 0) str(R.string.outgoing_no_answer) else str(R.string.h_outgoing)
+                    if (lc.duration <= 0) str(R.string.outgoing_no_answer) else null
                 // последним было наше действие через мессенджер: говорим, каким способом
                 act != null && act.at == a.last -> act.method.label(ctx)
                 else -> null
             }
-            HomeEntry(key, person, if (person == null) a.number else null, a.last, missed, note)
+            val dir = when {
+                missed != null -> com.khizrim.dialer.model.Dir.MISSED
+                act != null && act.at == a.last -> com.khizrim.dialer.model.Dir.OUT
+                lc != null && lc.date == a.last && lc.type == android.provider.CallLog.Calls.OUTGOING_TYPE -> com.khizrim.dialer.model.Dir.OUT
+                lc != null && lc.date == a.last -> com.khizrim.dialer.model.Dir.IN
+                else -> null
+            }
+            HomeEntry(key, person, if (person == null) a.number else null, a.last, missed, note, dir = dir)
         }.sortedBy { it.lastAt }.takeLast(FEED_SIZE).ifEmpty {
             // истории ещё нет: показываем избранных, чтобы главная не была пустой
-            if (acc.isNotEmpty()) emptyList()
-            else people.filter { it.starred && prefs.hiddenAt(it.key) == 0L }.take(HOME_SIZE).map { HomeEntry(it.key, it, null, 0L, null) }
+            // истории нет: лента пустая, а не притворяется журналом из избранных (они и так в «Причале»)
+            emptyList()
         }
         // обновляем список на месте, чтобы строки переезжали, а не мигали
         if (entries.map { it.key } != home.map { it.key } || entries != home.toList()) {
@@ -694,6 +702,13 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
         } else {
             performOther(p, m, number)
         }
+    }
+
+    /** Долгое нажатие на способ в карточке: он становится основным. */
+    fun makeDefault(p: Person, m: Method) {
+        prefs.setDefault(p.lookupKey, m)
+        defaultsVersion++
+        say(str(R.string.now_on_tap, m.label(ctx)))
     }
 
     /** Связаться не основным способом; когда человек вернётся в приложение, тихо предложим сделать способ основным. */

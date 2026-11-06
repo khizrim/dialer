@@ -144,7 +144,7 @@ fun HomeScreen(vm: DialerViewModel) {
                 state = list,
                 reverseLayout = true,
             ) {
-                if (feed.isEmpty() && vm.favorites.isEmpty()) {
+                if (feed.isEmpty()) {
                     item(key = "empty") {
                         Column(Modifier.padding(start = 12.dp, end = 12.dp, bottom = 24.dp).animateItem()) {
                             Text(stringResource(R.string.home_empty_title), style = OzType.nameHome, color = oz.fg)
@@ -160,11 +160,11 @@ fun HomeScreen(vm: DialerViewModel) {
                         // подпись дня — тихий разделитель с линией
                         Row(
                             Modifier.animateItem(fadeInSpec = Motion.enter(Motion.FADE), placementSpec = if (reduced) null else Motion.enter(Motion.MOVE), fadeOutSpec = Motion.exit(Motion.FADE))
-                                .fillMaxWidth().padding(start = 12.dp, end = 12.dp, top = 24.dp, bottom = 4.dp),
+                                .fillMaxWidth().padding(start = 12.dp, end = 12.dp, top = 20.dp, bottom = 2.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Text(r.text, style = OzType.small.copy(fontWeight = FontWeight.Medium), color = oz.fg3, modifier = Modifier.semantics { heading() })
-                            Box(Modifier.padding(start = 12.dp).weight(1f).height(1.dp).background(oz.line))
+                            // подпись дня — без линии: хватает воздуха над ней
+                            Text(r.text, style = OzType.meta.copy(fontWeight = FontWeight.Medium), color = oz.fg3, modifier = Modifier.semantics { heading() })
                         }
                         return@items
                     }
@@ -212,7 +212,7 @@ fun HomeScreen(vm: DialerViewModel) {
                             }
                             .fillMaxWidth(),
                     ) {
-                        // всё, что правее имени (но не меньше 104 dp у края), на всю высоту строки — «связаться»
+                        // правая зона 120 dp у края, на всю высоту строки — «связаться»; остальное — карточка
                         Box(
                             Modifier.matchParentSize()
                                 .press(
@@ -222,37 +222,48 @@ fun HomeScreen(vm: DialerViewModel) {
                                     label = stringResource(method?.title ?: R.string.choose_method) + ": " + e.title,
                                 ),
                         )
-                        Row(Modifier.fillMaxWidth().padding(end = 104.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Row(Modifier.fillMaxWidth().padding(end = 120.dp), verticalAlignment = Alignment.CenterVertically) {
                             // нажатие на имя — карточка (у незнакомого номера — такая же карточка номера)
                             Column(
-                                Modifier.weight(1f, fill = false).heightIn(min = 64.dp)
+                                // имя ловит всю ширину до правой зоны: имена стали короче, и «рядом с именем» не должно звонить
+                                Modifier.weight(1f).heightIn(min = 52.dp)
                                     .press(
                                         onClick = { if (p != null) vm.openPerson(p.id) else e.number?.let(vm::openNumber) ?: vm.openMenu(e, MenuContext.HOME) },
                                         onLongClick = { vm.openMenu(e, MenuContext.HOME) },
                                         label = e.title + ((note ?: e.note)?.let { ", $it" } ?: ""),
                                     )
-                                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                                    .padding(horizontal = 12.dp, vertical = 8.dp),
                                 verticalArrangement = Arrangement.Center,
                             ) {
                                 Text(
                                     e.title,
-                                    style = if (p != null && !p.nameIsNumber) OzType.nameHome else OzType.numberHome,
+                                    style = if (p != null && !p.nameIsNumber) OzType.row else OzType.rowNumber,
                                     color = if (quiet) oz.fg2 else oz.fg, maxLines = 1, overflow = TextOverflow.Ellipsis,
                                 )
                                 // в раскрытой группе дни не показаны, поэтому время рядом с «без звука»
                                 val second = when {
                                     quiet -> stringResource(R.string.silenced) + (if (e.inSilentGroup) " · " + com.khizrim.dialer.data.Dates.whenText(res, e.lastAt) else "")
-                                    note != null -> note // в «Пропущенный, 14:15» время уже есть
-                                    e.note != null -> e.note + (time?.let { " · $it" } ?: "")
-                                    else -> time
+                                    note != null -> note
+                                    else -> e.note // время стоит справа, у края строки
                                 }
                                 if (second != null) {
-                                    Text(second, style = OzType.small, color = if (note != null && !quiet) oz.danger else oz.fg3, modifier = Modifier.padding(top = 4.dp))
+                                    Text(second, style = OzType.meta, color = if (note != null && !quiet) oz.danger else oz.fg3, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 2.dp))
                                 }
                             }
                         }
-                        // значок способа у края: крупнее и темнее, само нажатие ловит вся правая зона
-                        OzIcon(method?.icon ?: R.drawable.ic_oz_swap, oz.fg2, 24.dp, Modifier.align(Alignment.CenterEnd).padding(end = 12.dp))
+                        // у края: время серым (сегодня и вчера) и способ — значок, у мессенджера ещё «WA» / «TG»; нажатие ловит вся правая зона
+                        Row(Modifier.align(Alignment.CenterEnd).padding(end = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                            // направление мелкой стрелкой перед временем: входящий ↙, исходящий ↗, пропущенный — красным
+                            e.dir?.takeIf { !e.inSilentGroup }?.let { d ->
+                                OzIcon(
+                                    when (d) { com.khizrim.dialer.model.Dir.IN -> R.drawable.ic_oz_arr_in; com.khizrim.dialer.model.Dir.OUT -> R.drawable.ic_oz_arr_out; else -> R.drawable.ic_oz_missed },
+                                    if (d == com.khizrim.dialer.model.Dir.MISSED) oz.danger else oz.fg3, 14.dp,
+                                    Modifier.padding(end = if (time != null) 4.dp else 12.dp),
+                                )
+                            }
+                            if (time != null && !e.inSilentGroup) Text(time, style = OzType.meta, color = oz.fg3, modifier = Modifier.padding(end = 12.dp))
+                            com.khizrim.dialer.ui.components.MethodMark(method)
+                        }
                     }
                 }
             }
@@ -263,6 +274,8 @@ fun HomeScreen(vm: DialerViewModel) {
             // контакты вытягиваются за «Причал» и нижнюю панель: они не листаются, поэтому жест работает всегда
             // нижняя панель — причал, как у Ozero Mail: всегда одна поверхность цвета страницы с тенью над краем
             Column(Modifier.fillMaxWidth().dock().then(gestures)) {
+                // ручка: за неё вытягивают контакты, и она выше системной полосы жестов
+                Box(Modifier.padding(top = 6.dp).align(Alignment.CenterHorizontally).width(36.dp).height(4.dp).background(oz.handle, RoundedCornerShape(2.dp)))
                 val favs = vm.favorites
                 if (favs.isNotEmpty()) {
                     // избранные — ступенью выше подписей: тот же размер, что у имён в списках, и отдельной полосой над панелью
@@ -270,7 +283,7 @@ fun HomeScreen(vm: DialerViewModel) {
                     val favRow = androidx.compose.foundation.lazy.rememberLazyListState()
                     val fadeEdge by animateFloatAsState(if (favRow.canScrollForward) 1f else 0f, Motion.enter(Motion.FADE), label = "favFade")
                     androidx.compose.foundation.lazy.LazyRow(
-                        Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 4.dp)
+                        Modifier.fillMaxWidth().padding(top = 6.dp)
                             .graphicsLayer { compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen }
                             .drawWithContent {
                                 drawContent()
@@ -300,8 +313,8 @@ fun HomeScreen(vm: DialerViewModel) {
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 // избранные — кнопки быстрого набора: значок способа у всех, трубка тоже
-                                OzIcon(m?.icon ?: R.drawable.ic_oz_swap, oz.fg3, 18.dp, modifier = Modifier.padding(end = 8.dp))
-                                Text(vm.favLabel(p), style = OzType.nameList.copy(fontSize = 19.sp), color = oz.fg, maxLines = 1)
+                                OzIcon(m?.icon ?: R.drawable.ic_oz_swap, oz.fg3, 16.dp, modifier = Modifier.padding(end = 6.dp))
+                                Text(vm.favLabel(p), style = OzType.row, color = oz.fg, maxLines = 1)
                             }
                         }
                     }
@@ -337,18 +350,14 @@ fun HomeScreen(vm: DialerViewModel) {
                             exit = fadeOut(Motion.exit(Motion.PRESS)),
                         ) {
                             Row {
-                                // «Пропущенные» — только когда они есть; во время фильтра на его месте «Все»
+                                // пропущенные и так видны красным в ленте; «Все» — только если лента открыта из уведомления о пропущенных
                                 if (vm.missedOnly) TextAction(stringResource(R.string.filter_all), oz.fg2, { vm.showMissedOnly(false) }, modifier = Modifier.heightIn(min = 48.dp))
-                                else if (vm.homeHasMissed) TextAction(stringResource(R.string.filter_missed), oz.danger, { vm.showMissedOnly(true) }, modifier = Modifier.heightIn(min = 48.dp))
                                 TextAction(stringResource(R.string.contacts), oz.fg2, vm::openTextSearch, modifier = Modifier.heightIn(min = 48.dp))
                             }
                         }
                     }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        GhostIconButton(R.drawable.ic_oz_settings, stringResource(R.string.settings), vm::openSettings, tint = oz.fg2)
-                        androidx.compose.foundation.layout.Spacer(Modifier.width(12.dp))
-                        KeypadFab { vm.openKeypad() }
-                    }
+                    // настройки нужны редко и живут в «Контактах»; здесь одна кнопка — клавиатура
+                    KeypadFab { vm.openKeypad() }
                 }
             }
         }

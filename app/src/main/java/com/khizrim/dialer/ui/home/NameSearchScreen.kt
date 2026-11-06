@@ -42,6 +42,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -106,34 +107,40 @@ fun NameSearchScreen(vm: DialerViewModel) {
         LaunchedEffect(indexState.isScrollInProgress) {
             if (indexState.isScrollInProgress) { keyboard?.hide(); focusManager.clearFocus() }
         }
-        if (q.isBlank()) Box(Modifier.weight(1f).fillMaxWidth()) {
+        Box(Modifier.weight(1f).fillMaxWidth()) {
+        if (q.isBlank()) Box(Modifier.fillMaxSize()) {
             // докрутили до самого верха и тянут дальше вниз — контакты уезжают за пальцем
             // где начинается каждая группа: для колонки букв справа
             val starts = remember(groups) { var i = 0; groups.map { (l, ps) -> (l to i).also { i += 1 + ps.size } } }
-            LazyColumn(Modifier.fillMaxSize().dismissOnOverscroll { vm.closeTextSearch() }.padding(start = 8.dp, end = if (all.size >= 30) 28.dp else 8.dp), state = indexState) {
-                groups.forEachIndexed { gi, (letter, ps) ->
-                    // буква группы прилипает к верху, пока идёт её группа; над группой тонкая линия
-                    stickyHeader(key = "h$letter") {
-                        Box(Modifier.fillMaxWidth().height(0.dp)) {
-                            Text(
-                                letter, style = OzType.nameList.copy(fontSize = 30.sp, lineHeight = 36.sp), color = oz.fg3,
-                                modifier = Modifier.width(44.dp).wrapContentHeight(Alignment.Top, unbounded = true).padding(start = 8.dp, top = 6.dp),
-                            )
-                        }
+            LazyColumn(Modifier.fillMaxSize().dismissOnOverscroll { vm.closeTextSearch() }.padding(horizontal = 8.dp), state = indexState) {
+                groups.forEach { (letter, ps) ->
+                    // буква серым над своей группой: вся ширина строки остаётся имени
+                    item(key = "h$letter") {
+                        Text(
+                            letter, style = OzType.meta.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold), color = oz.fg3,
+                            modifier = Modifier.padding(start = 12.dp, top = 16.dp, bottom = 2.dp).semantics { heading() },
+                        )
                     }
-                    items(ps, key = { "a" + it.id }) { p ->
-                        Column(Modifier.padding(start = 44.dp)) {
-                            if (p == ps.first() && gi > 0) Box(Modifier.fillMaxWidth().height(1.dp).background(oz.line))
-                            IndexRow(vm, p)
-                        }
-                    }
+                    items(ps, key = { "a" + it.id }) { p -> IndexRow(vm, p) }
                 }
             }
-            // узкая колонка букв для быстрой прокрутки — при 30+ контактах; тянут пальцем, рядом крупно текущая буква
-            if (all.size >= 30) LetterRail(starts.map { it.first }, Modifier.align(Alignment.CenterEnd)) { i ->
-                scope.launch { indexState.scrollToItem(starts[i].second) }
+            // колонка букв для быстрой прокрутки — при 30+ контактах и только пока список листают или её держат
+            var railHeld by remember { androidx.compose.runtime.mutableStateOf(false) }
+            var railShown by remember { androidx.compose.runtime.mutableStateOf(false) }
+            LaunchedEffect(indexState.isScrollInProgress, railHeld) {
+                if (indexState.isScrollInProgress || railHeld) railShown = true
+                else { kotlinx.coroutines.delay(1200); railShown = false }
             }
-        } else LazyColumn(Modifier.weight(1f).fillMaxWidth().dismissOnOverscroll { vm.closeTextSearch() }.padding(horizontal = 8.dp), state = listState, reverseLayout = true) {
+            if (all.size >= 30) androidx.compose.animation.AnimatedVisibility(
+                railShown, Modifier.align(Alignment.CenterEnd),
+                enter = androidx.compose.animation.fadeIn(com.khizrim.dialer.ui.theme.Motion.enter(com.khizrim.dialer.ui.theme.Motion.FADE)),
+                exit = androidx.compose.animation.fadeOut(com.khizrim.dialer.ui.theme.Motion.exit(com.khizrim.dialer.ui.theme.Motion.FADE)),
+            ) {
+                LetterRail(starts.map { it.first }, Modifier, onHeld = { railHeld = it }) { i ->
+                    scope.launch { indexState.scrollToItem(starts[i].second) }
+                }
+            }
+        } else LazyColumn(Modifier.fillMaxSize().dismissOnOverscroll { vm.closeTextSearch() }.padding(horizontal = 8.dp), state = listState, reverseLayout = true) {
             if (numeric) {
                 item(key = "call") {
                     Row(
@@ -165,16 +172,25 @@ fun NameSearchScreen(vm: DialerViewModel) {
                 }
             }
         }
-        // поле 52dp: обводка accent, радиус 26, лупа слева, крестик справа. Поле тянут вниз — весь экран идёт за пальцем
+        // над полем список мягко гаснет, а не обрезается по середине букв
+        Box(
+            Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(20.dp)
+                .background(androidx.compose.ui.graphics.Brush.verticalGradient(listOf(oz.bg.copy(alpha = 0f), oz.bg))),
+        )
+        }
+        // поле 48dp на мягкой заливке без рамки, справа от него настройки. Поле тянут вниз — весь экран идёт за пальцем
         Row(
-            Modifier
-                .dismissOnDrag { vm.closeTextSearch() }
-                .padding(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 16.dp).fillMaxWidth().height(52.dp)
-                .border(1.5.dp, oz.accent, RoundedCornerShape(26.dp)).padding(start = 16.dp, end = 4.dp),
+            Modifier.dismissOnDrag { vm.closeTextSearch() }.fillMaxWidth()
+                .padding(start = 12.dp, end = 4.dp, top = 8.dp, bottom = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+        Row(
+            Modifier.weight(1f).height(48.dp)
+                .background(oz.soft, com.khizrim.dialer.ui.theme.OzShape.row).padding(start = 14.dp, end = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             OzIcon(R.drawable.ic_oz_search, oz.fg3, 20.dp)
-            val hint = stringResource(R.string.search_by_name)
+            val hint = stringResource(R.string.search_all)
             Box(Modifier.weight(1f).padding(start = 12.dp)) {
                 BasicTextField(
                     value = q,
@@ -188,8 +204,10 @@ fun NameSearchScreen(vm: DialerViewModel) {
                     decorationBox = { inner -> Box { if (q.isEmpty()) Text(hint, style = OzType.list, color = oz.fg3); inner() } },
                 )
             }
-            if (q.isNotEmpty()) GhostIconButton(R.drawable.ic_oz_x, stringResource(R.string.clear), { vm.typeText("") })
-            else GhostIconButton(R.drawable.ic_oz_chevron_down, stringResource(R.string.back), vm::closeTextSearch)
+            // крестик — только когда есть что стереть; закрывают свайпом вниз или жестом назад
+            if (q.isNotEmpty()) GhostIconButton(R.drawable.ic_oz_x, stringResource(R.string.clear), { vm.typeText("") }, tint = oz.fg3)
+        }
+        GhostIconButton(R.drawable.ic_oz_settings, stringResource(R.string.settings), vm::openSettings, tint = oz.fg2)
         }
     }
 }
@@ -218,14 +236,14 @@ private fun HitRow(vm: DialerViewModel, h: TextHit) {
     }
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Column(
-            Modifier.weight(1f).heightIn(min = 60.dp)
+            Modifier.weight(1f).heightIn(min = 52.dp)
                 .press({ vm.openPerson(p.id) }, onLongClick = { vm.openMenu(p) }, label = p.name + (where?.let { ", $it" } ?: ""))
-                .padding(horizontal = 12.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp, Alignment.CenterVertically),
         ) {
-            if (p.nameIsNumber) Text(p.shownName, style = OzType.number, color = oz.fg, maxLines = 1)
-            else Text(name, style = OzType.nameSearch, color = oz.fg, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            if (where != null) Text(where, style = OzType.small, color = oz.fg3, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            if (p.nameIsNumber) Text(p.shownName, style = OzType.rowNumber, color = oz.fg, maxLines = 1)
+            else Text(name, style = OzType.row, color = oz.fg, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            if (where != null) Text(where, style = OzType.meta, color = oz.fg3, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
         com.khizrim.dialer.ui.components.ReachButton(method, p.name) { vm.tapHit(p) }
     }
@@ -237,10 +255,10 @@ private fun IndexRow(vm: DialerViewModel, p: com.khizrim.dialer.model.Person) {
     val oz = LocalOz.current
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Box(
-            Modifier.weight(1f).heightIn(min = 48.dp).press({ vm.openPerson(p.id) }, onLongClick = { vm.openMenu(p) }, label = p.name).padding(horizontal = 12.dp),
+            Modifier.weight(1f).heightIn(min = 52.dp).press({ vm.openPerson(p.id) }, onLongClick = { vm.openMenu(p) }, label = p.name).padding(horizontal = 12.dp),
             contentAlignment = Alignment.CenterStart,
         ) {
-            Text(p.shownName, style = if (p.nameIsNumber) OzType.number else OzType.nameList.copy(fontSize = 18.sp), color = oz.fg, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(p.shownName, style = if (p.nameIsNumber) OzType.rowNumber else OzType.row, color = oz.fg, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
         com.khizrim.dialer.ui.components.ReachButton(vm.defaultOf(p), p.name) { vm.tapHit(p) }
     }
@@ -248,7 +266,7 @@ private fun IndexRow(vm: DialerViewModel, p: com.khizrim.dialer.model.Person) {
 
 /** Колонка букв справа: тап или ведение пальцем прокручивает к группе, рядом крупно текущая буква. */
 @Composable
-private fun LetterRail(letters: List<String>, modifier: Modifier, onPick: (Int) -> Unit) {
+private fun LetterRail(letters: List<String>, modifier: Modifier, onHeld: (Boolean) -> Unit = {}, onPick: (Int) -> Unit) {
     val oz = LocalOz.current
     var current by remember { androidx.compose.runtime.mutableStateOf<Int?>(null) }
     var railHeight by remember { androidx.compose.runtime.mutableStateOf(1) }
@@ -263,13 +281,14 @@ private fun LetterRail(letters: List<String>, modifier: Modifier, onPick: (Int) 
                 .pointerInput(letters) {
                     awaitEachGesture {
                         val down = awaitFirstDown()
-                        down.consume(); pick(down.position.y)
+                        down.consume(); onHeld(true); pick(down.position.y)
                         do {
                             val ev = awaitPointerEvent()
                             val c = ev.changes.firstOrNull { it.id == down.id } ?: break
                             if (c.pressed) { c.consume(); pick(c.position.y) }
                         } while (c.pressed)
                         current = null
+                        onHeld(false)
                     }
                 }
                 .semantics { contentDescription = letters.joinToString(" ") },

@@ -86,7 +86,6 @@
     <string name="yesterday">Yesterday</string>
     <string name="yesterday_lower">yesterday</string>
     <string name="at_time">at %1$s</string>
-    <string name="missed_when">Missed, %1$s</string>
     <string name="h_incoming">Incoming</string>
     <string name="h_outgoing">Outgoing</string>
     <string name="h_outgoing_no_answer">Outgoing, no answer</string>
@@ -155,6 +154,7 @@
     <string name="alert_notifications">Notifications are off, incoming calls may not show</string>
     <string name="alert_full_screen">Allow full-screen calls to see who is calling on the lock screen</string>
     <string name="alert_xiaomi">On Xiaomi, allow «Show on lock screen» and «Pop-up windows»</string>
+    <string name="alert_call_log">No access to call history, so the feed can\'t show who called</string>
     <string name="alert_fix">Fix</string>
     <string name="alert_open">Open</string>
     <string name="err_call_permission">Allow calls in settings to dial from Ozero Phone</string>
@@ -275,6 +275,7 @@
     <string name="edit_discard_text">Your changes to this contact will be lost.</string>
     <string name="edit_discard">Leave</string>
     <string name="call_to">Call %1$s</string>
+    <string name="search_all">Search</string>
     <string name="search_by_name">Search by name</string>
     <string name="search_hint">Swipe up for contacts and search</string>
     <string name="search_nothing">No one found</string>
@@ -292,4 +293,17 @@
     <string name="log_cleared">Call log cleared</string>
     <string name="log_clear_failed">Couldn’t clear the call log</string>
     <string name="hide">Hide</string>
+    <plurals name="feed_missed_times">
+        <item quantity="one">Missed</item>
+        <item quantity="other">Missed %d times</item>
+    </plurals>
+    <string name="keypad_more">%d more</string>
+    <string name="call_more">More</string>
+    <string name="card_usual">Usually: %s</string>
+    <string name="card_change">Change</string>
+    <string name="card_history">History</string>
+    <plurals name="card_calls">
+        <item quantity="one">%d call</item>
+        <item quantity="other">%d calls</item>
+    </plurals>
 </resources>

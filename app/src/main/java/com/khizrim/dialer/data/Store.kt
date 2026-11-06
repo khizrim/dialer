@@ -186,9 +186,10 @@ object Dates {
     }
 
     /** «Пропущенный, вчера» для подписи на главной; несколько подряд — «3 пропущенных, последний в 14:15». */
-    fun missed(res: Resources, ts: Long, count: Int = 1): String =
-        if (count > 1) res.getQuantityString(R.plurals.feed_missed_many, count, count, whenText(res, ts))
-        else res.getString(R.string.missed_when, whenText(res, ts))
+    fun missed(res: Resources, @Suppress("UNUSED_PARAMETER") ts: Long, count: Int = 1): String =
+        // время уже стоит у края строки, день — в подписи над ней: здесь только что случилось
+        if (count > 1) res.getQuantityString(R.plurals.feed_missed_times, count, count)
+        else res.getString(R.string.h_missed)
 
     /** «16:05» за сегодня и вчера, иначе null: дальше в ленте хватает подписи дня. */
     fun recentTime(ts: Long): String? {

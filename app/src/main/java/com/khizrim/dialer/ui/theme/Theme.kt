@@ -87,7 +87,7 @@ val Inter = variable(listOf(400, 500, 600, 700))
 val InterDisplay = variable(listOf(600, 700), optical = 32.sp)
 
 /**
- * Шесть размеров с шагом около 1,25: 14 · 16 · 20 · 28 · 32 · 40 (и 32 для клавиш).
+ * Крупное редко: 12 · 15–16 · 17 (любая строка человека) · 28 (карточка) · 32 (звонок, клавиши).
  * Всё набрано Inter, как в Ozero Mail; крупные имена — Inter Display. Моноширинные цифры только во времени и номерах.
  */
 object OzType {
@@ -109,15 +109,22 @@ object OzType {
     val callNumber = TextStyle(fontFamily = Inter, fontSize = 28.sp, lineHeight = 34.sp, letterSpacing = (-0.017).em, fontFeatureSettings = NUM)
 
     /** Имя в списке: журнал, контакты, поиск, листы. Как отправитель в списке Ozero Mail, на ступень крупнее. */
-    val nameList = TextStyle(fontFamily = Inter, fontWeight = FontWeight.Medium, fontSize = 18.sp, lineHeight = 24.sp, letterSpacing = (-0.006).em)
+    val nameList = TextStyle(fontFamily = Inter, fontWeight = FontWeight.Medium, fontSize = 17.sp, lineHeight = 22.sp, letterSpacing = (-0.006).em)
+    /** Одна строка человека на всё приложение: лента, контакты, подсказки, избранные. */
+    val row = nameList
+    val rowNumber = row.copy(fontFeatureSettings = NUM)
+    /** Вторая строка и время у края строки. */
+    val meta = TextStyle(fontFamily = Inter, fontSize = 12.sp, lineHeight = 16.sp, fontFeatureSettings = NUM)
+    /** Подпись мессенджера рядом со значком способа: «WA», «TG». */
+    val channel = TextStyle(fontFamily = Inter, fontWeight = FontWeight.SemiBold, fontSize = 10.sp, lineHeight = 12.sp, letterSpacing = 0.04.em)
     val nameSearch = nameList
     val nameHome = TextStyle(fontFamily = InterDisplay, fontWeight = FontWeight.SemiBold, fontSize = 26.sp, lineHeight = 32.sp, letterSpacing = (-0.017).em)
     /** Номер вместо имени на главной: тот же вид, цифры одной ширины. */
     val numberHome = nameHome.copy(fontFeatureSettings = NUM)
-    val namePerson = TextStyle(fontFamily = InterDisplay, fontWeight = FontWeight.Bold, fontSize = 32.sp, lineHeight = 38.sp, letterSpacing = (-0.022).em)
+    val namePerson = TextStyle(fontFamily = InterDisplay, fontWeight = FontWeight.Bold, fontSize = 28.sp, lineHeight = 34.sp, letterSpacing = (-0.022).em)
     /** Заголовок диалога и экрана, как заголовки листов в Ozero Mail. */
     val title = TextStyle(fontFamily = Inter, fontWeight = FontWeight.SemiBold, fontSize = 19.sp, lineHeight = 25.sp, letterSpacing = (-0.01).em)
-    val nameCall = TextStyle(fontFamily = InterDisplay, fontWeight = FontWeight.Bold, fontSize = 38.sp, lineHeight = 44.sp, letterSpacing = (-0.022).em)
+    val nameCall = TextStyle(fontFamily = InterDisplay, fontWeight = FontWeight.Bold, fontSize = 32.sp, lineHeight = 38.sp, letterSpacing = (-0.022).em)
 }
 
 @Composable

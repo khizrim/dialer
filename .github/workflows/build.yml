@@ -9,6 +9,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     env:
       OZERO_KEYSTORE_PASSWORD: ${{ secrets.OZERO_KEYSTORE_PASSWORD }}
       OZERO_KEY_ALIAS: ${{ secrets.OZERO_KEY_ALIAS }}
@@ -51,3 +53,15 @@ jobs:
         with:
           name: ozero-phone-release-apk
           path: app/build/outputs/apk/release/*.apk
+      # ручной запуск собирает и выпускает релиз: подписанный APK с номером сборки (versionCode)
+      - name: Publish release
+        if: github.event_name == 'workflow_dispatch' && env.OZERO_KEYSTORE != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          V=$(( GITHUB_RUN_NUMBER + 100 ))
+          cp app/build/outputs/apk/release/*.apk "ozero-phone-$V.apk"
+          NOTES=".github/release-notes.md"
+          [ -f "$NOTES" ] || echo "Сборка $V" > "$NOTES"
+          gh release create "build-$V" "ozero-phone-$V.apk" --target "$GITHUB_SHA" \
+            --title "Ozero Phone · сборка $V" --notes-file "$NOTES" --prerelease
