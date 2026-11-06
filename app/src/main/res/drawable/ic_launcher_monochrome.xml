@@ -5,21 +5,43 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <group android:translateX="29.7" android:translateY="32.4" android:scaleX="0.9" android:scaleY="0.9">
+    <group android:translateX="27" android:translateY="32.4" android:scaleX="0.9" android:scaleY="0.9">
         <group>
-            <clip-path android:pathData="M-10,-10H58V27H-10z" />
-            <path
-                android:pathData="M9.4,24a14.6,14.6 0 1,0 29.2,0a14.6,14.6 0 1,0 -29.2,0"
-                android:strokeColor="#FF000000"
-                android:strokeWidth="6" />
+            <clip-path android:pathData="M-30,-30H80V25H-30z" />
+            <group android:translateX="24" android:translateY="24">
+                <group android:scaleX="1.8086" android:scaleY="1.8086">
+                    <group android:translateX="-1.0652" android:translateY="0.6433">
+                        <group android:rotation="12">
+                            <group android:translateX="-11.3785" android:translateY="-12.5823">
+                                <path
+                                    android:pathData="M8.2 3.8c.5 0 .9.3 1.1.7l1.3 3c.2.5.1 1-.3 1.4l-1.4 1.3c1 2.1 2.7 3.8 4.8 4.8l1.3-1.4c.4-.4.9-.5 1.4-.3l3 1.3c.4.2.7.6.7 1.1v2.4c0 .9-.7 1.6-1.6 1.6C10.4 19.7 4.3 13.6 4.3 5.4c0-.9.7-1.6 1.6-1.6z"
+                                    android:strokeColor="#FF000000"
+                                    android:strokeWidth="2.7"
+                                    android:strokeLineJoin="round" />
+                            </group>
+                        </group>
+                    </group>
+                </group>
+            </group>
         </group>
         <group>
-            <clip-path android:pathData="M-10,27H58V58H-10z" />
+            <clip-path android:pathData="M-30,25H80V80H-30z" />
             <group android:translateX="6">
-                <path
-                    android:pathData="M9.4,24a14.6,14.6 0 1,0 29.2,0a14.6,14.6 0 1,0 -29.2,0"
-                    android:strokeColor="#FF000000"
-                    android:strokeWidth="6" />
+                <group android:translateX="24" android:translateY="24">
+                    <group android:scaleX="1.8086" android:scaleY="1.8086">
+                        <group android:translateX="-1.0652" android:translateY="0.6433">
+                            <group android:rotation="12">
+                                <group android:translateX="-11.3785" android:translateY="-12.5823">
+                                    <path
+                                        android:pathData="M8.2 3.8c.5 0 .9.3 1.1.7l1.3 3c.2.5.1 1-.3 1.4l-1.4 1.3c1 2.1 2.7 3.8 4.8 4.8l1.3-1.4c.4-.4.9-.5 1.4-.3l3 1.3c.4.2.7.6.7 1.1v2.4c0 .9-.7 1.6-1.6 1.6C10.4 19.7 4.3 13.6 4.3 5.4c0-.9.7-1.6 1.6-1.6z"
+                                        android:strokeColor="#FF000000"
+                                        android:strokeWidth="2.7"
+                                        android:strokeLineJoin="round" />
+                                </group>
+                            </group>
+                        </group>
+                    </group>
+                </group>
             </group>
         </group>
     </group>
