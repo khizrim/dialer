@@ -52,7 +52,7 @@ class MainActivity : ComponentActivity() {
             intent?.action == ACTION_ADD_CONTACT -> vm.addToContacts(intent.getStringExtra(EXTRA_NUMBER).orEmpty())
             intent?.action == CallNotifications.ACTION_OPEN_MISSED -> vm.openMissed(intent.getStringExtra(CallNotifications.EXTRA_MISSED_NUMBER))
             // «Перезвонить» из уведомления о пропущенном
-            intent?.action == CallNotifications.ACTION_CALL_BACK && tel != null -> vm.callNumber(tel)
+            intent?.action == CallNotifications.ACTION_CALL_BACK && tel != null -> vm.callNumber(tel, intent.getStringExtra(CallNotifications.EXTRA_SIM))
             intent?.action == Intent.ACTION_DIAL -> vm.openKeypad(tel.orEmpty())
             intent?.action == Intent.ACTION_VIEW && tel != null -> vm.openKeypad(tel)
             // «Пропущенные» из системного уведомления: на главную, там они наверху

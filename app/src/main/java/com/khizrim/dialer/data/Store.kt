@@ -72,6 +72,15 @@ class Prefs(context: Context) {
         sp.edit().apply { if (id == null) remove("sim:" + Numbers.key(number)) else putString("sim:" + Numbers.key(number), id) }.apply()
     }
 
+    /** Сколько раз подряд для номера звонили с одной не основной SIM: (id, n). На третий раз она запоминается. */
+    fun simStreak(number: String): Pair<String?, Int> {
+        val v = sp.getString("ss:" + Numbers.key(number), null) ?: return null to 0
+        return v.substringBeforeLast('|') to (v.substringAfterLast('|').toIntOrNull() ?: 0)
+    }
+    fun setSimStreak(number: String, id: String?, n: Int) {
+        sp.edit().apply { if (id == null) remove("ss:" + Numbers.key(number)) else putString("ss:" + Numbers.key(number), "$id|$n") }.apply()
+    }
+
     fun hiddenAt(key: String): Long = sp.getLong("hid:$key", 0L)
     fun hide(keys: Collection<String>, at: Long = System.currentTimeMillis()) {
         val e = sp.edit()
@@ -180,6 +189,13 @@ object Dates {
     fun missed(res: Resources, ts: Long, count: Int = 1): String =
         if (count > 1) res.getQuantityString(R.plurals.feed_missed_many, count, count, whenText(res, ts))
         else res.getString(R.string.missed_when, whenText(res, ts))
+
+    /** «16:05» за сегодня и вчера, иначе null: дальше в ленте хватает подписи дня. */
+    fun recentTime(ts: Long): String? {
+        if (ts <= 0L) return null
+        val days = daysBetween(Calendar.getInstance().apply { timeInMillis = ts }, Calendar.getInstance())
+        return if (days in 0..1) DateFormat.getTimeInstance(DateFormat.SHORT, locale).format(Date(ts)) else null
+    }
 
     fun whenText(res: Resources, ts: Long): String {
         val a = Calendar.getInstance().apply { timeInMillis = ts }

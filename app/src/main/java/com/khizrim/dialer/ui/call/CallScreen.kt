@@ -35,6 +35,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import kotlinx.coroutines.launch
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.foundation.gestures.draggable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -179,7 +184,6 @@ fun CallScreen(c: CallState, actions: CallActions, locked: Boolean = false) {
 @Composable
 private fun Ringing(actions: CallActions, known: Boolean, secondLine: Boolean, locked: Boolean, onBlock: () -> Unit) {
     val oz = LocalOz.current
-    var hint by remember { mutableStateOf(false) }
     Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
         Row(Modifier.fillMaxWidth().padding(bottom = 28.dp), horizontalArrangement = Arrangement.SpaceAround) {
             if (secondLine) {
@@ -192,16 +196,77 @@ private fun Ringing(actions: CallActions, known: Boolean, secondLine: Boolean, l
             }
         }
         Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 24.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-            LabeledRound(R.drawable.ic_oz_end_call, stringResource(R.string.decline), oz.dangerFill, actions::decline)
-            // на заблокированном экране отвечаем удержанием, чтобы не принять звонок в кармане
-            LabeledRound(
-                R.drawable.ic_oz_phone,
-                stringResource(if (hint) R.string.hold_to_answer else if (secondLine) R.string.answer_hold else R.string.answer),
-                oz.accentFill,
-                onClick = if (locked) ({ hint = true }) else actions::answer,
-                onLongClick = if (locked) actions::answer else null,
-            )
+            // на заблокированном экране круги тянут: «Отклонить» вниз, «Ответить» вверх — в кармане случайно не сработает
+            if (locked) {
+                SlideRound(R.drawable.ic_oz_end_call, stringResource(R.string.decline), oz.dangerFill, up = false, onCommit = actions::decline)
+                SlideRound(R.drawable.ic_oz_phone, stringResource(if (secondLine) R.string.answer_hold else R.string.answer), oz.accentFill, up = true, onCommit = actions::answer)
+            } else {
+                LabeledRound(R.drawable.ic_oz_end_call, stringResource(R.string.decline), oz.dangerFill, actions::decline)
+                LabeledRound(R.drawable.ic_oz_phone, stringResource(if (secondLine) R.string.answer_hold else R.string.answer), oz.accentFill, actions::answer)
+            }
         }
+    }
+}
+
+/**
+ * Круг, который тянут по вертикали (заблокированный экран): идёт за пальцем 1:1, на трети дорожки (≈50 dp)
+ * или после броска в свою сторону срабатывает, отпустил раньше — возвращается. Дорожка видна, только пока палец на круге.
+ */
+@Composable
+private fun SlideRound(icon: Int, label: String, fill: Color, up: Boolean, onCommit: () -> Unit) {
+    val oz = LocalOz.current
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val track = with(density) { 150.dp.toPx() }
+    val threshold = with(density) { 50.dp.toPx() }
+    val fling = with(density) { 900.dp.toPx() }
+    val offset = remember { androidx.compose.animation.core.Animatable(0f) }
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    var held by remember { mutableStateOf(false) }
+    var done by remember { mutableStateOf(false) }
+    val sign = if (up) -1f else 1f
+    val trackAlpha by androidx.compose.animation.core.animateFloatAsState(if (held) 1f else 0f, Motion.enter(Motion.FADE), label = "track")
+    val drag = androidx.compose.foundation.gestures.rememberDraggableState { d ->
+        // только в свою сторону и не дальше дорожки
+        val next = (offset.value + d).let { if (up) it.coerceIn(-track, 0f) else it.coerceIn(0f, track) }
+        scope.launch { offset.snapTo(next) }
+    }
+    Column(
+        Modifier.widthIn(min = 104.dp).padding(8.dp)
+            .semantics { contentDescription = label; onClick(label) { onCommit(); true } },
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Box(
+            Modifier.size(64.dp)
+                .drawBehind {
+                    if (trackAlpha > 0f) {
+                        val r = size.width / 2
+                        val top = if (up) -track else 0f
+                        drawRoundRect(
+                            fill.copy(alpha = .16f * trackAlpha),
+                            topLeft = androidx.compose.ui.geometry.Offset(0f, top),
+                            size = androidx.compose.ui.geometry.Size(size.width, size.height + track),
+                            cornerRadius = androidx.compose.ui.geometry.CornerRadius(r, r),
+                        )
+                    }
+                }
+                .graphicsLayer { translationY = offset.value }
+                .draggable(
+                    drag, androidx.compose.foundation.gestures.Orientation.Vertical,
+                    enabled = !done,
+                    onDragStarted = { held = true },
+                    onDragStopped = { v ->
+                        held = false
+                        if (offset.value * sign >= threshold || v * sign >= fling) { done = true; onCommit() }
+                        else offset.animateTo(0f, Motion.settle(), v)
+                    },
+                )
+                .raisedFill(fill, CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            OzIcon(icon, Color.White, 28.dp)
+        }
+        Text(label, style = OzType.small, color = oz.fg2)
     }
 }
 

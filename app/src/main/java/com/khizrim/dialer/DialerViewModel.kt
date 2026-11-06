@@ -137,6 +137,8 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Перечитываем всё при каждом возвращении в приложение. */
     fun reload() {
+        // вернулись в приложение — раскрытая группа «без звука» снова свёрнута
+        silentOpen = false
         offerDefault()
         isDefaultDialer = Launcher.isDefaultDialer(ctx)
         viewModelScope.launch { sims = withContext(Dispatchers.IO) { Launcher.sims(ctx) } }
@@ -178,7 +180,17 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     var favNickname by mutableStateOf(prefs.favNickname); private set
     fun toggleFavNickname() { favNickname = !favNickname; prefs.favNickname = favNickname }
     /** Как подписан избранный: никнейм, если выбран и есть, иначе имя без фамилии. */
-    fun favLabel(p: Person): String = p.nickname?.takeIf { favNickname && it.isNotBlank() } ?: if (p.nameIsNumber) p.shownName else p.name.substringBefore(' ')
+    private fun favBase(p: Person): String = p.nickname?.takeIf { favNickname && it.isNotBlank() } ?: if (p.nameIsNumber) p.shownName else p.name.substringBefore(' ')
+    /** Подпись в «Причале»: ник или первое слово имени; если у двоих оно одинаковое — с буквой фамилии («Саша К.»). */
+    fun favLabel(p: Person): String {
+        val base = favBase(p)
+        val usesNick = p.nickname?.takeIf { favNickname && it.isNotBlank() } != null
+        if (usesNick || p.nameIsNumber) return base
+        val twins = favorites.count { it.id != p.id && favBase(it).equals(base, ignoreCase = true) }
+        if (twins == 0) return base
+        val initial = p.name.trim().split(Regex("\\s+")).drop(1).lastOrNull()?.firstOrNull { it.isLetter() } ?: return base
+        return "$base ${initial.uppercaseChar()}."
+    }
 
     val favorites: List<Person> get() = people.filter { it.starred }.sortedByDescending { scores[it.key] ?: 0.0 }
 
@@ -194,16 +206,22 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
         val all = home.toList()
         val silent = all.filter(::isSilenced)
         val rest = all.filterNot(::isSilenced)
-        val list = if (silent.isEmpty() || silentOpen) all
-        else rest + HomeEntry("silent", null, null, silent.maxOf { it.lastAt }, null, silent = silent.size)
-        return (if (missedOnly) list.filter { it.missedNote != null } else list).sortedBy { it.lastAt }
+        val base = if (missedOnly) rest.filter { it.missedNote != null } else rest
+        if (silent.isEmpty()) return base.sortedBy { it.lastAt }
+        // незнакомые без звука никогда не вытесняют людей: одна строка-заголовок на месте последнего из них;
+        // раскрытая группа стоит сразу над заголовком (в прошлое), свежие ближе к нему
+        val header = HomeEntry("silent", null, null, silent.maxOf { it.lastAt }, null, silent = silent.size)
+        val sorted = (base + header).sortedBy { it.lastAt }
+        if (!silentOpen) return sorted
+        val at = sorted.indexOf(header)
+        return sorted.subList(0, at) + silent.sortedBy { it.lastAt }.map { it.copy(inSilentGroup = true) } + sorted.subList(at, sorted.size)
     }
     /** Незнакомый, чей звонок прошёл без звука (включено «Не беспокоить незнакомым»). */
     fun isSilenced(e: HomeEntry): Boolean = e.person == null && silenceUnknown && e.missedNote != null
     val homeHasMissed: Boolean get() = home.any { it.missedNote != null }
 
     private fun rebuildHome() {
-        class Acc(var last: Long = 0L, var lastMissed: Long = 0L, var lastOther: Long = 0L, var number: String? = null, var lastCall: CallRecord? = null) {
+        class Acc(var last: Long = 0L, var lastMissed: Long = 0L, var lastOther: Long = 0L, var number: String? = null, var lastCall: CallRecord? = null, var lastAct: com.khizrim.dialer.data.Interaction? = null) {
             val missedAt = ArrayList<Long>()
         }
         val acc = LinkedHashMap<String, Acc>()
@@ -219,6 +237,7 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
             val a = acc.getOrPut(i.key) { Acc() }
             a.last = maxOf(a.last, i.at)
             a.lastOther = maxOf(a.lastOther, i.at)
+            if (i.at >= (a.lastAct?.at ?: 0L)) a.lastAct = i
         }
         val personByKey = people.associateBy { it.key }
         val entries = acc.mapNotNull { (key, a) ->
@@ -228,7 +247,16 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
             val missed = if (a.lastMissed > a.lastOther) Dates.missed(res, a.lastMissed, a.missedAt.count { it > a.lastOther }) else null
             // исходящий без ответа — тоже стоит сказать; обычный звонок второй строки не получает
             val lc = a.lastCall
-            val note = if (missed == null && lc != null && lc.date == a.last && lc.type == android.provider.CallLog.Calls.OUTGOING_TYPE && lc.duration <= 0) str(R.string.outgoing_no_answer) else null
+            // направление видно только у исходящих: входящий отвеченный — обычный случай, без подписи
+            val act = a.lastAct
+            val note = when {
+                missed != null -> null
+                lc != null && lc.date == a.last && lc.type == android.provider.CallLog.Calls.OUTGOING_TYPE ->
+                    if (lc.duration <= 0) str(R.string.outgoing_no_answer) else str(R.string.h_outgoing)
+                // последним было наше действие через мессенджер: говорим, каким способом
+                act != null && act.at == a.last -> act.method.label(ctx)
+                else -> null
+            }
             HomeEntry(key, person, if (person == null) a.number else null, a.last, missed, note)
         }.sortedBy { it.lastAt }.takeLast(FEED_SIZE).ifEmpty {
             // истории ещё нет: показываем избранных, чтобы главная не была пустой
@@ -243,7 +271,20 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     // ---------- навигация ----------
-    fun person(id: Long): Person? = byId[id]
+    fun person(id: Long): Person? = byId[id] ?: numberCards[id]
+
+    /** Незнакомый номер открывается такой же карточкой, как человек: id отрицательный, способы — звонок и SMS. */
+    private val numberCards = HashMap<Long, Person>()
+    fun openNumber(number: String) {
+        val key = Numbers.key(number)
+        val id = -1L - (key.hashCode().toLong() and 0x7fffffffL)
+        numberCards[id] = Person(
+            id, "n:$key", number, listOf(com.khizrim.dialer.model.Phone(number, "")),
+            listOf(com.khizrim.dialer.model.Channel(Method.PHONE), com.khizrim.dialer.model.Channel(Method.SMS)), null, false,
+        )
+        openPerson(id)
+    }
+    fun isNumberCard(p: Person): Boolean = p.id < 0
 
     /** Незнакомые и заблокированные открываются из настроек или из уведомления: назад — туда, откуда пришли. */
     private var listFrom = Screen.HOME
@@ -299,7 +340,12 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
         if (p != null) openPerson(p.id) else openRecents(missed = true)
     }
 
-    fun callNumber(number: String) { closeKeypad(); Launcher.call(ctx, number)?.let { say(it) } }
+    /** [sim] — id SIM для этого звонка (перезвон с той, на которую пришёл пропущенный). */
+    fun callNumber(number: String, sim: String? = null) {
+        closeKeypad()
+        val pinned = sim != null && sims.any { it.first == sim }
+        Launcher.call(ctx, number, sim = sim, pinned = pinned)?.let { say(it) }
+    }
     private var settingsFrom = Screen.HOME
     fun openSettings() {
         closeKeypad(); simForCalls = prefs.simForCalls
@@ -344,6 +390,35 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
         if (sims.size < 2 || number == null) return null
         return prefs.simFor(number)?.takeIf { s -> sims.any { it.first == s } } ?: simForCalls ?: sims.first().first
     }
+    /** Лист «с какой SIM» по долгому нажатию на трубку: выбор на один звонок. */
+    data class SimPick(val number: String, val who: String)
+    var simPick by mutableStateOf<SimPick?>(null); private set
+    /** false — SIM одна или звонить некуда: выбирать нечего, вызывающий делает своё обычное долгое нажатие. */
+    fun askSim(number: String?, who: String): Boolean {
+        if (sims.size < 2 || number.isNullOrBlank() || PhoneFormat.digits(number).isEmpty()) return false
+        menu = null; simPick = SimPick(number, who); return true
+    }
+    /** То же для человека: только если по нажатию у него обычный звонок. */
+    fun askSim(p: Person): Boolean = defaultOf(p) == Method.PHONE && askSim(numberFor(p), p.shownName)
+    fun closeSimPick() { simPick = null }
+    /** SIM, через которую звонок ушёл бы сам: запомненная для номера или основная. */
+    fun usualSim(number: String): String? = prefs.simFor(number)?.takeIf { s -> sims.any { it.first == s } } ?: simForCalls ?: sims.firstOrNull()?.first
+    fun callWithSim(id: String) {
+        val pick = simPick ?: return
+        simPick = null
+        closeKeypad()
+        // три звонка подряд с одной и той же не основной SIM — запоминаем её для номера
+        val usual = usualSim(pick.number)
+        if (id == usual) prefs.setSimStreak(pick.number, null, 0)
+        else {
+            val (last, n) = prefs.simStreak(pick.number)
+            val count = if (last == id) n + 1 else 1
+            if (count >= 3) { prefs.setSimFor(pick.number, id); prefs.setSimStreak(pick.number, null, 0); simVersion++ }
+            else prefs.setSimStreak(pick.number, id, count)
+        }
+        Launcher.call(ctx, pick.number, sim = id, pinned = true)?.let { say(it) }
+    }
+
     /** Нажатие на подпись SIM в карточке: следующая SIM; дошли до основной — забываем выбор. */
     fun cyclePersonSim(number: String) {
         val main = simForCalls ?: sims.firstOrNull()?.first ?: return

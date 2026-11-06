@@ -77,6 +77,8 @@ data class HomeEntry(
     val note: String? = null,
     /** >0 — это не человек, а свёрнутая строка «N незнакомых без звука». */
     val silent: Int = 0,
+    /** Строка раскрытой группы «без звука»: стоит сразу над заголовком группы, а не на своём дне. */
+    val inSilentGroup: Boolean = false,
 ) {
     val title: String get() = person?.shownName ?: com.khizrim.dialer.data.PhoneFormat.pretty(number.orEmpty())
 }

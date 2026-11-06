@@ -232,7 +232,8 @@ fun KeypadPanel(vm: DialerViewModel, onTop: (Float) -> Unit = {}) {
                 }
             }
         }
-        val twoSims = vm.sims.size > 1
+        // подпись SIM — только когда звонок уйдёт не с основной (выбрана здесь или запомнена для номера)
+        val twoSims = vm.sims.size > 1 && vm.keypadSimId != (vm.simForCalls ?: vm.sims.firstOrNull()?.first)
         Row(
             Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, top = 12.dp, bottom = if (twoSims) 0.dp else 16.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -242,7 +243,7 @@ fun KeypadPanel(vm: DialerViewModel, onTop: (Float) -> Unit = {}) {
             }
             Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
                 val label = if (vm.keypad.isEmpty()) stringResource(R.string.call) else stringResource(R.string.call_number, PhoneFormat.formatTyping(vm.keypad, vm.region))
-                RoundButton(R.drawable.ic_oz_phone, label, oz.accentFill, vm::callTyped)
+                RoundButton(R.drawable.ic_oz_phone, label, oz.accentFill, vm::callTyped, onLongClick = { vm.askSim(vm.keypad, PhoneFormat.formatTyping(vm.keypad, vm.region)) })
             }
             Box(Modifier.weight(1f).size(56.dp), contentAlignment = Alignment.Center) {
                 if (vm.keypad.isNotEmpty()) {

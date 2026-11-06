@@ -10,6 +10,7 @@ import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.provider.CallLog.Calls
 import android.telecom.Call
 import android.telecom.CallAudioState
 import android.telecom.InCallService
@@ -94,6 +95,10 @@ object CallNotifications {
     private const val CHANNEL_MISSED = "missed"
     private const val CHANNEL_SILENT = "silent"
     private const val ID_MISSED = 3
+    private const val ID_MISSED_SUMMARY = 5
+    private const val TAG_MISSED = "missed:"
+    private const val GROUP_MISSED = "com.khizrim.dialer.MISSED"
+    const val EXTRA_SIM = "sim"
     private const val ID_SILENT = 4
     const val EXTRA_OPEN_UNKNOWN = "open_unknown"
     const val ACTION_OPEN_MISSED = "com.khizrim.dialer.OPEN_MISSED"
@@ -162,40 +167,87 @@ object CallNotifications {
         runCatching { nm.notify(ID_CALL, b.build()) }
     }
 
-    /** Пропущенный: «Пропущенный от Димы», «Перезвонить», «Написать». Несколько схлопываются в одно. */
+    /**
+     * Пропущенные: по уведомлению на каждый номер в одной группе, у каждого свои «Перезвонить» и «Написать».
+     * Номера берём из журнала (новые пропущенные), а не из сводки Telecom: там при нескольких
+     * пропущенных остаётся только последний номер, и «Перезвонить» звонил бы не тому.
+     */
     fun showMissed(context: Context, count: Int, number: String?) {
         val nm = context.getSystemService(NotificationManager::class.java) ?: return
-        if (count <= 0) { nm.cancel(ID_MISSED); return }
-        val name = number?.let { ContactsSource.nameFor(context, it) }
-        val who = name ?: number?.takeIf { it.isNotBlank() }?.let { com.khizrim.dialer.data.PhoneFormat.pretty(it) } ?: context.getString(R.string.hidden_number)
-        val open = PendingIntent.getActivity(
-            // один пропущенный от контакта → карточка, остальное → журнал с фильтром «Пропущенные»
-            context, 30, Intent(context, MainActivity::class.java).setAction(ACTION_OPEN_MISSED)
-                .putExtra(EXTRA_MISSED_NUMBER, if (count == 1 && name != null) number else null)
+        val old = runCatching { nm.activeNotifications.filter { it.tag?.startsWith(TAG_MISSED) == true }.map { it.tag } }.getOrDefault(emptyList())
+        if (count <= 0) { old.forEach { nm.cancel(it, ID_MISSED) }; nm.cancel(ID_MISSED); nm.cancel(ID_MISSED_SUMMARY); return }
+        val fresh = newMissed(context).ifEmpty { listOfNotNull(number?.let { MissedGroup(it, 1, System.currentTimeMillis(), null) }) }
+        if (fresh.isEmpty()) { nm.cancel(ID_MISSED); return }
+        nm.cancel(ID_MISSED) // старое сводное уведомление без тега
+        val keep = fresh.map { TAG_MISSED + com.khizrim.dialer.data.Numbers.key(it.number) }.toSet()
+        old.filter { it !in keep }.forEach { nm.cancel(it, ID_MISSED) }
+        fresh.forEach { g -> notifyMissed(context, nm, g) }
+        if (fresh.size > 1) {
+            val total = fresh.sumOf { it.count }
+            val summary = Notification.Builder(context, CHANNEL_MISSED)
+                .setSmallIcon(R.drawable.ic_oz_missed)
+                .setContentTitle(context.resources.getQuantityString(R.plurals.missed_many, total, total))
+                .setCategory(Notification.CATEGORY_MISSED_CALL)
+                .setGroup(GROUP_MISSED).setGroupSummary(true)
+                .setContentIntent(openMissed(context, null, 30))
+                .setAutoCancel(true)
+                .build()
+            runCatching { nm.notify(ID_MISSED_SUMMARY, summary) }
+        } else nm.cancel(ID_MISSED_SUMMARY)
+    }
+
+    private class MissedGroup(val number: String, val count: Int, val last: Long, val account: String?)
+
+    /** Новые (непрочитанные) пропущенные из журнала, по номеру: сколько раз и когда последний. */
+    private fun newMissed(context: Context): List<MissedGroup> = runCatching {
+        val rows = ArrayList<Triple<String, Long, String?>>()
+        context.contentResolver.query(
+            Calls.CONTENT_URI, arrayOf(Calls.NUMBER, Calls.DATE, Calls.PHONE_ACCOUNT_ID),
+            "${Calls.TYPE} = ${Calls.MISSED_TYPE} AND ${Calls.NEW} = 1", null, "${Calls.DATE} DESC",
+        )?.use { cur -> while (cur.moveToNext() && rows.size < 200) rows += Triple(cur.getString(0).orEmpty(), cur.getLong(1), cur.getString(2)) }
+        rows.filter { it.first.isNotBlank() }
+            .groupBy { com.khizrim.dialer.data.Numbers.key(it.first) }
+            .values.map { g -> MissedGroup(g.first().first, g.size, g.first().second, g.first().third) }
+            .sortedByDescending { it.last }
+            .take(8)
+    }.getOrDefault(emptyList())
+
+    private fun openMissed(context: Context, number: String?, code: Int): PendingIntent = PendingIntent.getActivity(
+        // пропущенный от контакта → его карточка, иначе → лента с фильтром «Пропущенные»
+        context, code, Intent(context, MainActivity::class.java).setAction(ACTION_OPEN_MISSED)
+            .putExtra(EXTRA_MISSED_NUMBER, number)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+    )
+
+    private fun notifyMissed(context: Context, nm: NotificationManager, g: MissedGroup) {
+        val key = com.khizrim.dialer.data.Numbers.key(g.number)
+        val code = 1000 + (key.hashCode() and 0xFFFF) * 3
+        val name = ContactsSource.nameFor(context, g.number)
+        val who = name ?: com.khizrim.dialer.data.PhoneFormat.pretty(g.number)
+        val b = Notification.Builder(context, CHANNEL_MISSED)
+            .setSmallIcon(R.drawable.ic_oz_missed)
+            .setContentTitle(if (g.count == 1) context.getString(R.string.missed_from, who) else context.resources.getQuantityString(R.plurals.missed_many_from, g.count, g.count, who))
+            .setContentText(if (name != null) com.khizrim.dialer.data.PhoneFormat.pretty(g.number) else null)
+            .setWhen(g.last).setShowWhen(true)
+            .setCategory(Notification.CATEGORY_MISSED_CALL)
+            .setGroup(GROUP_MISSED)
+            .setContentIntent(openMissed(context, if (name != null) g.number else null, code))
+            .setAutoCancel(true)
+        // «Перезвонить» — с той SIM, на которую пришёл звонок
+        val call = PendingIntent.getActivity(
+            context, code + 1, Intent(context, MainActivity::class.java).setAction(ACTION_CALL_BACK).setData(android.net.Uri.fromParts("tel", g.number, null))
+                .putExtra(EXTRA_SIM, g.account)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
-        val b = Notification.Builder(context, CHANNEL_MISSED)
-            .setSmallIcon(R.drawable.ic_oz_missed)
-            .setContentTitle(if (count == 1) context.getString(R.string.missed_from, who) else context.resources.getQuantityString(R.plurals.missed_many, count, count))
-            .setContentText(if (count == 1 && name != null) com.khizrim.dialer.data.PhoneFormat.pretty(number.orEmpty()) else who)
-            .setCategory(Notification.CATEGORY_MISSED_CALL)
-            .setContentIntent(open)
-            .setAutoCancel(true)
-        if (!number.isNullOrBlank()) {
-            val call = PendingIntent.getActivity(
-                context, 31, Intent(context, MainActivity::class.java).setAction(ACTION_CALL_BACK).setData(android.net.Uri.fromParts("tel", number, null))
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
-                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
-            )
-            val sms = PendingIntent.getActivity(
-                context, 32, Intent(Intent.ACTION_SENDTO, android.net.Uri.fromParts("smsto", number, null)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
-                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
-            )
-            b.addAction(Notification.Action.Builder(null, context.getString(R.string.call_back), call).build())
-            b.addAction(Notification.Action.Builder(null, context.getString(R.string.write), sms).build())
-        }
-        runCatching { nm.notify(ID_MISSED, b.build()) }
+        val sms = PendingIntent.getActivity(
+            context, code + 2, Intent(Intent.ACTION_SENDTO, android.net.Uri.fromParts("smsto", g.number, null)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        )
+        b.addAction(Notification.Action.Builder(null, context.getString(R.string.call_back), call).build())
+        b.addAction(Notification.Action.Builder(null, context.getString(R.string.write), sms).build())
+        runCatching { nm.notify(TAG_MISSED + key, ID_MISSED, b.build()) }
     }
 
     /** Фото звонящего из контактов или трубка на мягком голубом круге. */
@@ -244,7 +296,10 @@ object CallNotifications {
     /** Человек открыл приложение: сводки больше не нужны. */
     fun clearSummaries(context: Context) {
         context.getSharedPreferences("ozero", Context.MODE_PRIVATE).edit().putInt("silencedCount", 0).apply()
-        context.getSystemService(NotificationManager::class.java)?.let { it.cancel(ID_SILENT); it.cancel(ID_MISSED) }
+        context.getSystemService(NotificationManager::class.java)?.let { nm ->
+            nm.cancel(ID_SILENT); nm.cancel(ID_MISSED); nm.cancel(ID_MISSED_SUMMARY)
+            runCatching { nm.activeNotifications.filter { it.tag?.startsWith(TAG_MISSED) == true }.forEach { nm.cancel(it.tag, ID_MISSED) } }
+        }
     }
 
     const val ACTION_CALL_BACK = "com.khizrim.dialer.CALL_BACK"

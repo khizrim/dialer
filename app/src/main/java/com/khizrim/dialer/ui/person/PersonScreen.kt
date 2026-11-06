@@ -69,12 +69,15 @@ import com.khizrim.dialer.ui.theme.Motion
 import com.khizrim.dialer.ui.theme.OzType
 
 /** Человек: редкая хронология сверху, имя, главная кнопка со способом по умолчанию. */
+// value присваивается; ложное срабатывание Lint на Kotlin 2 (ProduceStateDoesNotAssignValue)
+@android.annotation.SuppressLint("ProduceStateDoesNotAssignValue")
 @Composable
 fun PersonScreen(vm: DialerViewModel, id: Long) {
     val oz = LocalOz.current
     val p = vm.person(id) ?: return
     val method = vm.defaultOf(p)
     val fav = p.starred
+    val unknown = vm.isNumberCard(p)
     val history = remember(p, vm.ready, vm.recentCalls) { vm.history(p) }
 
     // карточку тянут вниз — весь экран идёт за пальцем 1:1 и открывает тот, что под ним; отпустили — доезжает или возвращается
@@ -113,13 +116,21 @@ fun PersonScreen(vm: DialerViewModel, id: Long) {
                     p.shownName, style = if (p.nameIsNumber) OzType.numberHome else OzType.namePerson.copy(fontSize = 30.sp, lineHeight = 36.sp), color = oz.fg,
                     modifier = Modifier.weight(1f).padding(top = 4.dp).semantics { heading() },
                 )
-                Box(Modifier.offset(x = 10.dp)) {
+                if (!unknown) Box(Modifier.offset(x = 10.dp)) {
                     GhostIconButton(
                         if (fav) R.drawable.ic_oz_star_on else R.drawable.ic_oz_star,
                         stringResource(if (fav) R.string.remove_favorite else R.string.add_favorite),
                         { vm.toggleFavorite(p) }, tint = if (fav) oz.accent else oz.fg3, size = 44.dp, iconSize = 22.dp,
                     )
                 }
+            }
+            // у незнакомого номера под ним метка АОН, если она есть
+            if (unknown) {
+                val context = androidx.compose.ui.platform.LocalContext.current
+                val cid by produceState<String?>(null, p.mainNumber) {
+                    value = withContext(Dispatchers.IO) { runCatching { com.khizrim.dialer.callerid.CallerId.labelFor(context, p.mainNumber) }.getOrNull() }
+                }
+                cid?.let { Text(it, style = OzType.small, color = oz.fg3, modifier = Modifier.padding(top = 4.dp)) }
             }
             // номера: номер слева, тип справа; нажатие звонит на этот номер, долгое нажатие копирует
             if (!p.nameIsNumber || p.phones.size > 1) {
@@ -149,7 +160,7 @@ fun PersonScreen(vm: DialerViewModel, id: Long) {
             ) {
                 Row(
                     Modifier.weight(1f).fillMaxHeight()
-                        .press({ vm.perform(p, method) }, shape = OzShape.main, pressColor = Color.White.copy(alpha = .12f)),
+                        .press({ vm.perform(p, method) }, onLongClick = { vm.askSim(p) }, shape = OzShape.main, pressColor = Color.White.copy(alpha = .12f)),
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -206,8 +217,21 @@ fun PersonScreen(vm: DialerViewModel, id: Long) {
                 }
                 Box(Modifier.fillMaxWidth().height(1.dp).background(oz.line))
             }
-            // «Изменить контакт» — тихим словом ровно по левому краю, открывает системный редактор
-            Text(
+            // «Изменить контакт» — тихим словом ровно по левому краю, открывает системный редактор.
+            // У незнакомого номера здесь «Добавить в контакты», «Заблокировать», «Найти в интернете».
+            if (unknown) {
+                val n = p.mainNumber.orEmpty()
+                Row(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+                    listOf(
+                        R.string.add_to_contacts to { vm.addToContacts(n) },
+                        R.string.block to { vm.askBlock(n) },
+                        R.string.cid_search_web to { vm.searchWeb(n) },
+                    ).forEach { (t, act) ->
+                        Text(stringResource(t), style = OzType.small, color = oz.fg3, maxLines = 1,
+                            modifier = Modifier.press(act, shape = OzShape.text).padding(vertical = 8.dp))
+                    }
+                }
+            } else Text(
                 stringResource(R.string.edit_contact), style = OzType.small, color = oz.fg3,
                 modifier = Modifier.padding(top = 8.dp).press({ vm.editContact(p) }, shape = OzShape.text).padding(vertical = 8.dp),
             )

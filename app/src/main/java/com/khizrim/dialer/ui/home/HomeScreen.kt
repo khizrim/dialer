@@ -39,6 +39,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
@@ -70,8 +72,8 @@ import kotlinx.coroutines.launch
 fun HomeScreen(vm: DialerViewModel) {
     val oz = LocalOz.current
     val reduced = LocalReducedMotion.current
-    // лента — это и журнал: её листают вверх в прошлое. Тянут вверх у самого свежего — снизу поднимаются контакты с поиском.
-    // Жест ловим раньше строк (Initial): после порога сдвига поглощаем касание, и нажатие на строку отменяется — свайп не звонит.
+    // лента — это и журнал, её просто листают. Контакты с поиском тянут вверх за «Причал» и нижнюю панель.
+    // Жест ловим раньше чипов и ссылок (Initial): после порога сдвига поглощаем касание, и нажатие отменяется — свайп не звонит.
     val stack = com.khizrim.dialer.ui.LocalScreenStack.current
     val threshold = with(LocalDensity.current) { 72.dp.toPx() }
     val list = androidx.compose.foundation.lazy.rememberLazyListState()
@@ -93,10 +95,10 @@ fun HomeScreen(vm: DialerViewModel) {
                 dy += ch.position.y - ch.previousPosition.y
                 dx += ch.position.x - ch.previousPosition.x
                 if (!dragging) {
-                    // горизонтальный жест — смахивание строки; вниз — листать ленту в прошлое; вверх не у края — тоже листать
+                    // горизонтальный жест — листать чипы избранного; вниз — ничего; вверх — контакты
                     if (kotlin.math.abs(dx) > slop && kotlin.math.abs(dx) > kotlin.math.abs(dy)) break
                     if (dy > slop) break
-                    if (dy < -slop) { if (list.canScrollBackward) break else dragging = true }
+                    if (dy < -slop) dragging = true
                 }
                 if (dragging) {
                     ch.consume()
@@ -124,6 +126,8 @@ fun HomeScreen(vm: DialerViewModel) {
         buildList<Any> {
             var day: String? = null
             feed.asReversed().forEach { e ->
+                // строки раскрытой группы «без звука» идут подряд над заголовком, дни их не делят
+                if (e.inSilentGroup) { add(e); return@forEach }
                 val d = if (e.lastAt > 0L) com.khizrim.dialer.data.Dates.day(res, e.lastAt) else null
                 if (day != null && d != day) add(FeedDay(day!!))
                 day = d
@@ -136,7 +140,6 @@ fun HomeScreen(vm: DialerViewModel) {
         Column(Modifier.fillMaxSize()) {
             LazyColumn(
                 modifier = Modifier.weight(1f).fillMaxWidth()
-                    .then(gestures)
                     .semantics { customActions = listOf(androidx.compose.ui.semantics.CustomAccessibilityAction(searchLabel) { vm.openTextSearch(); true }) }
                     .padding(horizontal = 12.dp),
                 state = list,
@@ -177,7 +180,8 @@ fun HomeScreen(vm: DialerViewModel) {
                         ) {
                             OzIcon(R.drawable.ic_oz_moon, oz.fg3, 18.dp)
                             Text(pluralStringResource(R.plurals.silent_unknown, e.silent, e.silent), style = OzType.body, color = oz.fg2, modifier = Modifier.padding(start = 12.dp).weight(1f))
-                            OzIcon(R.drawable.ic_oz_chevron, oz.fg3, 18.dp)
+                            // раскрыта — стрелка смотрит вверх, туда, где лежат номера; нажатие сворачивает
+                            OzIcon(R.drawable.ic_oz_chevron_down, oz.fg3, 18.dp, Modifier.graphicsLayer { rotationZ = if (vm.silentOpen) 180f else -90f })
                         }
                         return@items
                     }
@@ -191,7 +195,9 @@ fun HomeScreen(vm: DialerViewModel) {
                         animationSpec = Motion.exit(Motion.FADE), label = "leave",
                     )
                     val quiet = vm.isSilenced(e)
-                    Row(
+                    // время серым под именем — только за сегодня и вчера, дальше хватает подписи дня
+                    val time = com.khizrim.dialer.data.Dates.recentTime(e.lastAt)
+                    Box(
                         Modifier
                             .animateItem(
                                 fadeInSpec = Motion.enter(Motion.FADE),
@@ -206,30 +212,48 @@ fun HomeScreen(vm: DialerViewModel) {
                                 translationX = if (reduced) 0f else shift * progress
                             }
                             .fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        // нажатие на имя — карточка (у незнакомого номера — его меню), значок справа — связаться
-                        Column(
-                            Modifier.weight(1f).heightIn(min = 64.dp)
+                        // всё, что правее имени (но не меньше 104 dp у края), на всю высоту строки — «связаться»
+                        Box(
+                            Modifier.matchParentSize()
                                 .press(
-                                    onClick = { if (p != null) vm.openPerson(p.id) else vm.openMenu(e, MenuContext.HOME) },
-                                    onLongClick = { vm.openMenu(e, MenuContext.HOME) },
-                                    label = e.title + ((note ?: e.note)?.let { ", $it" } ?: ""),
+                                    onClick = { vm.tap(e) },
+                                    // долгое нажатие на трубку при двух SIM — выбор SIM на этот звонок, иначе меню
+                                    onLongClick = { if (!(if (p != null) vm.askSim(p) else vm.askSim(e.number, e.title))) vm.openMenu(e, MenuContext.HOME) },
+                                    label = stringResource(method?.title ?: R.string.choose_method) + ": " + e.title,
+                                ),
+                        )
+                        Row(Modifier.fillMaxWidth().padding(end = 104.dp), verticalAlignment = Alignment.CenterVertically) {
+                            // нажатие на имя — карточка (у незнакомого номера — такая же карточка номера)
+                            Column(
+                                Modifier.weight(1f, fill = false).heightIn(min = 64.dp)
+                                    .press(
+                                        onClick = { if (p != null) vm.openPerson(p.id) else e.number?.let(vm::openNumber) ?: vm.openMenu(e, MenuContext.HOME) },
+                                        onLongClick = { vm.openMenu(e, MenuContext.HOME) },
+                                        label = e.title + ((note ?: e.note)?.let { ", $it" } ?: ""),
+                                    )
+                                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                                verticalArrangement = Arrangement.Center,
+                            ) {
+                                Text(
+                                    e.title,
+                                    style = if (p != null && !p.nameIsNumber) OzType.nameHome else OzType.numberHome,
+                                    color = if (quiet) oz.fg2 else oz.fg, maxLines = 1, overflow = TextOverflow.Ellipsis,
                                 )
-                                .padding(horizontal = 12.dp, vertical = 10.dp),
-                            verticalArrangement = Arrangement.Center,
-                        ) {
-                            Text(
-                                e.title,
-                                style = if (p != null && !p.nameIsNumber) OzType.nameHome else OzType.numberHome,
-                                color = if (quiet) oz.fg2 else oz.fg, maxLines = 1, overflow = TextOverflow.Ellipsis,
-                            )
-                            val second = if (quiet) stringResource(R.string.silenced) else note ?: e.note
-                            if (second != null) {
-                                Text(second, style = OzType.small, color = if (note != null && !quiet) oz.danger else oz.fg3, modifier = Modifier.padding(top = 4.dp))
+                                // в раскрытой группе дни не показаны, поэтому время рядом с «без звука»
+                                val second = when {
+                                    quiet -> stringResource(R.string.silenced) + (if (e.inSilentGroup) " · " + com.khizrim.dialer.data.Dates.whenText(res, e.lastAt) else "")
+                                    note != null -> note // в «Пропущенный, 14:15» время уже есть
+                                    e.note != null -> e.note + (time?.let { " · $it" } ?: "")
+                                    else -> time
+                                }
+                                if (second != null) {
+                                    Text(second, style = OzType.small, color = if (note != null && !quiet) oz.danger else oz.fg3, modifier = Modifier.padding(top = 4.dp))
+                                }
                             }
                         }
-                        com.khizrim.dialer.ui.components.ReachButton(method, e.title) { vm.tap(e) }
+                        // значок способа у края: крупнее и темнее, само нажатие ловит вся правая зона
+                        OzIcon(method?.icon ?: R.drawable.ic_oz_swap, oz.fg2, 24.dp, Modifier.align(Alignment.CenterEnd).padding(end = 12.dp))
                     }
                 }
             }
@@ -238,12 +262,32 @@ fun HomeScreen(vm: DialerViewModel) {
             // избранные: один тихий ряд имён со значком способа, без заголовка и без заливок
             // «Причал»: избранные лежат на приподнятом крае над панелью — одна нижняя поверхность, лента уходит под неё
             val docked = vm.favorites.isNotEmpty()
-            Column(if (docked) Modifier.fillMaxWidth().dock() else Modifier.fillMaxWidth()) {
+            // контакты вытягиваются за «Причал» и нижнюю панель: они не листаются, поэтому жест работает всегда
+            Column((if (docked) Modifier.fillMaxWidth().dock() else Modifier.fillMaxWidth()).then(gestures)) {
                 val favs = vm.favorites
                 if (favs.isNotEmpty()) {
                     // избранные — ступенью выше подписей: Literata 20, как имена в списках, и отдельной полосой над панелью
+                    // край справа гаснет, только пока ряд можно прокрутить дальше
+                    val favRow = androidx.compose.foundation.lazy.rememberLazyListState()
+                    val fadeEdge by animateFloatAsState(if (favRow.canScrollForward) 1f else 0f, Motion.enter(Motion.FADE), label = "favFade")
                     androidx.compose.foundation.lazy.LazyRow(
-                        Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 4.dp),
+                        Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 4.dp)
+                            .graphicsLayer { compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen }
+                            .drawWithContent {
+                                drawContent()
+                                if (fadeEdge > 0f) {
+                                    val w = 48.dp.toPx()
+                                    drawRect(
+                                        androidx.compose.ui.graphics.Brush.horizontalGradient(
+                                            listOf(Color.Black, Color.Black.copy(alpha = 1f - fadeEdge)), startX = size.width - w, endX = size.width,
+                                        ),
+                                        topLeft = androidx.compose.ui.geometry.Offset(size.width - w, 0f),
+                                        size = androidx.compose.ui.geometry.Size(w, size.height),
+                                        blendMode = androidx.compose.ui.graphics.BlendMode.DstIn,
+                                    )
+                                }
+                            },
+                        state = favRow,
                         contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp),
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
@@ -251,7 +295,7 @@ fun HomeScreen(vm: DialerViewModel) {
                             val m = vm.defaultOf(p)
                             Row(
                                 Modifier.heightIn(min = 56.dp)
-                                    .press({ vm.perform(p, m) }, onLongClick = { vm.openPerson(p.id) }, shape = com.khizrim.dialer.ui.theme.OzShape.text,
+                                    .press({ vm.perform(p, m) }, onLongClick = { if (!vm.askSim(p)) vm.openPerson(p.id) }, shape = com.khizrim.dialer.ui.theme.OzShape.text,
                                         label = stringResource(R.string.favorite_label, p.name, stringResource(m?.title ?: R.string.choose_method)))
                                     .padding(horizontal = 12.dp),
                                 verticalAlignment = Alignment.CenterVertically,
@@ -357,15 +401,13 @@ private data class FeedDay(val text: String)
 private fun Modifier.dock(): Modifier {
     val oz = LocalOz.current
     val shape = androidx.compose.foundation.shape.RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp)
-    val shade = if (oz.isDark) Color.Black.copy(alpha = .35f) else oz.fg.copy(alpha = .07f)
+    // тень по форме причала (со скруглёнными углами), а не прямоугольной полосой над ним
     return this
-        .drawBehind {
-            val h = 16.dp.toPx()
-            drawRect(
-                androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color.Transparent, shade), startY = -h, endY = 0f),
-                topLeft = androidx.compose.ui.geometry.Offset(0f, -h), size = androidx.compose.ui.geometry.Size(size.width, h),
-            )
-        }
+        .shadow(
+            10.dp, shape,
+            ambientColor = if (oz.isDark) Color.Black.copy(alpha = .45f) else oz.fg.copy(alpha = .10f),
+            spotColor = if (oz.isDark) Color.Black.copy(alpha = .5f) else oz.fg.copy(alpha = .12f),
+        )
         .clip(shape)
         .background(oz.sheet)
         .border(1.dp, oz.line, shape)

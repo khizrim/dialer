@@ -166,12 +166,13 @@ fun RoundButton(
     onClick: () -> Unit,
     size: Dp = 64.dp,
     iconSize: Dp = 26.dp,
+    onLongClick: (() -> Unit)? = null,
 ) {
     Box(
         Modifier
             .size(size)
             .raisedFill(fill, CircleShape)
-            .press(onClick, shape = CircleShape, pressColor = Color.White.copy(alpha = .12f), label = label),
+            .press(onClick, onLongClick, shape = CircleShape, pressColor = Color.White.copy(alpha = .12f), label = label),
         contentAlignment = Alignment.Center,
     ) {
         OzIcon(icon, Color.White, iconSize)
