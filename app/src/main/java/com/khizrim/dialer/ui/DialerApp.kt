@@ -32,6 +32,7 @@ import com.khizrim.dialer.ui.components.ConfirmLayer
 import com.khizrim.dialer.ui.components.FloatToast
 import com.khizrim.dialer.ui.components.MethodSheet
 import com.khizrim.dialer.ui.components.PersonMenu
+import com.khizrim.dialer.ui.components.SimPickSheet
 import com.khizrim.dialer.ui.components.SyncHelpSheet
 import com.khizrim.dialer.ui.contacts.BlockedScreen
 import com.khizrim.dialer.ui.onboarding.Onboarding
@@ -93,7 +94,7 @@ fun DialerApp(vm: DialerViewModel = viewModel()) {
             }
 
             PersonMenu(vm)
-            com.khizrim.dialer.ui.components.SimPickSheet(vm)
+            SimPickSheet(vm)
             MethodSheet(vm)
             SyncHelpSheet(vm)
             ConfirmLayer(vm)
