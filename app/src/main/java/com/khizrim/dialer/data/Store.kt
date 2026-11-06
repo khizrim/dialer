@@ -181,6 +181,13 @@ object Dates {
         if (count > 1) res.getQuantityString(R.plurals.feed_missed_many, count, count, whenText(res, ts))
         else res.getString(R.string.missed_when, whenText(res, ts))
 
+    /** «16:05» за сегодня и вчера, иначе null: дальше в ленте хватает подписи дня. */
+    fun recentTime(ts: Long): String? {
+        if (ts <= 0L) return null
+        val days = daysBetween(Calendar.getInstance().apply { timeInMillis = ts }, Calendar.getInstance())
+        return if (days in 0..1) DateFormat.getTimeInstance(DateFormat.SHORT, locale).format(Date(ts)) else null
+    }
+
     fun whenText(res: Resources, ts: Long): String {
         val a = Calendar.getInstance().apply { timeInMillis = ts }
         val days = daysBetween(a, Calendar.getInstance())

@@ -195,7 +195,9 @@ fun HomeScreen(vm: DialerViewModel) {
                         animationSpec = Motion.exit(Motion.FADE), label = "leave",
                     )
                     val quiet = vm.isSilenced(e)
-                    Row(
+                    // время серым под именем — только за сегодня и вчера, дальше хватает подписи дня
+                    val time = com.khizrim.dialer.data.Dates.recentTime(e.lastAt)
+                    Box(
                         Modifier
                             .animateItem(
                                 fadeInSpec = Motion.enter(Motion.FADE),
@@ -210,31 +212,47 @@ fun HomeScreen(vm: DialerViewModel) {
                                 translationX = if (reduced) 0f else shift * progress
                             }
                             .fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        // нажатие на имя — карточка (у незнакомого номера — его меню), значок справа — связаться
-                        Column(
-                            Modifier.weight(1f).heightIn(min = 64.dp)
+                        // всё, что правее имени (но не меньше 104 dp у края), на всю высоту строки — «связаться»
+                        Box(
+                            Modifier.matchParentSize()
                                 .press(
-                                    onClick = { if (p != null) vm.openPerson(p.id) else vm.openMenu(e, MenuContext.HOME) },
+                                    onClick = { vm.tap(e) },
                                     onLongClick = { vm.openMenu(e, MenuContext.HOME) },
-                                    label = e.title + ((note ?: e.note)?.let { ", $it" } ?: ""),
+                                    label = stringResource(method?.title ?: R.string.choose_method) + ": " + e.title,
+                                ),
+                        )
+                        Row(Modifier.fillMaxWidth().padding(end = 104.dp), verticalAlignment = Alignment.CenterVertically) {
+                            // нажатие на имя — карточка (у незнакомого номера — его меню)
+                            Column(
+                                Modifier.weight(1f, fill = false).heightIn(min = 64.dp)
+                                    .press(
+                                        onClick = { if (p != null) vm.openPerson(p.id) else vm.openMenu(e, MenuContext.HOME) },
+                                        onLongClick = { vm.openMenu(e, MenuContext.HOME) },
+                                        label = e.title + ((note ?: e.note)?.let { ", $it" } ?: ""),
+                                    )
+                                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                                verticalArrangement = Arrangement.Center,
+                            ) {
+                                Text(
+                                    e.title,
+                                    style = if (p != null && !p.nameIsNumber) OzType.nameHome else OzType.numberHome,
+                                    color = if (quiet) oz.fg2 else oz.fg, maxLines = 1, overflow = TextOverflow.Ellipsis,
                                 )
-                                .padding(horizontal = 12.dp, vertical = 10.dp),
-                            verticalArrangement = Arrangement.Center,
-                        ) {
-                            Text(
-                                e.title,
-                                style = if (p != null && !p.nameIsNumber) OzType.nameHome else OzType.numberHome,
-                                color = if (quiet) oz.fg2 else oz.fg, maxLines = 1, overflow = TextOverflow.Ellipsis,
-                            )
-                            // в раскрытой группе дни не показаны, поэтому время рядом с «без звука»
-                            val second = if (quiet) stringResource(R.string.silenced) + (if (e.inSilentGroup) " · " + com.khizrim.dialer.data.Dates.whenText(res, e.lastAt) else "") else note ?: e.note
-                            if (second != null) {
-                                Text(second, style = OzType.small, color = if (note != null && !quiet) oz.danger else oz.fg3, modifier = Modifier.padding(top = 4.dp))
+                                // в раскрытой группе дни не показаны, поэтому время рядом с «без звука»
+                                val second = when {
+                                    quiet -> stringResource(R.string.silenced) + (if (e.inSilentGroup) " · " + com.khizrim.dialer.data.Dates.whenText(res, e.lastAt) else "")
+                                    note != null -> note // в «Пропущенный, 14:15» время уже есть
+                                    e.note != null -> e.note + (time?.let { " · $it" } ?: "")
+                                    else -> time
+                                }
+                                if (second != null) {
+                                    Text(second, style = OzType.small, color = if (note != null && !quiet) oz.danger else oz.fg3, modifier = Modifier.padding(top = 4.dp))
+                                }
                             }
                         }
-                        com.khizrim.dialer.ui.components.ReachButton(method, e.title) { vm.tap(e) }
+                        // значок способа у края: крупнее и темнее, само нажатие ловит вся правая зона
+                        OzIcon(method?.icon ?: R.drawable.ic_oz_swap, oz.fg2, 24.dp, Modifier.align(Alignment.CenterEnd).padding(end = 12.dp))
                     }
                 }
             }
