@@ -35,6 +35,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.detectTapGestures
 import kotlinx.coroutines.launch
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.onClick
@@ -253,6 +255,18 @@ private fun SlideRound(icon: Int, label: String, fill: Color, up: Boolean, onCom
                     }
                 }
                 .graphicsLayer { translationY = offset.value }
+                // тап по кругу на заблокированном экране не отвечает, а показывает, куда его тянуть: круг с дорожкой подаётся в свою сторону и возвращается
+                .pointerInput(Unit) {
+                    detectTapGestures {
+                        if (done) return@detectTapGestures
+                        scope.launch {
+                            held = true
+                            offset.animateTo(sign * threshold * 0.6f, Motion.enter(Motion.MOVE))
+                            offset.animateTo(0f, Motion.settle())
+                            held = false
+                        }
+                    }
+                }
                 .draggable(
                     drag, androidx.compose.foundation.gestures.Orientation.Vertical,
                     enabled = !done,
