@@ -180,7 +180,17 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     var favNickname by mutableStateOf(prefs.favNickname); private set
     fun toggleFavNickname() { favNickname = !favNickname; prefs.favNickname = favNickname }
     /** Как подписан избранный: никнейм, если выбран и есть, иначе имя без фамилии. */
-    fun favLabel(p: Person): String = p.nickname?.takeIf { favNickname && it.isNotBlank() } ?: if (p.nameIsNumber) p.shownName else p.name.substringBefore(' ')
+    private fun favBase(p: Person): String = p.nickname?.takeIf { favNickname && it.isNotBlank() } ?: if (p.nameIsNumber) p.shownName else p.name.substringBefore(' ')
+    /** Подпись в «Причале»: ник или первое слово имени; если у двоих оно одинаковое — с буквой фамилии («Саша К.»). */
+    fun favLabel(p: Person): String {
+        val base = favBase(p)
+        val usesNick = p.nickname?.takeIf { favNickname && it.isNotBlank() } != null
+        if (usesNick || p.nameIsNumber) return base
+        val twins = favorites.count { it.id != p.id && favBase(it).equals(base, ignoreCase = true) }
+        if (twins == 0) return base
+        val initial = p.name.trim().split(Regex("\\s+")).drop(1).lastOrNull()?.firstOrNull { it.isLetter() } ?: return base
+        return "$base ${initial.uppercaseChar()}."
+    }
 
     val favorites: List<Person> get() = people.filter { it.starred }.sortedByDescending { scores[it.key] ?: 0.0 }
 

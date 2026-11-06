@@ -40,6 +40,7 @@ import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
@@ -266,8 +267,27 @@ fun HomeScreen(vm: DialerViewModel) {
                 val favs = vm.favorites
                 if (favs.isNotEmpty()) {
                     // избранные — ступенью выше подписей: Literata 20, как имена в списках, и отдельной полосой над панелью
+                    // край справа гаснет, только пока ряд можно прокрутить дальше
+                    val favRow = androidx.compose.foundation.lazy.rememberLazyListState()
+                    val fadeEdge by animateFloatAsState(if (favRow.canScrollForward) 1f else 0f, Motion.enter(Motion.FADE), label = "favFade")
                     androidx.compose.foundation.lazy.LazyRow(
-                        Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 4.dp),
+                        Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 4.dp)
+                            .graphicsLayer { compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen }
+                            .drawWithContent {
+                                drawContent()
+                                if (fadeEdge > 0f) {
+                                    val w = 48.dp.toPx()
+                                    drawRect(
+                                        androidx.compose.ui.graphics.Brush.horizontalGradient(
+                                            listOf(Color.Black, Color.Black.copy(alpha = 1f - fadeEdge)), startX = size.width - w, endX = size.width,
+                                        ),
+                                        topLeft = androidx.compose.ui.geometry.Offset(size.width - w, 0f),
+                                        size = androidx.compose.ui.geometry.Size(w, size.height),
+                                        blendMode = androidx.compose.ui.graphics.BlendMode.DstIn,
+                                    )
+                                }
+                            },
+                        state = favRow,
                         contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp),
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
