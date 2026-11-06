@@ -212,7 +212,7 @@ fun HomeScreen(vm: DialerViewModel) {
                             }
                             .fillMaxWidth(),
                     ) {
-                        // всё, что правее имени (но не меньше 104 dp у края), на всю высоту строки — «связаться»
+                        // правая зона 120 dp у края, на всю высоту строки — «связаться»; остальное — карточка
                         Box(
                             Modifier.matchParentSize()
                                 .press(
@@ -225,7 +225,8 @@ fun HomeScreen(vm: DialerViewModel) {
                         Row(Modifier.fillMaxWidth().padding(end = 120.dp), verticalAlignment = Alignment.CenterVertically) {
                             // нажатие на имя — карточка (у незнакомого номера — такая же карточка номера)
                             Column(
-                                Modifier.weight(1f, fill = false).heightIn(min = 52.dp)
+                                // имя ловит всю ширину до правой зоны: имена стали короче, и «рядом с именем» не должно звонить
+                                Modifier.weight(1f).heightIn(min = 52.dp)
                                     .press(
                                         onClick = { if (p != null) vm.openPerson(p.id) else e.number?.let(vm::openNumber) ?: vm.openMenu(e, MenuContext.HOME) },
                                         onLongClick = { vm.openMenu(e, MenuContext.HOME) },
