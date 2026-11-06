@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Ozero Phone: the refracted handset on white paper, the same in every theme, like Ozero Mail. -->
+<!-- Ozero Phone: the Ozero mark in white on the lake blue; Ozero Mail has the same mark on white paper. -->
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
     <background android:drawable="@drawable/ic_launcher_background" />
     <foreground android:drawable="@drawable/ic_launcher_foreground" />
