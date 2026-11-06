@@ -60,8 +60,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           V=$(( GITHUB_RUN_NUMBER + 100 ))
+          VN=$(sed -n 's/.*versionName = "\(.*\)".*/\1/p' app/build.gradle.kts)
           cp app/build/outputs/apk/release/*.apk "ozero-phone-$V.apk"
           NOTES=".github/release-notes.md"
           [ -f "$NOTES" ] || echo "Сборка $V" > "$NOTES"
           gh release create "build-$V" "ozero-phone-$V.apk" --target "$GITHUB_SHA" \
-            --title "Ozero Phone · сборка $V" --notes-file "$NOTES" --prerelease
+            --title "Ozero Phone $VN · сборка $V" --notes-file "$NOTES" --latest
