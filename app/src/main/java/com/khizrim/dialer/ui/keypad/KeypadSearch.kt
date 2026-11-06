@@ -86,7 +86,8 @@ fun SearchResults(vm: DialerViewModel, modifier: Modifier = Modifier, drag: Pane
     // лучшее совпадение ближе к клавиатуре, под большим пальцем
     val all = vm.hits.asReversed()
     // над номером один самый вероятный человек; остальные — по «ещё N», пока набор не изменится
-    var more by remember(vm.keypad) { androidx.compose.runtime.mutableStateOf(false) }
+    // раскрыли — список остаётся раскрытым, пока набирают, и не прыгает от каждой цифры; сбрасывается, когда набор стёрт
+    var more by remember(vm.keypad.isEmpty()) { androidx.compose.runtime.mutableStateOf(false) }
     val results = if (more || all.size <= 1) all else all.takeLast(1)
     val showAdd = results.isEmpty() && PhoneFormat.digits(vm.keypad).length >= 3
     // подсказки и клавиатура — один лист: тянут вниз дальше края списка — весь слой идёт за пальцем 1:1,
@@ -119,7 +120,7 @@ fun SearchResults(vm: DialerViewModel, modifier: Modifier = Modifier, drag: Pane
             item(key = "more") {
                 Text(
                     stringResource(R.string.keypad_more, all.size - 1), style = OzType.meta, color = oz.fg3,
-                    modifier = Modifier.press({ more = true }, shape = com.khizrim.dialer.ui.theme.OzShape.text).padding(horizontal = 12.dp, vertical = 10.dp),
+                    modifier = Modifier.heightIn(min = 44.dp).press({ more = true }, shape = com.khizrim.dialer.ui.theme.OzShape.text).padding(horizontal = 12.dp, vertical = 13.dp),
                 )
             }
         }

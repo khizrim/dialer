@@ -154,6 +154,7 @@
     <string name="alert_notifications">Notifications are off, incoming calls may not show</string>
     <string name="alert_full_screen">Allow full-screen calls to see who is calling on the lock screen</string>
     <string name="alert_xiaomi">On Xiaomi, allow «Show on lock screen» and «Pop-up windows»</string>
+    <string name="alert_call_log">No access to call history, so the feed can\'t show who called</string>
     <string name="alert_fix">Fix</string>
     <string name="alert_open">Open</string>
     <string name="err_call_permission">Allow calls in settings to dial from Ozero Phone</string>

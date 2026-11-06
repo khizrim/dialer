@@ -73,6 +73,9 @@ data class Person(
 data class HistoryEntry(val day: String, val text: String, val missed: Boolean = false, val record: CallRecord? = null, val duration: String = "")
 
 /** Строка главной: человек из контактов или номер, которого нет в контактах. */
+/** Направление последнего контакта в ленте. */
+enum class Dir { IN, OUT, MISSED }
+
 data class HomeEntry(
     val key: String,
     val person: Person?,
@@ -85,6 +88,8 @@ data class HomeEntry(
     val silent: Int = 0,
     /** Строка раскрытой группы «без звука»: стоит сразу над заголовком группы, а не на своём дне. */
     val inSilentGroup: Boolean = false,
+    /** Направление последнего контакта: IN, OUT, MISSED или null (нет звонка). */
+    val dir: Dir? = null,
 ) {
     val title: String get() = person?.shownName ?: com.khizrim.dialer.data.PhoneFormat.pretty(number.orEmpty())
 }

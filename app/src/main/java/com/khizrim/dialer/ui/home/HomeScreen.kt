@@ -144,7 +144,7 @@ fun HomeScreen(vm: DialerViewModel) {
                 state = list,
                 reverseLayout = true,
             ) {
-                if (feed.isEmpty() && vm.favorites.isEmpty()) {
+                if (feed.isEmpty()) {
                     item(key = "empty") {
                         Column(Modifier.padding(start = 12.dp, end = 12.dp, bottom = 24.dp).animateItem()) {
                             Text(stringResource(R.string.home_empty_title), style = OzType.nameHome, color = oz.fg)
@@ -253,6 +253,14 @@ fun HomeScreen(vm: DialerViewModel) {
                         }
                         // у края: время серым (сегодня и вчера) и способ — значок, у мессенджера ещё «WA» / «TG»; нажатие ловит вся правая зона
                         Row(Modifier.align(Alignment.CenterEnd).padding(end = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                            // направление мелкой стрелкой перед временем: входящий ↙, исходящий ↗, пропущенный — красным
+                            e.dir?.takeIf { !e.inSilentGroup }?.let { d ->
+                                OzIcon(
+                                    when (d) { com.khizrim.dialer.model.Dir.IN -> R.drawable.ic_oz_arr_in; com.khizrim.dialer.model.Dir.OUT -> R.drawable.ic_oz_arr_out; else -> R.drawable.ic_oz_missed },
+                                    if (d == com.khizrim.dialer.model.Dir.MISSED) oz.danger else oz.fg3, 14.dp,
+                                    Modifier.padding(end = if (time != null) 4.dp else 12.dp),
+                                )
+                            }
                             if (time != null && !e.inSilentGroup) Text(time, style = OzType.meta, color = oz.fg3, modifier = Modifier.padding(end = 12.dp))
                             com.khizrim.dialer.ui.components.MethodMark(method)
                         }
