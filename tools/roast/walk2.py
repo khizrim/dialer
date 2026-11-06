@@ -89,8 +89,13 @@ def logrows(): return subprocess.run(["adb", "shell", "content query --uri conte
 def tstate(): return " ".join(re.findall(r"state=(\w+)", subprocess.run(["adb", "shell", "dumpsys telecom | grep 'Call id='"], capture_output=True, text=True).stdout)[:3])
 def lastnum(): return subprocess.run(["adb", "shell", "content query --uri content://call_log/calls --projection number:type --sort 'date DESC' | head -1"], capture_output=True, text=True).stdout.strip()
 def feed_rows():
-    # строки ленты: кликабельные узлы с описанием во всю ширину в нижней половине
-    return [(x, y, d) for t, d, x, y, b in nodes() if d and b[2] - b[0] > 800 and 900 < y < 2100]
+    # строки ленты: зона имени (слева) и зона звонка «Phone call: X» (справа)
+    nn = nodes(); out = []
+    for t, d, x, y, b in nn:
+        if d.startswith("Phone call: ") and 600 < y < 2100:
+            out.append((b[0], y, d[len("Phone call: "):]))
+    note(f"call zones start x: {[(q[2], q[0]) for q in out]}")
+    return [(200, y, nm) for x0, y, nm in out]
 def onscreen(): return [t or d for t, d, x, y, b in nodes() if t or d]
 
 if sys.argv[1] == "onboarding":
@@ -205,7 +210,8 @@ note(f"telecom after fullscreen answer: {tstate()}")
 subprocess.run(["adb", "emu", "gsm", "cancel", "+79161112244"]); time.sleep(5)
 # 9в. заблокированный экран: круг вверх отвечает, «Отклонить» вниз отклоняет
 for num, lbl, dy, tag in [("+79035556677", T["answer"], -700, "lock-answer"), ("+79267778899", "Decline", 700, "lock-decline")]:
-    sh("shell", "input", "keyevent", "KEYCODE_SLEEP"); time.sleep(2)
+    sh("shell", "locksettings", "set-pin", "1234"); sh("shell", "input", "keyevent", "KEYCODE_SLEEP"); time.sleep(3)
+    note("keyguard: " + subprocess.run(["adb", "shell", "dumpsys window | grep -m2 -iE 'mDreamingLockscreen|isKeyguardShowing|mShowingLockscreen'"], capture_output=True, text=True).stdout.strip())
     subprocess.run(["adb", "emu", "gsm", "call", num]); time.sleep(5); shot(tag + "-ringing")
     nn = [(x, y) for t, d, x, y, b in nodes() if t == lbl or d == lbl]
     note(f"{tag} nodes: {nn}")
@@ -215,16 +221,24 @@ for num, lbl, dy, tag in [("+79035556677", T["answer"], -700, "lock-answer"), ("
         shot(tag + "-after")
     note(f"{tag}: telecom={tstate()}")
     subprocess.run(["adb", "emu", "gsm", "cancel", num]); time.sleep(4)
-    sh("shell", "input", "keyevent", "KEYCODE_WAKEUP"); sh("shell", "wm", "dismiss-keyguard"); time.sleep(2)
+    sh("shell", "input", "keyevent", "KEYCODE_WAKEUP"); time.sleep(1); sh("shell", "input", "keyevent", "KEYCODE_MENU"); time.sleep(1)
+    sh("shell", "input", "text", "1234"); sh("shell", "input", "keyevent", "KEYCODE_ENTER"); time.sleep(2)
+    sh("shell", "locksettings", "clear", "--old", "1234"); time.sleep(1)
 # 9г. два пропущенных: два уведомления в группе, «Перезвонить» звонит своему номеру
 start()
 for num in ["+79851234567", "+74951234567"]:
     subprocess.run(["adb", "emu", "gsm", "call", num]); time.sleep(4); subprocess.run(["adb", "emu", "gsm", "cancel", num]); time.sleep(3)
 sh("shell", "cmd", "statusbar", "expand-notifications"); time.sleep(2); shot("missed-shade")
+def expand_all():
+    for _ in range(3):
+        ex = [(x, y) for t, d, x, y, b in nodes() if d == "Expand"]
+        if not ex: break
+        sh("shell", "input", "tap", str(ex[0][0]), str(ex[0][1])); time.sleep(1.5)
+expand_all(); shot("missed-shade-expanded")
 cb = [(x, y) for t, d, x, y, b in nodes() if t in ("Call back", "Перезвонить") or d in ("Call back", "Перезвонить")]
 note(f"call back buttons: {cb}")
 for n, (x, y) in enumerate(cb[:2]):
-    if n: sh("shell", "cmd", "statusbar", "expand-notifications"); time.sleep(2); cb2 = [(xx, yy) for t, d, xx, yy, b in nodes() if t in ("Call back", "Перезвонить")]; note(f"call back now: {cb2}"); x, y = (cb2 or [(x, y)])[0]
+    if n: sh("shell", "cmd", "statusbar", "expand-notifications"); time.sleep(2); expand_all(); cb2 = [(xx, yy) for t, d, xx, yy, b in nodes() if t in ("Call back", "Перезвонить")]; note(f"call back now: {cb2}"); x, y = (cb2 or [(x, y)])[0]
     sh("shell", "input", "tap", str(x), str(y)); time.sleep(4); shot(f"callback-{n+1}")
     note(f"callback {n+1}: state={tstate()}")
     hangup(); time.sleep(3); note(f"callback {n+1}: last call-log row = {lastnum()}")
