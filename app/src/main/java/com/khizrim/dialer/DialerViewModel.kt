@@ -136,7 +136,8 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     private fun granted(p: String) = ctx.checkSelfPermission(p) == PackageManager.PERMISSION_GRANTED
 
     /** Перечитываем всё при каждом возвращении в приложение. */
-    fun reload() {
+    /** keepMissed: пришли по «Перезвонить» — системные пропущенные не сбрасываем, иначе Telecom снимет и уведомления о других номерах. */
+    fun reload(keepMissed: Boolean = false) {
         // вернулись в приложение — раскрытая группа «без звука» снова свёрнута
         silentOpen = false
         offerDefault()
@@ -146,7 +147,7 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
         hasContacts = granted(Manifest.permission.READ_CONTACTS)
         hasCallLog = granted(Manifest.permission.READ_CALL_LOG)
         callAlert = com.khizrim.dialer.telecom.CallReadiness.check(ctx, isDefaultDialer, prefs.xiaomiHintSeen, prefs.silenceUnknown)
-        if (isDefaultDialer) com.khizrim.dialer.telecom.CallReadiness.clearMissed(ctx)
+        if (isDefaultDialer && !keepMissed) com.khizrim.dialer.telecom.CallReadiness.clearMissed(ctx)
         loadJob?.cancel()
         loadJob = viewModelScope.launch {
             val loaded = withContext(Dispatchers.IO) {

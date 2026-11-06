@@ -39,7 +39,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        vm.reload()
+        vm.reload(keepMissed)
         if (!keepMissed) CallNotifications.clearSummaries(this)
     }
 
