@@ -293,6 +293,29 @@ object CallNotifications {
         runCatching { nm.notify(ID_SILENT, n) }
     }
 
+    /** Перезвонили одному номеру: снимаем только его уведомление, остальные пропущенные остаются. */
+    fun clearMissed(context: Context, number: String) {
+        val nm = context.getSystemService(NotificationManager::class.java) ?: return
+        nm.cancel(TAG_MISSED + com.khizrim.dialer.data.Numbers.key(number), ID_MISSED)
+        val left = runCatching { nm.activeNotifications.count { it.tag?.startsWith(TAG_MISSED) == true && it.tag != TAG_MISSED + com.khizrim.dialer.data.Numbers.key(number) } }.getOrDefault(0)
+        if (left <= 1) nm.cancel(ID_MISSED_SUMMARY)
+        // в журнале пропущенные этого номера больше не новые, иначе следующая сводка вернёт уведомление
+        val key = com.khizrim.dialer.data.Numbers.key(number)
+        Thread {
+            runCatching {
+                val ids = ArrayList<Long>()
+                context.contentResolver.query(
+                    Calls.CONTENT_URI, arrayOf(Calls._ID, Calls.NUMBER),
+                    "${Calls.TYPE} = ${Calls.MISSED_TYPE} AND ${Calls.NEW} = 1", null, null,
+                )?.use { c -> while (c.moveToNext()) if (com.khizrim.dialer.data.Numbers.key(c.getString(1).orEmpty()) == key) ids += c.getLong(0) }
+                if (ids.isNotEmpty()) {
+                    val v = android.content.ContentValues().apply { put(Calls.NEW, 0) }
+                    context.contentResolver.update(Calls.CONTENT_URI, v, "${Calls._ID} IN (${ids.joinToString(",")})", null)
+                }
+            }
+        }.start()
+    }
+
     /** Человек открыл приложение: сводки больше не нужны. */
     fun clearSummaries(context: Context) {
         context.getSharedPreferences("ozero", Context.MODE_PRIVATE).edit().putInt("silencedCount", 0).apply()

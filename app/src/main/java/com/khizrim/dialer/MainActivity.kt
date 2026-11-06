@@ -33,10 +33,19 @@ class MainActivity : ComponentActivity() {
         })
     }
 
+    /** Открыли «Перезвонить» из уведомления: остальные пропущенные остаются в шторке, пока человек сам не откроет приложение. */
+    private var keepMissed = false
+
     override fun onResume() {
         super.onResume()
         vm.reload()
-        CallNotifications.clearSummaries(this)
+        if (!keepMissed) CallNotifications.clearSummaries(this)
+    }
+
+    override fun onStop() {
+        super.onStop()
+        // экран звонка поверх — это ещё тот же перезвон; ушли из приложения после него — следующий запуск уберёт сводки
+        if (!com.khizrim.dialer.telecom.CallManager.hasVisibleCall) keepMissed = false
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -52,7 +61,11 @@ class MainActivity : ComponentActivity() {
             intent?.action == ACTION_ADD_CONTACT -> vm.addToContacts(intent.getStringExtra(EXTRA_NUMBER).orEmpty())
             intent?.action == CallNotifications.ACTION_OPEN_MISSED -> vm.openMissed(intent.getStringExtra(CallNotifications.EXTRA_MISSED_NUMBER))
             // «Перезвонить» из уведомления о пропущенном
-            intent?.action == CallNotifications.ACTION_CALL_BACK && tel != null -> vm.callNumber(tel, intent.getStringExtra(CallNotifications.EXTRA_SIM))
+            intent?.action == CallNotifications.ACTION_CALL_BACK && tel != null -> {
+                keepMissed = true
+                CallNotifications.clearMissed(this, tel)
+                vm.callNumber(tel, intent.getStringExtra(CallNotifications.EXTRA_SIM))
+            }
             intent?.action == Intent.ACTION_DIAL -> vm.openKeypad(tel.orEmpty())
             intent?.action == Intent.ACTION_VIEW && tel != null -> vm.openKeypad(tel)
             // «Пропущенные» из системного уведомления: на главную, там они наверху
