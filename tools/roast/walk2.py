@@ -86,6 +86,8 @@ def fast(name):
         f.write(subprocess.run(["adb", "exec-out", "screencap", "-p"], capture_output=True).stdout)
     note(f"fast {name}")
 def logrows(): return subprocess.run(["adb", "shell", "content query --uri content://call_log/calls --projection _id | wc -l"], capture_output=True, text=True).stdout.strip()
+def tstate(): return " ".join(re.findall(r"state=(\w+)", subprocess.run(["adb", "shell", "dumpsys telecom | grep 'Call id='"], capture_output=True, text=True).stdout)[:3])
+def lastnum(): return subprocess.run(["adb", "shell", "content query --uri content://call_log/calls --projection number:type --sort 'date DESC' | head -1"], capture_output=True, text=True).stdout.strip()
 def feed_rows():
     # строки ленты: кликабельные узлы с описанием во всю ширину в нижней половине
     return [(x, y, d) for t, d, x, y, b in nodes() if d and b[2] - b[0] > 800 and 900 < y < 2100]
@@ -112,7 +114,8 @@ c0 = logrows()
 for y1, y2 in [(1500, 1700), (1800, 1500), (1400, 1650), (1650, 1350)]: swipe(y1, y2, 250, 0.8)
 time.sleep(2); shot("after-vertical-swipes"); note(f"calls before/after vertical swipes: {c0} -> {logrows()}")
 # 2. тяга вверх к контактам, указатель
-start(); record("pull-up-contacts", 7, lambda: swipe(1700, 700, 300, 3)); shot("contacts-sheet")
+start(); swipe(1500, 700, 300, 2); shot("feed-pull-up-scrolls")
+start(); record("pull-up-contacts", 7, lambda: drag(540, 2200, 800, 350, 3)); shot("contacts-sheet")
 back(1.2); shot("contacts-keyboard-hidden")
 idx = [b for t, d, x, y, b in nodes() if d and len(d) > 20 and all(len(w) == 1 for w in d.split())]
 note(f"index bounds: {idx}")
@@ -123,13 +126,18 @@ if idx:
     shot("index-after-scrub")
 swipe(1500, 700); shot("contacts-scrolled")
 back(); back()
-# 3. тап по строке ленты
+# 3. тап по правой трети строки звонит, по имени открывает карточку
 start(); r = feed_rows(); note(f"rows: {r}")
 if r:
     c0 = logrows(); x, y, d = r[0]
-    record("feed-row-tap", 7, lambda: (sh("shell", "input", "tap", str(x), str(y)), time.sleep(4)))
-    shot("after-feed-row-tap"); note(f"row tap '{d}': calls {c0} -> {logrows()}")
+    record("feed-row-right-tap", 7, lambda: (sh("shell", "input", "tap", "930", str(y)), time.sleep(4)))
+    shot("after-feed-right-tap"); note(f"right-third tap '{d}': calls {c0} -> {logrows()} state={tstate()}")
     hangup()
+    start(); r = feed_rows(); x, y, d = r[0]; c0 = logrows()
+    sh("shell", "input", "tap", "200", str(y)); time.sleep(3); shot("after-feed-name-tap"); note(f"name tap '{d}': calls {c0} -> {logrows()}")
+    start(); r = feed_rows(); u = [q for q in r if q[2].startswith("+")]
+    if u:
+        sh("shell", "input", "tap", "200", str(u[0][1])); time.sleep(3); shot("after-unknown-name-tap")
 # 4. долгое нажатие: меню, «Скрыть», «Вернуть»
 start(); r = feed_rows()
 if r:
@@ -195,12 +203,38 @@ if ans:
     ax, ay = ans[-1]; sh("shell", "input", "tap", str(ax), str(ay - 110)); time.sleep(1); fast("fullscreen-answer-1s"); time.sleep(2); shot("fullscreen-after-answer")
 note(f"telecom after fullscreen answer: {tstate()}")
 subprocess.run(["adb", "emu", "gsm", "cancel", "+79161112244"]); time.sleep(5)
+# 9в. заблокированный экран: круг вверх отвечает, «Отклонить» вниз отклоняет
+for num, lbl, dy, tag in [("+79035556677", T["answer"], -700, "lock-answer"), ("+79267778899", "Decline", 700, "lock-decline")]:
+    sh("shell", "input", "keyevent", "KEYCODE_SLEEP"); time.sleep(2)
+    subprocess.run(["adb", "emu", "gsm", "call", num]); time.sleep(5); shot(tag + "-ringing")
+    nn = [(x, y) for t, d, x, y, b in nodes() if t == lbl or d == lbl]
+    note(f"{tag} nodes: {nn}")
+    if nn:
+        x, y = nn[-1]; y0 = y - 110 if lbl == T["answer"] else y - 110
+        record(tag, 6, lambda: (sh("shell", "input", "swipe", str(x), str(y0), str(x), str(y0 + dy), "450"), time.sleep(2.5)))
+        shot(tag + "-after")
+    note(f"{tag}: telecom={tstate()}")
+    subprocess.run(["adb", "emu", "gsm", "cancel", num]); time.sleep(4)
+    sh("shell", "input", "keyevent", "KEYCODE_WAKEUP"); sh("shell", "wm", "dismiss-keyguard"); time.sleep(2)
+# 9г. два пропущенных: два уведомления в группе, «Перезвонить» звонит своему номеру
+start()
+for num in ["+79851234567", "+74951234567"]:
+    subprocess.run(["adb", "emu", "gsm", "call", num]); time.sleep(4); subprocess.run(["adb", "emu", "gsm", "cancel", num]); time.sleep(3)
+sh("shell", "cmd", "statusbar", "expand-notifications"); time.sleep(2); shot("missed-shade")
+cb = [(x, y) for t, d, x, y, b in nodes() if t in ("Call back", "Перезвонить") or d in ("Call back", "Перезвонить")]
+note(f"call back buttons: {cb}")
+for n, (x, y) in enumerate(cb[:2]):
+    if n: sh("shell", "cmd", "statusbar", "expand-notifications"); time.sleep(2); cb2 = [(xx, yy) for t, d, xx, yy, b in nodes() if t in ("Call back", "Перезвонить")]; note(f"call back now: {cb2}"); x, y = (cb2 or [(x, y)])[0]
+    sh("shell", "input", "tap", str(x), str(y)); time.sleep(4); shot(f"callback-{n+1}")
+    note(f"callback {n+1}: state={tstate()}")
+    hangup(); time.sleep(3); note(f"callback {n+1}: last call-log row = {lastnum()}")
+sh("shell", "cmd", "statusbar", "collapse")
 subprocess.run(["adb", "emu", "gsm", "call", "+74997001122"]); time.sleep(4); shot("incoming-unknown")
 subprocess.run(["adb", "emu", "gsm", "cancel", "+74997001122"]); time.sleep(4); shot("after-unknown")
 # 10. тёмная тема и крупный шрифт
 sh("shell", "cmd", "uimode", "night", "yes"); time.sleep(2)
 start(); shot("dark-home"); tap(T["keypad"]); keys("259"); time.sleep(1); shot("dark-keypad"); back(); back()
-start(); swipe(1700, 700, 300, 3); shot("dark-contacts"); back(); back()
+start(); drag(540, 2200, 800, 350, 3); shot("dark-contacts"); back(); back()
 start(); tap(T["settings"], wait=2.5); shot("dark-settings"); back()
 sh("shell", "cmd", "uimode", "night", "no")
 sh("shell", "settings", "put", "system", "font_scale", "1.3"); time.sleep(1)
