@@ -71,8 +71,8 @@ import kotlinx.coroutines.launch
 fun HomeScreen(vm: DialerViewModel) {
     val oz = LocalOz.current
     val reduced = LocalReducedMotion.current
-    // лента — это и журнал: её листают вверх в прошлое. Тянут вверх у самого свежего — снизу поднимаются контакты с поиском.
-    // Жест ловим раньше строк (Initial): после порога сдвига поглощаем касание, и нажатие на строку отменяется — свайп не звонит.
+    // лента — это и журнал, её просто листают. Контакты с поиском тянут вверх за «Причал» и нижнюю панель.
+    // Жест ловим раньше чипов и ссылок (Initial): после порога сдвига поглощаем касание, и нажатие отменяется — свайп не звонит.
     val stack = com.khizrim.dialer.ui.LocalScreenStack.current
     val threshold = with(LocalDensity.current) { 72.dp.toPx() }
     val list = androidx.compose.foundation.lazy.rememberLazyListState()
@@ -94,10 +94,10 @@ fun HomeScreen(vm: DialerViewModel) {
                 dy += ch.position.y - ch.previousPosition.y
                 dx += ch.position.x - ch.previousPosition.x
                 if (!dragging) {
-                    // горизонтальный жест — смахивание строки; вниз — листать ленту в прошлое; вверх не у края — тоже листать
+                    // горизонтальный жест — листать чипы избранного; вниз — ничего; вверх — контакты
                     if (kotlin.math.abs(dx) > slop && kotlin.math.abs(dx) > kotlin.math.abs(dy)) break
                     if (dy > slop) break
-                    if (dy < -slop) { if (list.canScrollBackward) break else dragging = true }
+                    if (dy < -slop) dragging = true
                 }
                 if (dragging) {
                     ch.consume()
@@ -139,7 +139,6 @@ fun HomeScreen(vm: DialerViewModel) {
         Column(Modifier.fillMaxSize()) {
             LazyColumn(
                 modifier = Modifier.weight(1f).fillMaxWidth()
-                    .then(gestures)
                     .semantics { customActions = listOf(androidx.compose.ui.semantics.CustomAccessibilityAction(searchLabel) { vm.openTextSearch(); true }) }
                     .padding(horizontal = 12.dp),
                 state = list,
@@ -261,7 +260,8 @@ fun HomeScreen(vm: DialerViewModel) {
             // избранные: один тихий ряд имён со значком способа, без заголовка и без заливок
             // «Причал»: избранные лежат на приподнятом крае над панелью — одна нижняя поверхность, лента уходит под неё
             val docked = vm.favorites.isNotEmpty()
-            Column(if (docked) Modifier.fillMaxWidth().dock() else Modifier.fillMaxWidth()) {
+            // контакты вытягиваются за «Причал» и нижнюю панель: они не листаются, поэтому жест работает всегда
+            Column((if (docked) Modifier.fillMaxWidth().dock() else Modifier.fillMaxWidth()).then(gestures)) {
                 val favs = vm.favorites
                 if (favs.isNotEmpty()) {
                     // избранные — ступенью выше подписей: Literata 20, как имена в списках, и отдельной полосой над панелью
