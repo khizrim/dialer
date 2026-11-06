@@ -88,7 +88,7 @@ fun Onboarding(vm: DialerViewModel) {
     }
 
     Column(
-        Modifier.fillMaxSize().background(oz.bg).safeDrawingPadding().padding(24.dp),
+        Modifier.fillMaxSize().background(oz.bg).safeDrawingPadding().padding(20.dp),
         verticalArrangement = Arrangement.Bottom,
     ) {
         when {

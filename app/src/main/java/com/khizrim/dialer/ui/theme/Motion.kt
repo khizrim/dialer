@@ -25,24 +25,27 @@ import androidx.compose.ui.platform.LocalContext
  * (пружина без отскока), а не начинает анимацию заново.
  */
 object Motion {
-    /** Сдвиг слоёв, строк и листов: мягкий старт и долгое спокойное торможение. */
-    val MoveEasing = CubicBezierEasing(0.2f, 0f, 0f, 1f)
+    /** Сдвиг слоёв, строк и листов — та же кривая, что у Ozero Mail: мягкий старт и долгое спокойное торможение. */
+    val MoveEasing = CubicBezierEasing(0.25f, 0.1f, 0.1f, 1f)
     /** Появление мелочей (тост, галочка, строка): сразу видно, плавно доходит. */
     val EnterEasing = CubicBezierEasing(0.05f, 0.7f, 0.1f, 1f)
     /** Исчезновение: начинает сразу, без «замирания». */
     val ExitEasing = CubicBezierEasing(0.3f, 0f, 0.8f, 0.15f)
 
+    // длительности Ozero Mail: QUICK 150, SMALL 250, SCRIM 380, NOTE 400, SCREEN 420
     const val PRESS = 100
     const val FADE = 150
-    const val MOVE = 200
-    const val SHEET = 300
+    const val MOVE = 250
+    const val SCRIM = 380
+    const val NOTE = 400
+    const val SHEET = 420
 
     fun <T> enter(ms: Int, delay: Int = 0): FiniteAnimationSpec<T> = tween(ms, delay, EnterEasing)
     fun <T> exit(ms: Int): FiniteAnimationSpec<T> = tween(ms, 0, ExitEasing)
     fun <T> move(ms: Int = SHEET): FiniteAnimationSpec<T> = tween(ms, 0, MoveEasing)
 
     /** Досвод после жеста: критическое затухание (без отскока), принимает скорость пальца. */
-    fun <T> settle(): AnimationSpec<T> = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = 420f)
+    fun <T> settle(): AnimationSpec<T> = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = 700f)
 
     /** Порог решения после отпускания: прошли треть пути или бросили быстрее 1000 px/с. */
     fun commits(fraction: Float, velocityPx: Float, heightPx: Float): Boolean {

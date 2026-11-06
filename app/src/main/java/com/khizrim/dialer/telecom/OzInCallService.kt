@@ -265,7 +265,7 @@ object CallNotifications {
         val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply { color = 0xFFE6F1FF.toInt() }
         canvas.drawCircle(size / 2f, size / 2f, size / 2f, paint)
         context.getDrawable(R.drawable.ic_oz_phone)?.mutate()?.let { d ->
-            d.setTint(0xFF1766D4.toInt())
+            d.setTint(0xFF1A6FE0.toInt())
             d.setBounds(size / 4, size / 4, size * 3 / 4, size * 3 / 4)
             d.draw(canvas)
         }

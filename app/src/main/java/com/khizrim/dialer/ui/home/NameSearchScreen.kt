@@ -110,7 +110,7 @@ fun NameSearchScreen(vm: DialerViewModel) {
             // докрутили до самого верха и тянут дальше вниз — контакты уезжают за пальцем
             // где начинается каждая группа: для колонки букв справа
             val starts = remember(groups) { var i = 0; groups.map { (l, ps) -> (l to i).also { i += 1 + ps.size } } }
-            LazyColumn(Modifier.fillMaxSize().dismissOnOverscroll { vm.closeTextSearch() }.padding(start = 12.dp, end = if (all.size >= 30) 28.dp else 12.dp), state = indexState) {
+            LazyColumn(Modifier.fillMaxSize().dismissOnOverscroll { vm.closeTextSearch() }.padding(start = 8.dp, end = if (all.size >= 30) 28.dp else 8.dp), state = indexState) {
                 groups.forEachIndexed { gi, (letter, ps) ->
                     // буква группы прилипает к верху, пока идёт её группа; над группой тонкая линия
                     stickyHeader(key = "h$letter") {
@@ -133,7 +133,7 @@ fun NameSearchScreen(vm: DialerViewModel) {
             if (all.size >= 30) LetterRail(starts.map { it.first }, Modifier.align(Alignment.CenterEnd)) { i ->
                 scope.launch { indexState.scrollToItem(starts[i].second) }
             }
-        } else LazyColumn(Modifier.weight(1f).fillMaxWidth().dismissOnOverscroll { vm.closeTextSearch() }.padding(horizontal = 12.dp), state = listState, reverseLayout = true) {
+        } else LazyColumn(Modifier.weight(1f).fillMaxWidth().dismissOnOverscroll { vm.closeTextSearch() }.padding(horizontal = 8.dp), state = listState, reverseLayout = true) {
             if (numeric) {
                 item(key = "call") {
                     Row(
@@ -231,7 +231,7 @@ private fun HitRow(vm: DialerViewModel, h: TextHit) {
     }
 }
 
-/** Строка указателя: имя Literata 18 на 48dp; нажатие — карточка, значок справа связывает. */
+/** Строка указателя: имя на 48dp; нажатие — карточка, значок справа связывает. */
 @Composable
 private fun IndexRow(vm: DialerViewModel, p: com.khizrim.dialer.model.Person) {
     val oz = LocalOz.current

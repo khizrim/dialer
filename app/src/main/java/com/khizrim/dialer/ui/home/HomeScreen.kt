@@ -2,7 +2,6 @@ package com.khizrim.dialer.ui.home
 
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.graphics.Color
-import androidx.compose.foundation.border
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.foundation.layout.height
@@ -39,7 +38,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -59,6 +57,7 @@ import com.khizrim.dialer.ui.components.TextAction
 import com.khizrim.dialer.ui.components.press
 import com.khizrim.dialer.ui.components.swipeAway
 import com.khizrim.dialer.ui.theme.LocalOz
+import com.khizrim.dialer.ui.theme.dock
 import com.khizrim.dialer.ui.theme.LocalReducedMotion
 import com.khizrim.dialer.ui.theme.Motion
 import com.khizrim.dialer.ui.theme.OzType
@@ -141,7 +140,7 @@ fun HomeScreen(vm: DialerViewModel) {
             LazyColumn(
                 modifier = Modifier.weight(1f).fillMaxWidth()
                     .semantics { customActions = listOf(androidx.compose.ui.semantics.CustomAccessibilityAction(searchLabel) { vm.openTextSearch(); true }) }
-                    .padding(horizontal = 12.dp),
+                    .padding(horizontal = 8.dp),
                 state = list,
                 reverseLayout = true,
             ) {
@@ -258,15 +257,15 @@ fun HomeScreen(vm: DialerViewModel) {
                 }
             }
             // идёт звонок: плашка встроена в разметку, стопка поднимается над ней, ничего не перекрыто
-            com.khizrim.dialer.ui.components.CallStrip(Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 4.dp))
+            com.khizrim.dialer.ui.components.CallStrip(Modifier.fillMaxWidth().padding(start = com.khizrim.dialer.ui.theme.Gap.bar, end = com.khizrim.dialer.ui.theme.Gap.bar, top = 8.dp, bottom = 4.dp))
             // избранные: один тихий ряд имён со значком способа, без заголовка и без заливок
             // «Причал»: избранные лежат на приподнятом крае над панелью — одна нижняя поверхность, лента уходит под неё
-            val docked = vm.favorites.isNotEmpty()
             // контакты вытягиваются за «Причал» и нижнюю панель: они не листаются, поэтому жест работает всегда
-            Column((if (docked) Modifier.fillMaxWidth().dock() else Modifier.fillMaxWidth()).then(gestures)) {
+            // нижняя панель — причал, как у Ozero Mail: всегда одна поверхность цвета страницы с тенью над краем
+            Column(Modifier.fillMaxWidth().dock().then(gestures)) {
                 val favs = vm.favorites
                 if (favs.isNotEmpty()) {
-                    // избранные — ступенью выше подписей: Literata 20, как имена в списках, и отдельной полосой над панелью
+                    // избранные — ступенью выше подписей: тот же размер, что у имён в списках, и отдельной полосой над панелью
                     // край справа гаснет, только пока ряд можно прокрутить дальше
                     val favRow = androidx.compose.foundation.lazy.rememberLazyListState()
                     val fadeEdge by animateFloatAsState(if (favRow.canScrollForward) 1f else 0f, Motion.enter(Motion.FADE), label = "favFade")
@@ -288,7 +287,7 @@ fun HomeScreen(vm: DialerViewModel) {
                                 }
                             },
                         state = favRow,
-                        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp),
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp),
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
                         items(favs, key = { "f" + it.id }) { p ->
@@ -322,12 +321,12 @@ fun HomeScreen(vm: DialerViewModel) {
                                 Modifier
                                     .fillMaxWidth()
                                     .heightIn(min = 52.dp)
-                                    .lift(com.khizrim.dialer.ui.theme.OzShape.row).background(oz.fg, com.khizrim.dialer.ui.theme.OzShape.row)
+                                    .background(oz.toastBg, com.khizrim.dialer.ui.theme.OzShape.row)
                                     .padding(start = 16.dp, end = 6.dp)
                                     .semantics { liveRegion = LiveRegionMode.Polite },
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                Text(t?.text ?: "", style = OzType.small, color = oz.bg, modifier = Modifier.weight(1f))
+                                Text(t?.text ?: "", style = OzType.small, color = oz.toastFg, modifier = Modifier.weight(1f))
                                 TextAction(stringResource(R.string.undo), oz.toastAct, vm::undo, style = OzType.small.copy(fontWeight = FontWeight.SemiBold))
                             }
                         }
@@ -377,7 +376,7 @@ private fun CallAlertRow(vm: DialerViewModel, alert: com.khizrim.dialer.telecom.
         androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult(),
     ) { vm.reload() }
     Row(
-        Modifier.fillMaxWidth().padding(start = 24.dp, end = 12.dp, top = 4.dp),
+        Modifier.fillMaxWidth().padding(start = 20.dp, end = 12.dp, top = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(stringResource(alert.text), style = OzType.small, color = oz.warn, modifier = Modifier.weight(1f))
@@ -396,19 +395,3 @@ private fun CallAlertRow(vm: DialerViewModel, alert: com.khizrim.dialer.telecom.
 /** Подпись дня в ленте. */
 private data class FeedDay(val text: String)
 
-/** Приподнятый край: фон листа, верх скруглён на 22dp, тонкая линия и мягкая тень вверх, на ленту. */
-@Composable
-private fun Modifier.dock(): Modifier {
-    val oz = LocalOz.current
-    val shape = androidx.compose.foundation.shape.RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp)
-    // тень по форме причала (со скруглёнными углами), а не прямоугольной полосой над ним
-    return this
-        .shadow(
-            10.dp, shape,
-            ambientColor = if (oz.isDark) Color.Black.copy(alpha = .45f) else oz.fg.copy(alpha = .10f),
-            spotColor = if (oz.isDark) Color.Black.copy(alpha = .5f) else oz.fg.copy(alpha = .12f),
-        )
-        .clip(shape)
-        .background(oz.sheet)
-        .border(1.dp, oz.line, shape)
-}

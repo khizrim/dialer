@@ -71,7 +71,7 @@ fun EditContactScreen(vm: DialerViewModel) {
 
     Column(Modifier.fillMaxSize().imePadding()) {
         Column(
-            Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 24.dp),
+            Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp),
             verticalArrangement = Arrangement.Bottom,
         ) {
             Text(
@@ -130,7 +130,7 @@ fun EditContactScreen(vm: DialerViewModel) {
             }
         }
         Row(
-            Modifier.fillMaxWidth().padding(start = 12.dp, end = 24.dp, top = 8.dp, bottom = 16.dp),
+            Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, top = 10.dp, bottom = 12.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -140,7 +140,7 @@ fun EditContactScreen(vm: DialerViewModel) {
             Box(
                 Modifier.height(48.dp).alpha(if (canSave) 1f else .38f).raisedFill(oz.accentFill, OzShape.text)
                     .press({ if (canSave) vm.saveEdit() }, shape = OzShape.text, pressColor = Color.White.copy(alpha = .12f))
-                    .padding(horizontal = 24.dp),
+                    .padding(horizontal = 20.dp),
                 contentAlignment = Alignment.Center,
             ) { Text(stringResource(R.string.save), style = OzType.strong, color = Color.White) }
         }

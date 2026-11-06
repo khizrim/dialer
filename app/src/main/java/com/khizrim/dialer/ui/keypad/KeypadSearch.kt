@@ -109,7 +109,7 @@ fun SearchResults(vm: DialerViewModel, modifier: Modifier = Modifier, drag: Pane
             }
         }
     }
-    LazyColumn(modifier.nestedScroll(pullDown).padding(horizontal = 12.dp), verticalArrangement = Arrangement.Bottom) {
+    LazyColumn(modifier.nestedScroll(pullDown).padding(horizontal = 8.dp), verticalArrangement = Arrangement.Bottom) {
         items(results, key = { it.person.id }) { hit ->
             val p = hit.person
             val method = vm.defaultOf(p)
@@ -291,7 +291,7 @@ private fun TypedNumber(vm: DialerViewModel) {
         Modifier
             .fillMaxWidth()
             .height(56.dp)
-            .padding(start = 24.dp, end = 24.dp, top = 4.dp)
+            .padding(start = 20.dp, end = 20.dp, top = 4.dp)
             // смахнуть номер влево — стереть цифру, как на калькуляторе
             .pointerInput(vm) {
                 var dx = 0f
