@@ -39,4 +39,5 @@
         <item quantity="many">%1$d пропущенных от %2$s</item>
         <item quantity="other">%1$d пропущенного от %2$s</item>
     </plurals>
+    <string name="sim_usual">%1$s · обычно</string>
 </resources>

@@ -93,6 +93,7 @@ fun DialerApp(vm: DialerViewModel = viewModel()) {
             }
 
             PersonMenu(vm)
+            com.khizrim.dialer.ui.components.SimPickSheet(vm)
             MethodSheet(vm)
             SyncHelpSheet(vm)
             ConfirmLayer(vm)

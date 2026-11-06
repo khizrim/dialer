@@ -33,4 +33,5 @@
         <item quantity="one">%1$d missed call from %2$s</item>
         <item quantity="other">%1$d missed calls from %2$s</item>
     </plurals>
+    <string name="sim_usual">%1$s · usual</string>
 </resources>

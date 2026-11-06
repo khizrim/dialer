@@ -51,6 +51,7 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.khizrim.dialer.ConfirmState
 import com.khizrim.dialer.DialerViewModel
 import com.khizrim.dialer.MenuContext
@@ -230,6 +231,36 @@ private fun SheetRow(text: String, color: Color, onClick: () -> Unit, icon: Int?
     ) {
         if (icon != null) OzIcon(icon, oz.fg3)
         Text(text, style = OzType.body, color = color)
+    }
+}
+
+/** Долгое нажатие на трубку при двух SIM: две крупные строки с операторами у большого пальца, выбор на один звонок. */
+@Composable
+fun BoxScope.SimPickSheet(vm: DialerViewModel) {
+    val oz = LocalOz.current
+    val pick = rememberLast(vm.simPick)
+    SheetLayer(vm.simPick != null, pick?.who ?: "", vm::closeSimPick) {
+        if (pick == null) return@SheetLayer
+        Text(
+            pick.who, style = OzType.nameSearch, color = oz.fg, maxLines = 1,
+            modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 4.dp, bottom = 8.dp),
+        )
+        val usual = vm.usualSim(pick.number)
+        vm.sims.forEach { (id, label) ->
+            val carrier = label.substringAfter(" · ", "").ifBlank { label }
+            val slot = label.substringBefore(" · ")
+            Column(
+                Modifier.fillMaxWidth().heightIn(min = 64.dp).press({ vm.callWithSim(id) }, shape = RoundedCornerShape(0.dp), label = label)
+                    .padding(horizontal = 24.dp, vertical = 10.dp),
+                verticalArrangement = Arrangement.Center,
+            ) {
+                Text(carrier, style = OzType.body.copy(fontSize = 18.sp), color = oz.fg, maxLines = 1)
+                Text(
+                    if (id == usual) stringResource(R.string.sim_usual, slot) else slot,
+                    style = OzType.small, color = oz.fg3, maxLines = 1,
+                )
+            }
+        }
     }
 }
 

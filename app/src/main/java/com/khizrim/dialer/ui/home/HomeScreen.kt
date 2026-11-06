@@ -217,7 +217,8 @@ fun HomeScreen(vm: DialerViewModel) {
                             Modifier.matchParentSize()
                                 .press(
                                     onClick = { vm.tap(e) },
-                                    onLongClick = { vm.openMenu(e, MenuContext.HOME) },
+                                    // долгое нажатие на трубку при двух SIM — выбор SIM на этот звонок, иначе меню
+                                    onLongClick = { if (!(if (p != null) vm.askSim(p) else vm.askSim(e.number, e.title))) vm.openMenu(e, MenuContext.HOME) },
                                     label = stringResource(method?.title ?: R.string.choose_method) + ": " + e.title,
                                 ),
                         )
@@ -274,7 +275,7 @@ fun HomeScreen(vm: DialerViewModel) {
                             val m = vm.defaultOf(p)
                             Row(
                                 Modifier.heightIn(min = 56.dp)
-                                    .press({ vm.perform(p, m) }, onLongClick = { vm.openPerson(p.id) }, shape = com.khizrim.dialer.ui.theme.OzShape.text,
+                                    .press({ vm.perform(p, m) }, onLongClick = { if (!vm.askSim(p)) vm.openPerson(p.id) }, shape = com.khizrim.dialer.ui.theme.OzShape.text,
                                         label = stringResource(R.string.favorite_label, p.name, stringResource(m?.title ?: R.string.choose_method)))
                                     .padding(horizontal = 12.dp),
                                 verticalAlignment = Alignment.CenterVertically,

@@ -367,6 +367,35 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
         if (sims.size < 2 || number == null) return null
         return prefs.simFor(number)?.takeIf { s -> sims.any { it.first == s } } ?: simForCalls ?: sims.first().first
     }
+    /** Лист «с какой SIM» по долгому нажатию на трубку: выбор на один звонок. */
+    data class SimPick(val number: String, val who: String)
+    var simPick by mutableStateOf<SimPick?>(null); private set
+    /** false — SIM одна или звонить некуда: выбирать нечего, вызывающий делает своё обычное долгое нажатие. */
+    fun askSim(number: String?, who: String): Boolean {
+        if (sims.size < 2 || number.isNullOrBlank() || PhoneFormat.digits(number).isEmpty()) return false
+        menu = null; simPick = SimPick(number, who); return true
+    }
+    /** То же для человека: только если по нажатию у него обычный звонок. */
+    fun askSim(p: Person): Boolean = defaultOf(p) == Method.PHONE && askSim(numberFor(p), p.shownName)
+    fun closeSimPick() { simPick = null }
+    /** SIM, через которую звонок ушёл бы сам: запомненная для номера или основная. */
+    fun usualSim(number: String): String? = prefs.simFor(number)?.takeIf { s -> sims.any { it.first == s } } ?: simForCalls ?: sims.firstOrNull()?.first
+    fun callWithSim(id: String) {
+        val pick = simPick ?: return
+        simPick = null
+        closeKeypad()
+        // три звонка подряд с одной и той же не основной SIM — запоминаем её для номера
+        val usual = usualSim(pick.number)
+        if (id == usual) prefs.setSimStreak(pick.number, null, 0)
+        else {
+            val (last, n) = prefs.simStreak(pick.number)
+            val count = if (last == id) n + 1 else 1
+            if (count >= 3) { prefs.setSimFor(pick.number, id); prefs.setSimStreak(pick.number, null, 0); simVersion++ }
+            else prefs.setSimStreak(pick.number, id, count)
+        }
+        Launcher.call(ctx, pick.number, sim = id, pinned = true)?.let { say(it) }
+    }
+
     /** Нажатие на подпись SIM в карточке: следующая SIM; дошли до основной — забываем выбор. */
     fun cyclePersonSim(number: String) {
         val main = simForCalls ?: sims.firstOrNull()?.first ?: return

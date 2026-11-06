@@ -149,7 +149,7 @@ fun PersonScreen(vm: DialerViewModel, id: Long) {
             ) {
                 Row(
                     Modifier.weight(1f).fillMaxHeight()
-                        .press({ vm.perform(p, method) }, shape = OzShape.main, pressColor = Color.White.copy(alpha = .12f)),
+                        .press({ vm.perform(p, method) }, onLongClick = { vm.askSim(p) }, shape = OzShape.main, pressColor = Color.White.copy(alpha = .12f)),
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
