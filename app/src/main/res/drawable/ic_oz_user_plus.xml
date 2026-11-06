@@ -1,3 +1,26 @@
-<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
-  <path android:pathData="M6.25 7.75a3.75 3.75 0 1 0 7.5 0a3.75 3.75 0 1 0 -7.5 0z M3.5 20a6.5 6.5 0 0 1 10.6-5 M18.5 14v6 M15.5 17h6" android:strokeColor="@android:color/black" android:strokeWidth="1.6" android:strokeLineCap="round" android:strokeLineJoin="round"/>
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ozero icon: the 24 grid shared with Ozero Mail, 2 dp stroke, round caps and joins. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:strokeColor="#FF000000"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M6 8a4 4 0 1 0 8 0a4 4 0 1 0 -8 0z" />
+    <path
+        android:strokeColor="#FF000000"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M3 20a7 7 0 0 1 14 0" />
+    <path
+        android:strokeColor="#FF000000"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M19 6.5v6M16 9.5h6" />
 </vector>

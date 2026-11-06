@@ -266,7 +266,7 @@ fun HomeScreen(vm: DialerViewModel) {
             Column((if (docked) Modifier.fillMaxWidth().dock() else Modifier.fillMaxWidth()).then(gestures)) {
                 val favs = vm.favorites
                 if (favs.isNotEmpty()) {
-                    // избранные — ступенью выше подписей: Literata 20, как имена в списках, и отдельной полосой над панелью
+                    // избранные — ступенью выше подписей: тот же размер, что у имён в списках, и отдельной полосой над панелью
                     // край справа гаснет, только пока ряд можно прокрутить дальше
                     val favRow = androidx.compose.foundation.lazy.rememberLazyListState()
                     val fadeEdge by animateFloatAsState(if (favRow.canScrollForward) 1f else 0f, Motion.enter(Motion.FADE), label = "favFade")

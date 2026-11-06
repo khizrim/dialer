@@ -12,7 +12,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.unit.dp
 
 /** Четыре радиуса: текстовые кнопки, строки, главная кнопка, верх листа. */
@@ -32,16 +31,22 @@ fun Modifier.lift(shape: Shape): Modifier {
     else shadow(12.dp, shape, ambientColor = oz.fg.copy(alpha = .08f), spotColor = oz.fg.copy(alpha = .22f))
 }
 
-/** Круглая или главная кнопка: мягкий градиент, блик сверху и тень цвета заливки. */
-fun Modifier.raisedFill(fill: Color, shape: Shape = CircleShape): Modifier = this
-    .shadow(6.dp, shape, ambientColor = fill.copy(alpha = .3f), spotColor = fill.copy(alpha = .55f))
+/**
+ * Круглая или главная кнопка, как кнопки в акценте у Ozero Mail: ровная заливка, мягкая тень цвета заливки
+ * и полоска света по верхнему краю. Ночью тень почти не видна, поэтому кнопку держит свет.
+ */
+@Composable
+fun Modifier.raisedFill(fill: Color, shape: Shape = CircleShape): Modifier {
+    val lit = Color.White.copy(alpha = if (LocalOz.current.isDark) .07f else .35f)
+    return this
+    .shadow(3.dp, shape, ambientColor = fill.copy(alpha = .3f), spotColor = fill.copy(alpha = .7f))
     .clip(shape)
-    .background(Brush.verticalGradient(0f to lerp(fill, Color.White, .12f), .6f to fill, 1f to fill))
+    .background(fill)
     .drawWithContent {
         drawContent()
-        // блик 1dp у верхнего края
-        drawLine(Color.White.copy(alpha = .22f), Offset(size.width * .2f, 1.dp.toPx() / 2), Offset(size.width * .8f, 1.dp.toPx() / 2), 1.dp.toPx())
+        drawLine(lit, Offset(0f, .5.dp.toPx()), Offset(size.width, .5.dp.toPx()), 1.dp.toPx())
     }
+}
 
 /** «Лунка»: включённая кнопка звонка, переключатель, удержанный звонок. */
 @Composable

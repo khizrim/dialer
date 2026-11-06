@@ -231,7 +231,7 @@ private fun HitRow(vm: DialerViewModel, h: TextHit) {
     }
 }
 
-/** Строка указателя: имя Literata 18 на 48dp; нажатие — карточка, значок справа связывает. */
+/** Строка указателя: имя на 48dp; нажатие — карточка, значок справа связывает. */
 @Composable
 private fun IndexRow(vm: DialerViewModel, p: com.khizrim.dialer.model.Person) {
     val oz = LocalOz.current

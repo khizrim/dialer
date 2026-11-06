@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Ozero Phone: a round window onto a deep still lake with a white handset, on paper in every theme. -->
+<!-- Ozero Phone: the refracted handset on white paper, the same in every theme, like Ozero Mail. -->
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
     <background android:drawable="@drawable/ic_launcher_background" />
-    <foreground android:drawable="@mipmap/ic_launcher_foreground" />
+    <foreground android:drawable="@drawable/ic_launcher_foreground" />
     <monochrome android:drawable="@drawable/ic_launcher_monochrome" />
 </adaptive-icon>
