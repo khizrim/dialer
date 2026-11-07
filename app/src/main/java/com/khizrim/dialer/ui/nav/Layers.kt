@@ -73,6 +73,8 @@ class Layer internal constructor(val dest: Any, val kind: Kind, val id: Int, pri
         internal set
     /** Длина пути в пикселях: высота листа, высота или ширина экрана. NaN, пока лист не измерен. */
     var extent by mutableFloatStateOf(Float.NaN)
+    /** Высота того, что экран держит у нижнего края (группа способов у экрана человека): тост встаёт над ней. */
+    var floor by mutableFloatStateOf(Float.NaN)
     var onClosed: (() -> Unit)? = null
     private var job: Job? = null
 

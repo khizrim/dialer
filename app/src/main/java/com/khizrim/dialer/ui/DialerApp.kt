@@ -39,7 +39,7 @@ import com.khizrim.dialer.DialerViewModel
 import com.khizrim.dialer.R
 import com.khizrim.dialer.Screen
 import com.khizrim.dialer.ui.call.CallCapsule
-import com.khizrim.dialer.ui.card.CardSheet
+import com.khizrim.dialer.ui.card.PersonScreen
 import com.khizrim.dialer.ui.card.ConfirmSheet
 import com.khizrim.dialer.ui.card.MenuSheet
 import com.khizrim.dialer.ui.card.SimSheet
@@ -80,7 +80,7 @@ sealed interface Dest {
 /** Открыть карточку человека, если она ещё не сверху. */
 fun Nav.openCard(id: Long) {
     if ((top?.dest as? Dest.Card)?.id == id) return
-    open(Dest.Card(id), Kind.SHEET)
+    open(Dest.Card(id), Kind.RISE)
 }
 
 @Composable
@@ -99,7 +99,7 @@ fun DialerApp(vm: DialerViewModel) {
             Box(Modifier.fillMaxSize().background(oz.bg)) {
                 LayerHost(nav, base = { Home(vm) { dock = it } }) { l ->
                     when (val d = l.dest) {
-                        is Dest.Card -> CardSheet(vm, l, d.id)
+                        is Dest.Card -> PersonScreen(vm, l, d.id)
                         Dest.Keypad -> KeypadPanel(vm, l)
                         Dest.Contacts -> ContactsScreen(vm, l)
                         Dest.Settings -> SettingsPage(vm, l)
@@ -176,7 +176,7 @@ private fun ToastHost(vm: DialerViewModel, nav: Nav, dockPx: Int) {
                             val e = top.extent.takeUnless { it.isNaN() } ?: 0f
                             maxOf(dockPx.toFloat() * (1f - top.p), e * top.p) + gap
                         }
-                        Kind.RISE -> navPx + rise
+                        Kind.RISE -> navPx + (top.floor.takeUnless { it.isNaN() }?.let { it + gap * 2 } ?: rise)
                         Kind.PUSH -> navPx + gap
                     }
                 }

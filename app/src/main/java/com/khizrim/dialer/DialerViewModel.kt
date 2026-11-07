@@ -727,6 +727,36 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
         say(str(R.string.now_on_tap, m.label(ctx)))
     }
 
+    /**
+     * Удержание действия на экране человека: оно становится основным, с «Вернуть».
+     * [number] — на какой номер звонить и писать, [sim] — с какой SIM звонить этому человеку.
+     */
+    fun makeUsual(p: Person, m: Method, number: String? = null, sim: String? = null) {
+        val key = p.lookupKey
+        val prevDef = prefs.defaultFor(key)
+        val prevNum = prefs.numberFor(key)
+        val target = number ?: numberFor(p)
+        val prevSim = target?.let { prefs.simFor(it) }
+        prefs.setDefault(key, m)
+        if (number != null) prefs.setNumber(key, number)
+        if (sim != null && target != null) { prefs.setSimFor(target, sim); simVersion++ }
+        defaultsVersion++
+        say(str(R.string.now_on_tap, m.label(ctx)), action = str(R.string.undo)) {
+            prefs.restoreDefault(key, prevDef)
+            prefs.setNumber(key, prevNum)
+            if (sim != null && target != null) { prefs.setSimFor(target, prevSim); simVersion++ }
+            defaultsVersion++
+        }
+    }
+
+    /** Звонок человеку на этот номер с этой SIM, один раз. */
+    fun callPerson(p: Person, number: String, sim: String?) {
+        if (sim == null) { perform(p, Method.PHONE, number); return }
+        callNumber(number, sim)
+        prefs.log(p.key, Method.PHONE)
+        prefs.unhide(p.key)
+    }
+
     /** Связаться не основным способом; когда человек вернётся в приложение, тихо предложим сделать способ основным. */
     fun performOther(p: Person, m: Method, number: String? = null) {
         val before = defaultOf(p)
@@ -797,11 +827,14 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
         val tf = java.text.DateFormat.getTimeInstance(java.text.DateFormat.SHORT)
         // из recentCalls: смахнутый в карточке звонок пропадает сразу, «Вернуть» его возвращает
         recentCalls.asSequence().map { it.first }.filter { Numbers.key(it.number) in keys }.take(300).forEach {
-            val what = if (it.ordinary) str(if (it.type == android.provider.CallLog.Calls.OUTGOING_TYPE) R.string.h_outgoing else R.string.h_incoming) else it.note(res) ?: tf.format(java.util.Date(it.date))
+            // текст называет способ, направление показывает стрелка; подпись — только у необычного
+            val plain = str(R.string.way_call)
+            val what = if (it.ordinary) plain else it.note(res) ?: plain
             val dur = when { it.duration <= 0 -> ""; it.duration < 60 -> res.getString(R.string.card_dur_sec, it.duration.toInt()); else -> res.getString(R.string.card_dur_min, ((it.duration + 30) / 60).toInt()) }
-            events += it.date to HistoryEntry(Dates.day(res, it.date), what, it.missed, it, dur)
+            events += it.date to HistoryEntry(Dates.day(res, it.date), what, it.missed, it, dur, tf.format(java.util.Date(it.date)))
         }
-        interactions.filter { it.key == p.key }.takeLast(300).forEach { events += it.at to HistoryEntry(Dates.day(res, it.at), it.method.label(ctx)) }
+        // обычный звонок уже есть в журнале звонков: второй строкой его не дублируем
+        interactions.filter { it.key == p.key && it.method != Method.PHONE }.takeLast(300).forEach { events += it.at to HistoryEntry(Dates.day(res, it.at), it.method.label(ctx), time = tf.format(java.util.Date(it.at))) }
         // старые сверху, свежие у имени; карточка открывается у свежих
         return events.sortedBy { it.first }.map { it.second }
     }

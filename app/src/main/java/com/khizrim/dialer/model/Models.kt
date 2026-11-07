@@ -70,7 +70,7 @@ data class Person(
     val key: String get() = "c:$lookupKey"
 }
 
-data class HistoryEntry(val day: String, val text: String, val missed: Boolean = false, val record: CallRecord? = null, val duration: String = "")
+data class HistoryEntry(val day: String, val text: String, val missed: Boolean = false, val record: CallRecord? = null, val duration: String = "", val time: String = "")
 
 /** Строка главной: человек из контактов или номер, которого нет в контактах. */
 /** Направление последнего контакта в ленте. */
