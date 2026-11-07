@@ -59,6 +59,10 @@ class Prefs(context: Context) {
     fun setDefault(lookupKey: String, method: Method?) {
         sp.edit().putString("def:$lookupKey", method?.name ?: ASK).apply()
     }
+    /** Вернуть сохранённое как было (для «Вернуть»): null — ничего не выбрано. */
+    fun restoreDefault(lookupKey: String, raw: String?) {
+        sp.edit().apply { if (raw == null) remove("def:$lookupKey") else putString("def:$lookupKey", raw) }.apply()
+    }
 
     /** Порядок избранных, который человек задал сам (ключи людей). Кого нет в списке — после, по частоте. */
     fun favOrder(): List<String> = sp.getString("favorder", "").orEmpty().split('\n').filter { it.isNotBlank() }

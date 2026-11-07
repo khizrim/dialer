@@ -122,6 +122,8 @@ fun ContactsScreen(vm: DialerViewModel, l: Layer) {
     val nav = LocalNav.current
     val haze = remember { HazeState() }
     val list = rememberLazyListState()
+    // поиск — свой список, снизу вверх: лучший результат прямо над полем, под большим пальцем
+    val found = rememberLazyListState()
     val scope = rememberCoroutineScope()
     val focus = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
@@ -136,8 +138,8 @@ fun ContactsScreen(vm: DialerViewModel, l: Layer) {
     LaunchedEffect(favs.isEmpty()) { if (favs.isEmpty()) editFav = false }
     val items = remember(sorted, q, vm.textHits, favs, editFav) {
         buildList {
-            add(CItem.Hero)
             if (q.isBlank()) {
+                add(CItem.Hero)
                 if (favs.isNotEmpty()) {
                     add(CItem.FavHeader)
                     if (editFav) add(CItem.FavEditor) else favs.distinctBy { it.id }.forEach { add(CItem.Row(it, null, "f" + it.id)) }
@@ -179,8 +181,11 @@ fun ContactsScreen(vm: DialerViewModel, l: Layer) {
     DisposableEffect(Unit) { onDispose { vm.typeText("") } }
     // листнули пальцем — клавиатура уходит
     LaunchedEffect(list) {
-        snapshotFlow { list.isScrollInProgress }.collect { if (it) focusManager.clearFocus() }
+        snapshotFlow { list.isScrollInProgress || found.isScrollInProgress }.collect { if (it) focusManager.clearFocus() }
     }
+    val searching = q.isNotBlank()
+    // новый запрос — к лучшему результату у поля
+    LaunchedEffect(q) { if (searching) found.scrollToItem(0) }
 
     val imeBottom = with(density) { WindowInsets.ime.getBottom(this).toDp() }
     val navBottom = with(density) { WindowInsets.navigationBars.getBottom(this).toDp() }
@@ -190,7 +195,8 @@ fun ContactsScreen(vm: DialerViewModel, l: Layer) {
         Box(Modifier.fillMaxSize().background(oz.bg).dismissDrag(l)) {
             LazyColumn(
                 Modifier.fillMaxSize().haze(haze).background(oz.bg),
-                state = list,
+                state = if (searching) found else list,
+                reverseLayout = searching,
                 contentPadding = PaddingValues(top = statusTop, bottom = maxOf(imeBottom, navBottom) + 96.dp),
             ) {
                 items(items, key = { it.key }) { item ->
@@ -212,8 +218,8 @@ fun ContactsScreen(vm: DialerViewModel, l: Layer) {
             }
 
             // маленький заголовок, когда большой ушёл под строку состояния
-            val mini by remember { derivedStateOf { list.firstVisibleItemIndex > 0 || list.firstVisibleItemScrollOffset > 120 } }
-            val a by animateFloatAsState(if (mini) 1f else 0f, Motion.enter(Motion.FADE), label = "mini")
+            val scrolled by remember { derivedStateOf { list.firstVisibleItemIndex > 0 || list.firstVisibleItemScrollOffset > 120 } }
+            val a by animateFloatAsState(if (scrolled && !searching) 1f else 0f, Motion.enter(Motion.FADE), label = "mini")
             if (a > 0f) {
                 Box(Modifier.fillMaxWidth().graphicsLayer { alpha = a }.frosted().statusBarsPadding().height(44.dp), contentAlignment = Alignment.Center) {
                     Text(stringResource(R.string.contacts), style = OzType.strong, color = oz.fg)
@@ -361,7 +367,7 @@ private fun PersonRow(vm: DialerViewModel, p: Person, name: AnnotatedString, sub
 private fun NothingFound(vm: DialerViewModel, q: String) {
     val oz = LocalOz.current
     val digits = q.filter { it.isDigit() || it == '+' }
-    Column(Modifier.fillMaxWidth().padding(top = 32.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+    Column(Modifier.fillMaxWidth().padding(bottom = 16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         Text(stringResource(R.string.search_nothing), style = OzType.body, color = oz.fg3)
         if (PhoneFormat.digits(digits).length >= 3) {
             TextAction(stringResource(R.string.call_number, PhoneFormat.pretty(digits)), oz.accent, { vm.callNumber(digits) }, modifier = Modifier.padding(top = 8.dp))
