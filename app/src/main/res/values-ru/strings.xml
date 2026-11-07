@@ -315,5 +315,6 @@
     <string name="fav_done">Готово</string>
     <string name="fav_drag">Перетащите, чтобы поменять порядок</string>
     <string name="card_usual">Обычно —</string>
+    <string name="card_change">Изменить</string>
     <string name="card_copy">Скопировать</string>
 </resources>

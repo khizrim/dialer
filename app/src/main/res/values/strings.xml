@@ -306,5 +306,6 @@
     <string name="fav_done">Done</string>
     <string name="fav_drag">Drag to reorder</string>
     <string name="card_usual">Usually</string>
+    <string name="card_change">Change</string>
     <string name="card_copy">Copy</string>
 </resources>
