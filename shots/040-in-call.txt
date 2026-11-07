@@ -1,0 +1,14 @@
+(99, 224, 1023, 495)	C 		
+(99, 292, 1023, 354)	C 	Sat, Nov 7	Sat, Nov 7
+(309, 1479, 519, 1751)	CL	Gmail	Gmail
+(561, 1479, 771, 1751)	CL	Photos	Photos
+(813, 1479, 1023, 1751)	CL	YouTube	YouTube
+(0, 128, 1080, 2337)	  		Home
+(76, 1873, 249, 2068)	CL	Phone	Phone
+(328, 1873, 501, 2068)	CL	Messages	Messages
+(580, 1873, 753, 2068)	CL	Chrome	Chrome
+(832, 1873, 1004, 2068)	CL	Gmail	Predicted app: Gmail
+(75, 2125, 1004, 2290)	CL		Search
+(86, 2144, 212, 2270)	C 		Google app
+(741, 2125, 867, 2290)	C 		Voice search
+(867, 2125, 993, 2290)	C 		Google Lens

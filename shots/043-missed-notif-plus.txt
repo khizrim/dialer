@@ -1,0 +1,37 @@
+(0, 0, 1080, 2400)	C 		
+(42, 126, 529, 284)	CL	Internet, AndroidWifi	Internet,AndroidWifi
+(163, 179, 418, 230)	  	Internet	
+(550, 126, 1037, 284)	CL	Bluetooth, On	Bluetooth.
+(671, 179, 979, 230)	  	Bluetooth	
+(42, 305, 529, 463)	C 	Flashlight, Off	Flashlight
+(163, 358, 471, 409)	  	Flashlight	
+(550, 305, 1037, 463)	CL	Do Not Disturb, Off	Do Not Disturb.
+(671, 358, 979, 409)	  	Do Not Disturb	
+(42, 568, 1038, 1003)	CL		
+(179, 620, 362, 663)	  	Ozero Phone	
+(42, 568, 179, 715)	C 		
+(852, 568, 1038, 715)	C 		Expand
+(894, 610, 933, 673)	  	4	
+(179, 694, 772, 745)	  	3 missed calls from Аня Смирнова	
+(772, 694, 1006, 745)	  	+7 (903) 555-66-77	
+(179, 766, 621, 817)	  	2 missed calls from Мама	
+(621, 766, 1006, 817)	  	+7 (916) 111-22-33	
+(179, 838, 789, 889)	  	Missed call from +7 (800) 555-35-35	
+(179, 910, 789, 961)	  	Missed call from +7 (499) 700-11-22	
+(53, 1050, 207, 1176)	C 	Silent	
+(179, 1233, 405, 1276)	  	Android System	
+(42, 1181, 179, 1328)	C 		
+(852, 1181, 1038, 1328)	C 		Expand
+(894, 1223, 933, 1286)	  	2	
+(179, 1307, 561, 1358)	  	Serial console enabled	
+(561, 1307, 1006, 1358)	  	Performance is impacted. To disable, check bootloader.	
+(179, 1379, 840, 1430)	  	Configure AT Translated Set 2 keyboard	
+(840, 1379, 1006, 1430)	  	Tap to select language and layout	
+(84, 1509, 321, 1635)	C 	Manage	Manage
+(759, 1509, 996, 1635)	C 	Clear all	Clear all notifications.
+(50, 0, 138, 126)	C 	6:30 	6:30 PM
+(159, 31, 481, 94)	  	Sat, Nov 7	
+(810, 43, 849, 82)	  		Wifi signal full.
+(849, 34, 888, 92)	  		Phone signal full.
+(904, 32, 1027, 95)	  		Battery charging, 100 percent.
+(924, 32, 1027, 95)	  	100%	

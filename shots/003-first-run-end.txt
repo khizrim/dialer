@@ -1,0 +1,17 @@
+(53, 1009, 828, 1098)	  	Android blocked access	
+(53, 1130, 1027, 1307)	  	The app was installed from a file, so Android hides the default phone app permission. You only need to allow it once.	
+(53, 1365, 70, 1416)	  	1	
+(112, 1365, 840, 1416)	  	Open App info with the button below	
+(53, 1448, 79, 1499)	  	2	
+(121, 1448, 663, 1505)	  	Tap ⋮ in the top right corner	
+(53, 1537, 79, 1588)	  	3	
+(121, 1537, 1027, 1651)	  	Choose “Allow restricted settings” and confirm	
+(53, 1683, 80, 1734)	  	4	
+(122, 1683, 748, 1734)	  	Come back and tap “Try again”	
+(53, 1771, 1027, 1926)	  	No ⋮ menu? Tap “Try again” once more and check again: the option appears only after Android has refused once. On Xiaomi it may be under “Other permissions”.	
+(53, 1989, 1027, 2136)	C 		
+(396, 2037, 684, 2088)	  	Open App info	
+(22, 2163, 273, 2289)	C 		
+(54, 2201, 241, 2252)	  	Try again	
+(304, 2163, 535, 2289)	C 		
+(336, 2201, 503, 2252)	  	Not now	

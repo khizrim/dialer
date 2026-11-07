@@ -1,0 +1,9 @@
+(53, 1387, 145, 1432)	  	1 of 2	
+(53, 1453, 469, 1542)	  	Ozero Phone	
+(153, 1630, 707, 1681)	  	People, not lists of numbers	
+(153, 1730, 775, 1781)	  	Unknown callers can stay quiet	
+(153, 1830, 785, 1881)	  	Everything stays on your phone	
+(53, 1989, 1027, 2136)	C 		
+(298, 2037, 783, 2088)	  	Make default phone app	
+(22, 2163, 253, 2289)	C 		
+(54, 2201, 221, 2252)	  	Not now	

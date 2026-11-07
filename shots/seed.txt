@@ -1,0 +1,12 @@
+Row: 0 display_name=Мама, starred=1
+Row: 1 display_name=Папа, starred=1
+Row: 2 display_name=Дмитрий Козлов, starred=1
+Row: 3 display_name=Аня Смирнова, starred=0
+Row: 4 display_name=Илья Петров, starred=0
+Row: 5 display_name=Катя Иванова, starred=0
+Row: 6 display_name=Anna Brown, starred=0
+Row: 7 display_name=Алексей, starred=0
+Row: 8 display_name=Борис, starred=0
+Row: 9 display_name=Вера, starred=0
+Row: 10 display_name=Галина, starred=0
+Row: 11 display_name=Денис, starred=0

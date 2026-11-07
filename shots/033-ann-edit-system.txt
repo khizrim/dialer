@@ -1,0 +1,21 @@
+(0, 138, 147, 285)	C 		Cancel
+(157, 175, 472, 248)	  	Edit contact	
+(723, 148, 954, 274)	C 	Save	
+(954, 148, 1080, 274)	CL		More options
+(382, 349, 697, 735)	C 		
+(397, 364, 682, 649)	  		Add contact photo
+(449, 664, 630, 735)	  	Add photo	
+(137, 803, 933, 952)	CL	Аня	
+(137, 988, 933, 1137)	CL	Смирнова	
+(933, 788, 1080, 935)	C 		
+(933, 788, 1080, 935)	  		Show more name fields
+(137, 1194, 933, 1343)	CL	Company	
+(137, 1400, 933, 1549)	CL	+79035556677	
+(137, 1585, 586, 1734)	CL	Mobile	Mobile Phone
+(460, 1596, 586, 1722)	C 		Show dropdown menu
+(933, 1385, 1080, 1532)	C 		Delete Mobile Phone
+(933, 1385, 1080, 1532)	  		delete
+(137, 1796, 933, 1945)	CL	Phone	
+(137, 1981, 586, 2130)	CL	Home	Home Phone
+(460, 1992, 586, 2118)	C 		Show dropdown menu
+(137, 2192, 933, 2337)	CL	Email	
