@@ -116,9 +116,9 @@ fun PersonScreen(vm: DialerViewModel, l: Layer, id: Long) {
                 Modifier.fillMaxSize().haze(haze),
                 state = rememberLazyListState(),
                 reverseLayout = true,
-                contentPadding = PaddingValues(top = statusTop + 24.dp, bottom = navBottom + 12.dp + dockDp + 16.dp),
+                contentPadding = PaddingValues(top = statusTop + 24.dp, bottom = navBottom + 12.dp + dockDp + 24.dp),
             ) {
-                item(key = "who") { Who(vm, p, unknown, top = if (history.isEmpty()) 0.dp else 32.dp) }
+                item(key = "who") { Who(vm, p, unknown, top = if (history.isEmpty()) 0.dp else 28.dp) }
                 days.asReversed().forEachIndexed { di, (day, list) ->
                     list.asReversed().forEachIndexed { i, h -> item(key = "h$di:$i") { Event(h) } }
                     item(key = "d$di") { Day(day, first = di == days.size - 1) }
@@ -343,7 +343,7 @@ private fun VerbRow(verbs: List<Verb>) {
 @Composable
 private fun NumberChips(items: List<String>, selected: Int, onPick: (Int) -> Unit) {
     val oz = LocalOz.current
-    Row(Modifier.fillMaxWidth().padding(start = 8.dp, end = 8.dp, top = 2.dp, bottom = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    Row(Modifier.fillMaxWidth().padding(start = 4.dp, end = 4.dp, bottom = 4.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
         items.forEachIndexed { i, s ->
             val on = i == selected
             Box(
