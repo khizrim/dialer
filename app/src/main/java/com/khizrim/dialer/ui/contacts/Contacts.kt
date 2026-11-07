@@ -39,6 +39,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -54,6 +55,7 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
@@ -97,6 +99,10 @@ private sealed interface CItem {
     val key: String
     data object Hero : CItem { override val key = "hero" }
     data class Label(val text: String, override val key: String) : CItem
+    /** «Избранные» с «Изменить» справа. */
+    data object FavHeader : CItem { override val key = "favhead" }
+    /** Избранные в режиме «Изменить»: убрать, переставить, способ по нажатию. */
+    data object FavEditor : CItem { override val key = "favedit" }
     data class Letter(val letter: String) : CItem { override val key = "L$letter" }
     data class Row(val p: Person, val sub: String?, override val key: String) : CItem
     data class Hit(val h: TextHit, override val key: String) : CItem
@@ -122,24 +128,36 @@ fun ContactsScreen(vm: DialerViewModel, l: Layer) {
     val density = LocalDensity.current
     val q = vm.textQuery
     val collator = remember { Collator.getInstance(Locale.getDefault()) }
-    val favTitle = stringResource(R.string.favorites)
+    var editFav by remember { mutableStateOf(false) }
     val sorted = remember(vm.people) { vm.people.distinctBy { it.id }.sortedWith { a, b -> collator.compare(a.shownName, b.shownName) } }
     val res = androidx.compose.ui.platform.LocalContext.current.resources
 
-    val items = remember(sorted, q, vm.textHits, vm.favorites) {
+    val favs = vm.favorites
+    LaunchedEffect(favs.isEmpty()) { if (favs.isEmpty()) editFav = false }
+    val items = remember(sorted, q, vm.textHits, favs, editFav) {
         buildList {
             add(CItem.Hero)
             if (q.isBlank()) {
-                val favs = vm.favorites.distinctBy { it.id }
                 if (favs.isNotEmpty()) {
-                    add(CItem.Label(favTitle, "favlabel"))
-                    favs.forEach { add(CItem.Row(it, null, "f" + it.id)) }
+                    add(CItem.FavHeader)
+                    if (editFav) add(CItem.FavEditor) else favs.distinctBy { it.id }.forEach { add(CItem.Row(it, null, "f" + it.id)) }
                 }
                 // по буквам: «Ё» и «Е», «É» и «E» сортировщик ставит вперемешку, поэтому сначала группы, потом строки,
-                // иначе одна буква встречается дважды и ключи списка совпадают
-                sorted.groupBy(::letterOf).entries
-                    .sortedWith(compareBy<Map.Entry<String, List<Person>>> { it.key == "#" }.thenComparator { a, b -> collator.compare(a.key, b.key) })
+                // иначе одна буква встречается дважды и ключи списка совпадают.
+                // Сначала алфавит, на котором записано больше людей; второй отделён тихой подписью «A–Z» или «А–Я»,
+                // иначе латинская «A» и кириллическая «А» выглядят одной буквой, встреченной дважды
+                val groups = sorted.groupBy(::letterOf)
+                fun script(l0: String) = when (l0.firstOrNull()) { null -> 2; in 'A'..'Z', in 'À'..'ž' -> 1; else -> if (l0 == "#") 3 else 0 }
+                val cyr = groups.filterKeys { script(it) == 0 }.values.sumOf { it.size }
+                val lat = groups.filterKeys { script(it) == 1 }.values.sumOf { it.size }
+                fun rank(l0: String) = script(l0).let { if (it <= 1 && lat > cyr) 1 - it else it }
+                var lastRank = -1
+                groups.entries
+                    .sortedWith(compareBy<Map.Entry<String, List<Person>>> { rank(it.key) }.thenComparator { a, b -> collator.compare(a.key, b.key) })
                     .forEach { (l0, ps) ->
+                        val r = rank(l0)
+                        if (lastRank == 0 && r == 1) add(CItem.Label(if (script(l0) == 1) "A–Z" else "А–Я", "script"))
+                        lastRank = r
                         add(CItem.Letter(l0))
                         ps.forEach { p -> add(CItem.Row(p, p.company?.takeIf { it.isNotBlank() }, "p" + p.id)) }
                     }
@@ -179,6 +197,8 @@ fun ContactsScreen(vm: DialerViewModel, l: Layer) {
                     when (item) {
                         // стекло внутри того, что оно размывает, рисовало бы само себя: здесь только вуаль
                         CItem.Hero -> CompositionLocalProvider(LocalGlass provides null) { Hero(onNew = { vm.addNamedContact(q) }, onSettings = { focusManager.clearFocus(); vm.openSettings() }) }
+                        CItem.FavHeader -> FavHeader(editFav) { focusManager.clearFocus(); editFav = !editFav }
+                        CItem.FavEditor -> FavEditor(vm, favs)
                         is CItem.Label -> Text(item.text, style = OzType.meta.copy(fontWeight = FontWeight.Medium), color = oz.fg3, modifier = Modifier.padding(start = 20.dp, top = 12.dp, bottom = 4.dp).semantics { heading() })
                         is CItem.Letter -> Text(item.letter, style = OzType.title.copy(fontSize = 20.sp), color = oz.fg3, modifier = Modifier.padding(start = 20.dp, top = 16.dp, bottom = 2.dp).semantics { heading() })
                         is CItem.Row -> PersonRow(vm, item.p, AnnotatedString(item.p.shownName), item.sub) { focusManager.clearFocus(); nav.openCard(item.p.id) }
@@ -214,6 +234,85 @@ fun ContactsScreen(vm: DialerViewModel, l: Layer) {
                     .padding(bottom = (imeBottom - navBottom).coerceAtLeast(0.dp))
                     .padding(start = 12.dp, end = 12.dp, bottom = 10.dp),
             ) { focusManager.clearFocus() }
+        }
+    }
+}
+
+/** «Избранные» и справа «Изменить» / «Готово». */
+@Composable
+private fun FavHeader(editing: Boolean, onToggle: () -> Unit) {
+    val oz = LocalOz.current
+    Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 12.dp, top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+        Text(stringResource(R.string.favorites), style = OzType.meta.copy(fontWeight = FontWeight.Medium), color = oz.fg3, modifier = Modifier.weight(1f).semantics { heading() })
+        TextAction(stringResource(if (editing) R.string.fav_done else R.string.fav_edit), oz.accent, onToggle, style = OzType.small)
+    }
+}
+
+/**
+ * Избранные в режиме «Изменить»: за ручку слева — переставить (порядок тот же, что в доке),
+ * справа — что делает нажатие (меняется тут же) и крестик «убрать», с «Вернуть» в тосте.
+ */
+@Composable
+private fun FavEditor(vm: DialerViewModel, favs: List<Person>) {
+    val oz = LocalOz.current
+    val rowPx = with(LocalDensity.current) { 60.dp.toPx() }
+    var dragging by remember { mutableStateOf<Long?>(null) }
+    var offset by remember { mutableStateOf(0f) }
+    val list by androidx.compose.runtime.rememberUpdatedState(favs)
+    Column(Modifier.fillMaxWidth()) {
+        favs.forEach { p ->
+            androidx.compose.runtime.key(p.id) {
+                val m = vm.defaultOf(p)
+                val lifted = dragging == p.id
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .height(60.dp)
+                        .graphicsLayer { if (lifted) { translationY = offset; shadowElevation = 12f } }
+                        .background(oz.bg)
+                        .padding(start = 4.dp, end = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    val drag = stringResource(R.string.fav_drag)
+                    Box(
+                        Modifier
+                            .size(48.dp)
+                            .semantics { contentDescription = drag }
+                            .pointerInput(p.id) {
+                                detectVerticalDragGestures(
+                                    onDragStart = { dragging = p.id; offset = 0f },
+                                    onDragEnd = { dragging = null; offset = 0f },
+                                    onDragCancel = { dragging = null; offset = 0f },
+                                ) { c, dy ->
+                                    c.consume()
+                                    offset += dy
+                                    val at = list.indexOfFirst { it.id == p.id }
+                                    // переехали за половину соседней строки — меняемся с ней местами
+                                    if (offset > rowPx / 2 && at < list.size - 1) { vm.moveFavorite(at, at + 1); offset -= rowPx }
+                                    else if (offset < -rowPx / 2 && at > 0) { vm.moveFavorite(at, at - 1); offset += rowPx }
+                                }
+                            },
+                        contentAlignment = Alignment.Center,
+                    ) { OzIcon(R.drawable.ic_oz_grip, oz.fg3, 20.dp) }
+                    Text(p.shownName, style = OzType.row.copy(fontWeight = FontWeight.Normal), color = oz.fg, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f).padding(start = 4.dp))
+                    if (p.methods.size > 1) {
+                        Row(
+                            Modifier.height(44.dp).press({ vm.openSheet(p, SheetMode.DEFAULT) }, shape = RoundedCornerShape(14.dp), label = stringResource(R.string.on_tap_title)).padding(horizontal = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            MethodMark(m, size = 18.dp)
+                            Spacer(Modifier.width(6.dp))
+                            Text(stringResource(m?.short ?: R.string.ask_every_time), style = OzType.small, color = oz.accent, maxLines = 1)
+                        }
+                    } else {
+                        Box(Modifier.padding(horizontal = 10.dp)) { MethodMark(m, size = 18.dp) }
+                    }
+                    val remove = stringResource(R.string.remove_favorite)
+                    Box(Modifier.size(44.dp).press({ vm.toggleFavorite(p) }, shape = CircleShape, label = remove).semantics { contentDescription = remove }, contentAlignment = Alignment.Center) {
+                        OzIcon(R.drawable.ic_oz_x, oz.fg3, 18.dp)
+                    }
+                }
+            }
         }
     }
 }

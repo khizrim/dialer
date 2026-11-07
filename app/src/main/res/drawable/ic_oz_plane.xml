@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ozero icon (paper plane, Telegram): the 24 grid shared with Ozero Mail, 2 dp stroke, round caps and joins. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:strokeColor="#FF000000"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M20.5 3.5L10.5 13.5M20.5 3.5l-6.2 17-3.8-7-7-3.8 17-6.2z" />
+</vector>

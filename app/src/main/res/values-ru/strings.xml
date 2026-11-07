@@ -50,7 +50,6 @@
     <string name="now_ask">Теперь будем спрашивать каждый раз</string>
     <string name="back">Назад</string>
     <string name="back_home">Вернуться на главную</string>
-    <string name="change_default">Изменить по умолчанию</string>
     <string name="edit_contact">Изменить контакт</string>
     <string name="add_favorite">Добавить в избранное</string>
     <string name="remove_favorite">Убрать из избранного</string>
@@ -64,7 +63,7 @@
     <string name="blocked_numbers">Заблокированные номера</string>
     <string name="blocked_title">Заблокированные</string>
     <string name="blocked_need_role">Список доступен, когда Ozero Phone выбран звонилкой по умолчанию.</string>
-    <string name="blocked_empty">Никого не блокировали. Заблокировать номер можно прямо во время звонка или долгим нажатием на главной.</string>
+    <string name="blocked_empty">Никто не заблокирован</string>
     <string name="unblock">Разблокировать</string>
     <string name="block_title">Заблокировать %1$s?</string>
     <string name="block_text">Звонки и SMS с этого номера больше не будут доходить. Разблокировать можно в Настройках.</string>
@@ -304,8 +303,6 @@
     </plurals>
     <string name="keypad_more">ещё %d</string>
     <string name="call_more">Ещё</string>
-    <string name="card_usual">Обычно: %s</string>
-    <string name="card_change">Сменить</string>
     <string name="card_history">История</string>
     <plurals name="card_calls">
         <item quantity="one">%d звонок</item>
@@ -313,4 +310,8 @@
         <item quantity="many">%d звонков</item>
         <item quantity="other">%d звонка</item>
     </plurals>
+    <string name="card_on_tap">По нажатию</string>
+    <string name="fav_edit">Изменить</string>
+    <string name="fav_done">Готово</string>
+    <string name="fav_drag">Перетащите, чтобы поменять порядок</string>
 </resources>

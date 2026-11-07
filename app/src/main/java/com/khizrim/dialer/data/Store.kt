@@ -60,6 +60,10 @@ class Prefs(context: Context) {
         sp.edit().putString("def:$lookupKey", method?.name ?: ASK).apply()
     }
 
+    /** Порядок избранных, который человек задал сам (ключи людей). Кого нет в списке — после, по частоте. */
+    fun favOrder(): List<String> = sp.getString("favorder", "").orEmpty().split('\n').filter { it.isNotBlank() }
+    fun setFavOrder(keys: List<String>) { sp.edit().putString("favorder", keys.joinToString("\n")).apply() }
+
     /** Номер, на который звонить и писать SMS, если у человека их несколько. */
     fun numberFor(lookupKey: String): String? = sp.getString("num:$lookupKey", null)
     fun setNumber(lookupKey: String, number: String?) {

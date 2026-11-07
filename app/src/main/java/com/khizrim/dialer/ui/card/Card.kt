@@ -77,8 +77,31 @@ fun CardSheet(vm: DialerViewModel, l: Layer, id: Long) {
     val default = vm.defaultOf(p)
     fun done(action: () -> Unit) { nav.close(l); action() }
 
-    Sheet(l) {
-        Row(Modifier.fillMaxWidth().padding(start = 22.dp, end = 10.dp, top = 4.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+    val number = vm.numberFor(p)
+    val line = buildList {
+        if (default == Method.PHONE || default == Method.SMS) {
+            if (p.phones.size > 1) p.phones.firstOrNull { it.number == number }?.label?.takeIf { it.isNotBlank() }?.let(::add)
+            else number?.let { add(PhoneFormat.pretty(it)) }
+        }
+        if (default == Method.PHONE && vm.sims.size > 1) vm.simLabel(vm.personSim(number))?.let(::add)
+    }.joinToString(" · ")
+
+    Sheet(l, footer = {
+        // главная кнопка закреплена внизу: история над ней раскрывается, а кнопка остаётся под пальцем
+        Spacer(Modifier.height(10.dp))
+        MainButton(
+            text = default?.let { stringResource(it.title) } ?: stringResource(R.string.choose_method),
+            icon = default?.icon ?: R.drawable.ic_oz_swap,
+            onClick = { if (default == null) vm.perform(p, null) else done { vm.perform(p, default) } },
+            onLongClick = { if (!vm.askSim(p)) vm.openSheet(p, SheetMode.OTHER) },
+        )
+        Text(
+            line, style = OzType.meta, color = oz.fg3,
+            modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 4.dp).height(16.dp),
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+        )
+    }) {
+        Row(Modifier.fillMaxWidth().padding(start = 22.dp, end = 10.dp, top = 4.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text(p.shownName, style = OzType.namePerson, color = oz.fg, modifier = Modifier.semantics { heading() })
                 val sub = p.nickname?.takeIf { it.isNotBlank() && it != p.name } ?: p.company?.takeIf { it.isNotBlank() }
@@ -88,6 +111,16 @@ fun CardSheet(vm: DialerViewModel, l: Layer, id: Long) {
             IconSlot(R.drawable.ic_oz_edit, stringResource(R.string.edit_contact), oz.fg3) { vm.editContact(p) }
         }
 
+        // что делает нажатие на имя этого человека — сразу под именем, значением, которое видно и меняется по нажатию
+        if (p.methods.size > 1) {
+            Line(
+                left = stringResource(R.string.card_on_tap),
+                right = default?.let { stringResource(it.title) } ?: stringResource(R.string.ask_every_time),
+                chevronRight = true,
+            ) { vm.openSheet(p, SheetMode.DEFAULT) }
+            Spacer(Modifier.height(4.dp))
+        }
+
         // несколько номеров: каждый — звонок именно на него, долгое — скопировать
         if (p.phones.size > 1) {
             p.phones.forEach { ph ->
@@ -95,54 +128,24 @@ fun CardSheet(vm: DialerViewModel, l: Layer, id: Long) {
                     PhoneFormat.pretty(ph.number), { done { vm.callNumberOf(p, ph.number) } },
                     sub = ph.label.takeIf { it.isNotBlank() },
                     onLongClick = { vm.copyNumber(ph.number) },
-                    checked = p.phones.size > 1 && ph.number == vm.numberFor(p) && default == Method.PHONE,
+                    checked = ph.number == vm.numberFor(p) && default == Method.PHONE,
                 )
             }
             Spacer(Modifier.height(4.dp))
         }
 
-        // способы по приложениям: «Телефон  ☎ ✉», «WhatsApp  ☎ ▶ ✉»; основной — в акценте
+        // способы по приложениям: «Телефон  ☎ ✉», «WhatsApp  ☎ ▶ ✉». Нажатие — связаться этим способом один раз
         val groups = p.methods.groupBy { it.brand?.takeIf { b -> b != "SMS" } }
         groups.forEach { (brand, methods) ->
             Row(Modifier.fillMaxWidth().padding(start = 22.dp, end = 10.dp).heightIn(min = 56.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(brand ?: stringResource(R.string.net_phone), style = OzType.body, color = oz.fg2, modifier = Modifier.weight(1f), maxLines = 1)
                 methods.forEach { m ->
-                    IconSlot(m.icon, stringResource(m.title), if (m == default) oz.accent else oz.fg2, size = 52, onLongClick = { vm.makeDefault(p, m) }) {
-                        done { vm.performOther(p, m) }
-                    }
+                    IconSlot(m.icon, stringResource(m.title), oz.fg2, size = 52) { done { vm.performOther(p, m) } }
                 }
             }
         }
 
-        if (p.methods.size > 1) {
-            Line(
-                left = stringResource(R.string.card_usual, default?.let { stringResource(it.title) } ?: stringResource(R.string.ask_every_time)),
-                right = stringResource(R.string.card_change),
-            ) { vm.openSheet(p, SheetMode.DEFAULT) }
-        }
-
         History(vm.history(p))
-
-        Spacer(Modifier.height(10.dp))
-        MainButton(
-            text = default?.let { stringResource(it.title) } ?: stringResource(R.string.choose_method),
-            icon = default?.icon ?: R.drawable.ic_oz_swap,
-            onClick = { if (default == null) vm.perform(p, null) else done { vm.perform(p, default) } },
-            onLongClick = { if (!vm.askSim(p)) vm.openSheet(p, SheetMode.OTHER) },
-        )
-        val number = vm.numberFor(p)
-        val line = buildList {
-            if (default == Method.PHONE || default == Method.SMS) {
-                if (p.phones.size > 1) p.phones.firstOrNull { it.number == number }?.label?.takeIf { it.isNotBlank() }?.let(::add)
-                else number?.let { add(PhoneFormat.pretty(it)) }
-            }
-            if (default == Method.PHONE && vm.sims.size > 1) vm.simLabel(vm.personSim(number))?.let(::add)
-        }.joinToString(" · ")
-        Text(
-            line, style = OzType.meta, color = oz.fg3,
-            modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 4.dp).height(16.dp),
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-        )
     }
 }
 
@@ -200,7 +203,7 @@ private fun History(entries: List<HistoryEntry>, open: Boolean = false) {
 
 /** Тихая строка-действие: слева текст, справа значение или стрелка. */
 @Composable
-private fun Line(left: String, right: String?, chevron: Float? = null, onClick: () -> Unit) {
+private fun Line(left: String, right: String?, chevron: Float? = null, chevronRight: Boolean = false, onClick: () -> Unit) {
     val oz = LocalOz.current
     Row(
         Modifier.fillMaxWidth().padding(horizontal = 8.dp).heightIn(min = 48.dp).press(onClick, shape = OzShape.row, label = left).padding(horizontal = 14.dp),
@@ -209,6 +212,7 @@ private fun Line(left: String, right: String?, chevron: Float? = null, onClick: 
         Text(left, style = OzType.small, color = oz.fg2, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
         if (right != null) Text(right, style = OzType.small.copy(fontWeight = FontWeight.Medium), color = oz.accent)
         if (chevron != null) OzIcon(R.drawable.ic_oz_chevron_down, oz.fg3, 18.dp, Modifier.graphicsLayer { rotationZ = chevron })
+        if (chevronRight) OzIcon(R.drawable.ic_oz_chevron, oz.fg3, 18.dp, Modifier.padding(start = 4.dp))
     }
 }
 
@@ -238,7 +242,6 @@ fun WaySheet(vm: DialerViewModel, l: Layer) {
                     p.phones.forEach { ph -> Opt(stringResource(m.title), { vm.pickInSheet(m, ph.number) }, icon = m.icon, sub = PhoneFormat.pretty(ph.number) + (ph.label.takeIf { it.isNotBlank() }?.let { " · $it" } ?: "")) }
                 } else Opt(stringResource(m.title), { vm.pickInSheet(m) }, icon = m.icon, checked = m == default)
             }
-            QuietButton(stringResource(R.string.change_default), vm::sheetFooter, color = LocalOz.current.accent)
         } else {
             SheetTitle(stringResource(R.string.on_tap_title))
             p.methods.forEach { m -> Opt(stringResource(m.title), { vm.pickInSheet(m) }, icon = m.icon, checked = m == default) }
@@ -290,6 +293,12 @@ fun MenuSheet(vm: DialerViewModel, l: Layer) {
         if (p != null) {
             Opt(stringResource(R.string.open_card), { vm.closeMenu(); nav.open(com.khizrim.dialer.ui.Dest.Card(p.id), com.khizrim.dialer.ui.nav.Kind.SHEET) }, icon = R.drawable.ic_oz_user)
             Opt(stringResource(R.string.other_way), { vm.openSheet(p, SheetMode.OTHER) }, icon = R.drawable.ic_oz_swap)
+            if (p.methods.size > 1) Opt(stringResource(R.string.on_tap_title), { vm.openSheet(p, SheetMode.DEFAULT) }, icon = R.drawable.ic_oz_sliders)
+            Opt(
+                stringResource(if (p.starred) R.string.remove_favorite else R.string.add_favorite),
+                { vm.closeMenu(); vm.toggleFavorite(p) },
+                icon = if (p.starred) R.drawable.ic_oz_star_on else R.drawable.ic_oz_star,
+            )
             Opt(stringResource(R.string.edit_contact), { vm.editContact(p) }, icon = R.drawable.ic_oz_edit)
         } else if (number != null) {
             Opt(stringResource(R.string.call), { vm.closeMenu(); vm.callNumber(number) }, icon = R.drawable.ic_oz_phone)

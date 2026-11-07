@@ -194,7 +194,21 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
         return "$base ${initial.uppercaseChar()}."
     }
 
-    val favorites: List<Person> get() = people.filter { it.starred }.sortedByDescending { scores[it.key] ?: 0.0 }
+    private var favOrder by mutableStateOf(prefs.favOrder())
+    val favorites: List<Person> get() {
+        val at = favOrder.withIndex().associate { it.value to it.index }
+        return people.filter { it.starred }
+            .sortedWith(compareBy<Person> { at[it.key] ?: Int.MAX_VALUE }.thenByDescending { scores[it.key] ?: 0.0 })
+    }
+
+    /** Переставить избранного (в «Изменить» у избранных): порядок в доке тот же. */
+    fun moveFavorite(from: Int, to: Int) {
+        val keys = favorites.map { it.key }.toMutableList()
+        if (from !in keys.indices || to !in keys.indices || from == to) return
+        keys.add(to, keys.removeAt(from))
+        favOrder = keys
+        prefs.setFavOrder(keys)
+    }
 
     /** Незнакомые без звука в ленте свёрнуты в одну строку; нажатие раскрывает их прямо там. */
     var silentOpen by mutableStateOf(false); private set

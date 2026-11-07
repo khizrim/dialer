@@ -192,12 +192,28 @@ if c:
 note("Папа: " + sh("shell", "content query --uri content://com.android.contacts/contacts --projection display_name:starred --where \"display_name='Папа'\"").strip())
 start(); shot("dock-after-restart")
 
-S("J4b избранное из списка контактов")
-tap("Search", exact_only=True, region=(2100, H), wait=3); back(1); shot("contacts-favs")
-f = find("Мама", exact_only=True, region=(300, 800))
-if f:
-    long_xy(f["x"], f["y"], why="долгое на Маму в «Избранных»"); shot("contacts-fav-long", "что-то случилось?")
-    swipe(700, f["y"], 100, f["y"], 250, wait=1.5); shot("contacts-fav-swipe", "смахнуть влево")
+S("J4b «Изменить» у избранных")
+start()
+tap("Search", exact_only=True, region=(2100, H), wait=3); back(1); shot("contacts-favs", "«Избранные · Изменить»")
+if tap("Edit", exact_only=True, wait=1.5):
+    shot("fav-editor", "ручки, способ, крестики")
+    d = find("Дмитрий Козлов", exact_only=True, region=(300, 1200))
+    if d:
+        swipe(60, d["y"], 60, d["y"] - 170, 900, wait=1.5); shot("fav-editor-dragged", "Дмитрий поднят выше")
+    m = find("Call", exact_only=True, region=(300, 1200)) or find("Video", exact_only=True, region=(300, 1200))
+    if m:
+        tap_xy(m["x"], m["y"], wait=2, why="способ в редакторе"); shot("fav-editor-method-sheet")
+        if tap("WhatsApp chat", exact_only=True, wait=2): shot("fav-editor-after-method")
+    mama = find("Мама", exact_only=True, region=(300, 1200))
+    if mama:
+        ic = clickable_near(mama["y"], xmin=950)
+        if ic: tap_xy(ic[-1]["x"], ic[-1]["y"], wait=1.2, why="крестик у Мамы"); shot("fav-editor-removed", "тост с Undo")
+        if tap("Undo", exact_only=True, wait=2): shot("fav-editor-undo")
+    tap("Done", exact_only=True, wait=1.5); shot("fav-editor-done")
+swipe(540, 1600, 540, 400, 300); shot("contacts-scripts", "А–Я / A–Z")
+start(); shot("dock-order", "порядок в доке после перестановки")
+a = find("Аня Смирнова", exact_only=True)
+if a: long_xy(a["x"], a["y"], why="долгое на строку Ани"); shot("feed-menu-person", "есть «В избранное» и «Что по нажатию»")
 start()
 
 S("J5 карточка из поиска и звезда")

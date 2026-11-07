@@ -51,7 +51,6 @@
     <string name="now_ask">We will ask every time</string>
     <string name="back">Back</string>
     <string name="back_home">Back to home</string>
-    <string name="change_default">Change default</string>
     <string name="edit_contact">Edit contact</string>
     <string name="add_favorite">Add to favorites</string>
     <string name="remove_favorite">Remove from favorites</string>
@@ -65,7 +64,7 @@
     <string name="blocked_numbers">Blocked numbers</string>
     <string name="blocked_title">Blocked</string>
     <string name="blocked_need_role">The list is available when Ozero Phone is your default phone app.</string>
-    <string name="blocked_empty">Nobody is blocked. You can block a number during a call or by holding it on the home screen.</string>
+    <string name="blocked_empty">Nobody is blocked</string>
     <string name="unblock">Unblock</string>
     <string name="block_title">Block %1$s?</string>
     <string name="block_text">Calls and texts from this number won\'t reach you. You can unblock it in Settings.</string>
@@ -297,11 +296,13 @@
     </plurals>
     <string name="keypad_more">%d more</string>
     <string name="call_more">More</string>
-    <string name="card_usual">Usually: %s</string>
-    <string name="card_change">Change</string>
     <string name="card_history">History</string>
     <plurals name="card_calls">
         <item quantity="one">%d call</item>
         <item quantity="other">%d calls</item>
     </plurals>
+    <string name="card_on_tap">On tap</string>
+    <string name="fav_edit">Edit</string>
+    <string name="fav_done">Done</string>
+    <string name="fav_drag">Drag to reorder</string>
 </resources>

@@ -59,7 +59,13 @@ fun Grab(modifier: Modifier = Modifier) {
  * Не выше 90% экрана: сверху всегда видно, откуда он пришёл.
  */
 @Composable
-fun Sheet(l: Layer, modifier: Modifier = Modifier, scroll: Boolean = true, content: @Composable ColumnScope.() -> Unit) {
+fun Sheet(
+    l: Layer,
+    modifier: Modifier = Modifier,
+    scroll: Boolean = true,
+    footer: (@Composable ColumnScope.() -> Unit)? = null,
+    content: @Composable ColumnScope.() -> Unit,
+) {
     val oz = LocalOz.current
     val max = LocalConfiguration.current.screenHeightDp.dp * 0.9f
     Column(
@@ -74,6 +80,8 @@ fun Sheet(l: Layer, modifier: Modifier = Modifier, scroll: Boolean = true, conte
         Grab()
         if (scroll) Column(Modifier.fillMaxWidth().weight(1f, fill = false).verticalScroll(rememberScrollState())) { content() }
         else content()
+        // низ листа (главная кнопка) стоит на месте, что бы ни раскрылось над ним
+        footer?.invoke(this)
     }
 }
 
