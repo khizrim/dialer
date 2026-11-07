@@ -1,0 +1,57 @@
+video light-01-home-tap-person
+video light-02-person-back
+video light-03-person-drag-down-slow
+video light-04-person-swipe-down-fast
+video light-05-person-drag-cancel
+video light-06-person-star
+MISSING: Ирина Два Номера
+MISSING: Сергей Работа
+MISSING: +7 495
+MISSING: +7 916
+video light-07-person-two-numbers
+video light-08-home-tap-search
+video light-09-contacts-type-erase
+video light-10-contacts-drag-down
+video light-11-dock-pull-up-slow
+MISSING: Открыть клавиатуру
+video light-12-keypad-open-type
+video light-13-keypad-erase-close
+video light-14-row-menu
+video light-15-menu-to-other-way
+video light-16-sheet-drag-down
+MISSING: Настройки
+video light-17-to-settings-and-back
+video light-18-row-swipe-away
+MISSING: Ответить
+video light-19-incoming-answer-end
+video light-20-person-call
+video dark-01-home-tap-person
+video dark-02-person-back
+video dark-03-person-drag-down-slow
+video dark-04-person-swipe-down-fast
+video dark-05-person-drag-cancel
+video dark-06-person-star
+MISSING: Ирина Два Номера
+MISSING: Сергей Работа
+MISSING: +7 495
+MISSING: +7 916
+video dark-07-person-two-numbers
+video dark-08-home-tap-search
+video dark-09-contacts-type-erase
+video dark-10-contacts-drag-down
+video dark-11-dock-pull-up-slow
+MISSING: Открыть клавиатуру
+video dark-12-keypad-open-type
+video dark-13-keypad-erase-close
+video dark-14-row-menu
+video dark-15-menu-to-other-way
+video dark-16-sheet-drag-down
+MISSING: Настройки
+video dark-17-to-settings-and-back
+video dark-18-row-swipe-away
+MISSING: Ответить
+video dark-19-incoming-answer-end
+MISSING: Никита
+MISSING: Позвонить
+video dark-20-person-call
+done
