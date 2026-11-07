@@ -3,7 +3,7 @@ name: Motion recordings
 on:
   workflow_dispatch:
   push:
-    branches: [claude/project-thread-ys9w3z]
+    branches: [claude/project-thread-950tig]
 
 permissions:
   contents: write
