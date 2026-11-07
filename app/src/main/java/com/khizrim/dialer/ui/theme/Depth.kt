@@ -149,6 +149,7 @@ fun Modifier.frosted(): Modifier {
     val oz = LocalOz.current
     val state = LocalGlass.current
     return if (state != null && Build.VERSION.SDK_INT >= 31) {
-        hazeChild(state, HazeStyle(backgroundColor = oz.bg, tint = HazeTint(oz.bg.copy(alpha = .72f)), blurRadius = 24.dp, noiseFactor = 0f))
+        // вуаль плотнее, чем у стекла дока: под полосой бегут строки текста, и при .72 их размытые пятна читались как грязь
+        hazeChild(state, HazeStyle(backgroundColor = oz.bg, tint = HazeTint(oz.bg.copy(alpha = .88f)), blurRadius = 24.dp, noiseFactor = 0f))
     } else background(oz.bg.copy(alpha = .96f))
 }

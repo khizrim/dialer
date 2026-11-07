@@ -203,7 +203,8 @@ if tap("Edit", exact_only=True, wait=1.5):
     m = find("Call", exact_only=True, region=(300, 1200)) or find("Video", exact_only=True, region=(300, 1200))
     if m:
         tap_xy(m["x"], m["y"], wait=2, why="способ в редакторе"); shot("fav-editor-method-sheet")
-        if tap("WhatsApp chat", exact_only=True, wait=2): shot("fav-editor-after-method")
+        if tap("Message on Telegram", exact_only=True, wait=2): shot("fav-editor-after-method")
+        else: back(1)
     mama = find("Мама", exact_only=True, region=(300, 1200))
     if mama:
         ic = clickable_near(mama["y"], xmin=950)
