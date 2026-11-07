@@ -1,6 +1,7 @@
 """Ozero Phone launcher icon: writes ic_launcher_foreground.xml and ic_launcher_monochrome.xml.
-The handset is whole (no cut at the water line, user's call 2026-11-07); depth comes only from
-light: ink at the top turns into water just below the water line.
+The handset is whole and all water (user's choice 2026-11-07: no cut, no dark ink):
+light from above, #50A0FF at the top to #1A6FE0 at the bottom. Centred on its bounding box,
+which reads as centred on the home screen (centring by mass pushed it right).
 Needs: pip install cairosvg shapely svgpathtools. Run from this folder: python3 handset_icon.py [--solve]
 paste.py drops a candidate onto a real home-screen screenshot; concepts.py holds the rejected alternatives."""
 import os, sys
@@ -8,12 +9,14 @@ from shapely import affinity
 from solid import SH, fit
 import geo
 if '--solve' in sys.argv:
-    _, p = fit('handset', wlf=.44); print(p)
-else:  # ink mass ~ Ozero Mail ring, optical centre (54, 55.2)
-    p = dict(k=1.782334, cx=53.68983, cy=55.62618, wlf=.44)
+    _, p = fit('handset', wlf=.44)
+    gb = affinity.translate(affinity.scale(SH['handset'](), p['k'], p['k'], origin=(0, 0)), p['cx'], p['cy']).bounds
+    p['cx'] += 54 - (gb[0] + gb[2]) / 2; p['cy'] += 54 - (gb[1] + gb[3]) / 2; print(p)
+else:  # ink mass ~ Ozero Mail ring, bounding box centred on the tile
+    p = dict(k=1.782334, cx=52.10219, cy=55.14660, wlf=.44)
 g = affinity.translate(affinity.scale(SH['handset'](), p['k'], p['k'], origin=(0, 0)), p['cx'], p['cy']).simplify(.015)
 y0, y1 = g.bounds[1], g.bounds[3]; wl = y0 + p['wlf'] * (y1 - y0); f = lambda y: (y - y0) / (y1 - y0)
-stops = [(0, '101A2E'), (f(wl) - .12, '2C4A80'), (f(wl) + .10, '50A0FF'), (1, '1A6FE0')]
+stops = [(0, '50A0FF'), (1, '1A6FE0')]
 items = ''.join(f'                <item android:offset="{o:.3f}" android:color="#FF{c}" />\n' for o, c in stops)
 d = geo.topath(g)
 H = '''<?xml version="1.0" encoding="utf-8"?>
@@ -25,7 +28,7 @@ H = '''<?xml version="1.0" encoding="utf-8"?>
     android:viewportWidth="108"
     android:viewportHeight="108">
 '''
-fg = H % ('The handset, whole: ink at the top turns into water below the water line, light only, no cut.', '\n    xmlns:aapt="http://schemas.android.com/aapt"')
+fg = H % ('The handset, whole, in water: brightest at the top, deeper below. No cut, no shadow.', '\n    xmlns:aapt="http://schemas.android.com/aapt"')
 fg += f'''    <path android:fillType="evenOdd" android:pathData="{d}">
         <aapt:attr name="android:fillColor">
             <gradient android:type="linear" android:startX="0" android:startY="{y0:.2f}" android:endX="0" android:endY="{y1:.2f}">
