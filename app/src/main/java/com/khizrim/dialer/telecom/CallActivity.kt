@@ -1,6 +1,5 @@
 package com.khizrim.dialer.telecom
 
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 
@@ -12,7 +11,6 @@ import android.os.Bundle
 import android.os.PowerManager
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.CompositionLocalProvider
@@ -20,8 +18,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.snapshotFlow
 import com.khizrim.dialer.model.CallPhase
 import com.khizrim.dialer.ui.call.CallActions
-import com.khizrim.dialer.ui.call.CallScreen
-import com.khizrim.dialer.ui.components.rememberLast
+import com.khizrim.dialer.ui.call.CallHost
 import com.khizrim.dialer.ui.theme.DialerTheme
 import com.khizrim.dialer.ui.theme.LocalReducedMotion
 import com.khizrim.dialer.ui.theme.rememberReducedMotion
@@ -65,7 +62,7 @@ class CallActivity : ComponentActivity() {
             override fun answer() = CallManager.answer()
             override fun decline() = CallManager.decline()
             override fun hangup() = CallManager.hangup()
-            override fun quickSms() = CallManager.rejectWithMessage(getString(com.khizrim.dialer.R.string.quick_reply))
+            override fun quickSms(text: String) = CallManager.rejectWithMessage(text)
             override fun remind() {
                 val number = CallManager.currentNumber() ?: return
                 CallNotifications.scheduleReminder(applicationContext, CallManager.currentName() ?: number, number)
@@ -103,19 +100,21 @@ class CallActivity : ComponentActivity() {
             }
         }
 
+        // откуда вырастать: нажатая кнопка в приложении; нет её — из капсулы наверху
+        val origin = if (savedInstanceState == null) CallOrigin.take() else null
         setContent {
             DialerTheme {
-                CompositionLocalProvider(LocalReducedMotion provides rememberReducedMotion(), com.khizrim.dialer.ui.components.LocalTapGuard provides false) {
-                    val live = CallManager.state
-                    val shown = rememberLast(live)
-                    BackHandler { /* во время звонка «назад» ничего не закрывает */ }
+                CompositionLocalProvider(LocalReducedMotion provides rememberReducedMotion()) {
                     LaunchedEffect(Unit) {
                         snapshotFlow { CallManager.state }.collect { s ->
-                            if (s == null) finishAndRemoveTask()
                             proximity(s != null && s.phase != CallPhase.RINGING && s.phase != CallPhase.ENDED && s.route == com.khizrim.dialer.model.CallState.ROUTE_EARPIECE)
                         }
                     }
-                    if (shown != null) CallScreen(shown, actions, locked = locked)
+                    CallHost(
+                        actions, locked = locked, origin = origin,
+                        onMinimized = { finish() },
+                        onGone = { finishAndRemoveTask() },
+                    )
                 }
             }
         }

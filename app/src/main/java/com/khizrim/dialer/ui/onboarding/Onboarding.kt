@@ -37,9 +37,9 @@ import androidx.compose.ui.unit.dp
 import com.khizrim.dialer.DialerViewModel
 import com.khizrim.dialer.R
 import com.khizrim.dialer.telecom.Launcher
-import com.khizrim.dialer.ui.components.OzIcon
-import com.khizrim.dialer.ui.components.TextAction
-import com.khizrim.dialer.ui.components.press
+import com.khizrim.dialer.ui.kit.OzIcon
+import com.khizrim.dialer.ui.kit.TextAction
+import com.khizrim.dialer.ui.kit.press
 import com.khizrim.dialer.ui.theme.LocalOz
 import com.khizrim.dialer.ui.theme.OzShape
 import com.khizrim.dialer.ui.theme.OzType

@@ -39,6 +39,7 @@
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/Theme.Dialer"
+        android:enableOnBackInvokedCallback="true"
         tools:targetApi="31">
 
         <activity
@@ -77,7 +78,8 @@
             android:excludeFromRecents="true"
             android:showWhenLocked="true"
             android:turnScreenOn="true"
-            android:taskAffinity="com.khizrim.dialer.call" />
+            android:taskAffinity="com.khizrim.dialer.call"
+            android:theme="@style/Theme.Dialer.Call" />
 
         <service
             android:name=".telecom.OzInCallService"

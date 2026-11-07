@@ -4,61 +4,67 @@ import android.provider.Settings
 import androidx.compose.animation.core.AnimationSpec
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.FiniteAnimationSpec
-import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.SpringSpec
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.platform.LocalContext
+import kotlin.math.abs
 
 /**
- * Движение «тихо и спокойно», версия 2 (MOTION-v2.md).
+ * Движение Ozero Phone, переписанное с нуля (прототип «интерфейс с нуля», 2026-11-07).
  *
- * Пространство: главная — поверхность озера. Журнал лежит над ней (его стягивают вниз),
- * всё остальное — под ней и поднимается снизу (контакты, карточка, настройки, клавиатура, листы).
- * Экран всегда непрозрачный и приходит целиком со своей стороны поверх неподвижного старого;
- * уходит туда же, откуда пришёл. Два экрана никогда не просвечивают друг через друга
- * и между ними не бывает пустого фона.
+ * Пространство:
+ * - главная — лента людей; управление висит над ней на стекле;
+ * - карточка, клавиатура, контакты и все выборы приходят снизу и уходят вниз;
+ * - настройки и их страницы сдвигаются справа, жест «назад» ведёт их за пальцем;
+ * - звонок вырастает из нажатого, сворачивается в капсулу наверху и в конце уходит в кнопку «Завершить».
  *
- * Жест ведёт слой 1:1 за пальцем; после отпускания слой продолжает движение с той же скоростью
- * (пружина без отскока), а не начинает анимацию заново.
+ * Одна пружина без отскока на всё. Жест ведёт слой 1:1; после отпускания слой продолжает
+ * со скоростью пальца, ничего не начинается заново. Решение — при отпускании: прошли треть пути
+ * или бросили быстрее 0,6 экрана в секунду.
  */
 object Motion {
-    /** Сдвиг слоёв, строк и листов — та же кривая, что у Ozero Mail: мягкий старт и долгое спокойное торможение. */
-    val MoveEasing = CubicBezierEasing(0.25f, 0.1f, 0.1f, 1f)
-    /** Появление мелочей (тост, галочка, строка): сразу видно, плавно доходит. */
+    val Ease = CubicBezierEasing(0.25f, 0.1f, 0.1f, 1f)
     val EnterEasing = CubicBezierEasing(0.05f, 0.7f, 0.1f, 1f)
-    /** Исчезновение: начинает сразу, без «замирания». */
     val ExitEasing = CubicBezierEasing(0.3f, 0f, 0.8f, 0.15f)
 
-    // длительности Ozero Mail: QUICK 150, SMALL 250, SCRIM 380, NOTE 400, SCREEN 420
     const val PRESS = 100
     const val FADE = 150
     const val MOVE = 250
-    const val SCRIM = 380
     const val NOTE = 400
     const val SHEET = 420
 
+    /** Жёсткость пружины слоёв: критическое затухание, слой доходит примерно за 420 мс, как экран в Ozero Mail. */
+    const val LAYER_STIFFNESS = 230f
+
+    /** Слои двигаются в долях пути (0…1): порог, после которого пружина считается дошедшей. Со стандартным 0.01 слой в конце доскакивает. */
+    const val THRESHOLD = 0.0002f
+
+    fun layer(): SpringSpec<Float> = spring(dampingRatio = 1f, stiffness = LAYER_STIFFNESS, visibilityThreshold = THRESHOLD)
+
+    /** То же для пикселей: строки, круги, сдвиги. */
+    fun pixels(stiffness: Float = 420f): SpringSpec<Float> = spring(dampingRatio = 1f, stiffness = stiffness, visibilityThreshold = 0.5f)
+
     fun <T> enter(ms: Int, delay: Int = 0): FiniteAnimationSpec<T> = tween(ms, delay, EnterEasing)
     fun <T> exit(ms: Int): FiniteAnimationSpec<T> = tween(ms, 0, ExitEasing)
-    fun <T> move(ms: Int = SHEET): FiniteAnimationSpec<T> = tween(ms, 0, MoveEasing)
+    fun <T> move(ms: Int = SHEET): FiniteAnimationSpec<T> = tween(ms, 0, Ease)
+    fun <T> settle(): AnimationSpec<T> = spring(dampingRatio = 1f, stiffness = 700f)
 
-    /** Досвод после жеста: критическое затухание (без отскока), принимает скорость пальца. */
-    fun <T> settle(): AnimationSpec<T> = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = 700f)
-
-    /** Порог решения после отпускания: прошли треть пути или бросили быстрее 1000 px/с. */
-    fun commits(fraction: Float, velocityPx: Float, heightPx: Float): Boolean {
-        val v = velocityPx / heightPx.coerceAtLeast(1f) // доли экрана в секунду
-        return when {
-            v > 0.6f -> true
-            v < -0.6f -> false
-            else -> fraction > 0.33f
-        }
+    /**
+     * Решение при отпускании. [progress] — пройденная доля пути в сторону «открыто»,
+     * [velocityTowardOpen] — скорость пальца в ту же сторону, px/с, [screenPx] — высота экрана.
+     * true — слой остаётся (или открывается).
+     */
+    fun keeps(progress: Float, velocityTowardOpen: Float, screenPx: Float): Boolean {
+        if (abs(velocityTowardOpen) > 0.6f * screenPx) return velocityTowardOpen > 0f
+        return progress > 1f / 3f
     }
 }
 
-/** true, если пользователь отключил анимации: тогда оставляем только прозрачность до 150 мс. */
+/** true, если пользователь отключил анимации: тогда слои только проявляются. */
 val LocalReducedMotion = staticCompositionLocalOf { false }
 
 @Composable

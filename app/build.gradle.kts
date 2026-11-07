@@ -76,6 +76,8 @@ dependencies {
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
     implementation("com.github.petrovich4j:petrovich4j:1.1.3")
+    // висячее стекло, как в Ozero Mail: размытая лента под плавающими кнопками (Android 12+)
+    implementation("dev.chrisbanes.haze:haze:1.1.1")
     debugImplementation("androidx.compose.ui:ui-tooling")
     testImplementation("junit:junit:4.13.2")
 }

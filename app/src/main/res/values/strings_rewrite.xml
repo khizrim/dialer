@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="copy_number">Copy number</string>
+    <string name="call_with_sim">Call from %1$s</string>
+    <string name="search_placeholder">Name, number or company</string>
+    <string name="call_audio_title">Where the sound goes</string>
+    <string name="reply_title">Reply with a message</string>
+    <string name="quick_reply_later">I\'ll call you back in 10 minutes</string>
+    <string name="quick_reply_write">Please text me</string>
+</resources>

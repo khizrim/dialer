@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="copy_number">Скопировать номер</string>
+    <string name="call_with_sim">Позвонить с %1$s</string>
+    <string name="search_placeholder">Имя, номер или компания</string>
+    <string name="call_audio_title">Куда идёт звук</string>
+    <string name="reply_title">Ответить сообщением</string>
+    <string name="quick_reply_later">Перезвоню через 10 минут</string>
+    <string name="quick_reply_write">Напишите, пожалуйста</string>
+</resources>

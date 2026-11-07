@@ -1,6 +1,13 @@
 package com.khizrim.dialer.ui.theme
 
+import android.os.Build
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.runtime.staticCompositionLocalOf
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.HazeStyle
+import dev.chrisbanes.haze.HazeTint
+import dev.chrisbanes.haze.hazeChild
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -108,4 +115,40 @@ fun Modifier.dock(): Modifier {
             drawContent()
             drawLine(hair, Offset(0f, 0f), Offset(size.width, 0f), 1.dp.toPx())
         }
+}
+
+
+/** Что просвечивает сквозь стекло: лента главной или список контактов. null — стекла нет, только вуаль. */
+val LocalGlass = staticCompositionLocalOf<HazeState?> { null }
+
+/**
+ * Висячее стекло, как у Ozero Mail: то, что висит над списком (избранные, поиск, кнопки), пропускает его
+ * сквозь себя размытым и подёрнутым цветом бумаги, с мягкой тенью и тонким ободком.
+ * До Android 12 размытия нет: остаётся плотная вуаль, текст списка под ней не мешает.
+ */
+@Composable
+fun Modifier.glass(shape: Shape): Modifier {
+    val oz = LocalOz.current
+    val state = LocalGlass.current
+    val veil = if (oz.isDark) Color(0xFF1F2633).copy(alpha = .66f) else Color.White.copy(alpha = .62f)
+    val rim = if (oz.isDark) Color.White.copy(alpha = .07f) else Color(0xFFE9EEF5).copy(alpha = .9f)
+    val shade = if (oz.isDark) Color.Black.copy(alpha = .45f) else oz.fg.copy(alpha = .14f)
+    val base = this.shadow(8.dp, shape, ambientColor = shade, spotColor = shade)
+    return if (state != null && Build.VERSION.SDK_INT >= 31) {
+        base.clip(shape)
+            .hazeChild(state, HazeStyle(backgroundColor = oz.bg, tint = HazeTint(veil), blurRadius = 24.dp, noiseFactor = 0f))
+            .border(1.dp, rim, shape)
+    } else {
+        base.clip(shape).background(if (oz.isDark) Color(0xFF1F2633).copy(alpha = .96f) else Color.White.copy(alpha = .95f)).border(1.dp, rim, shape)
+    }
+}
+
+/** Полоса во всю ширину над списком (верх ленты, заголовок контактов): то же стекло, без ободка и тени. */
+@Composable
+fun Modifier.frosted(): Modifier {
+    val oz = LocalOz.current
+    val state = LocalGlass.current
+    return if (state != null && Build.VERSION.SDK_INT >= 31) {
+        hazeChild(state, HazeStyle(backgroundColor = oz.bg, tint = HazeTint(oz.bg.copy(alpha = .72f)), blurRadius = 24.dp, noiseFactor = 0f))
+    } else background(oz.bg.copy(alpha = .96f))
 }

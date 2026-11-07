@@ -4,4 +4,11 @@
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:windowBackground">@color/window_bg</item>
     </style>
+    <!-- Экран звонка прозрачный: он вырастает из нажатой кнопки поверх приложения и уходит в капсулу. -->
+    <style name="Theme.Dialer.Call">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowAnimationStyle">@null</item>
+        <item name="android:windowNoTitle">true</item>
+    </style>
 </resources>

@@ -19,7 +19,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.khizrim.dialer.R
-import com.khizrim.dialer.ui.components.press
+import com.khizrim.dialer.ui.kit.press
 import com.khizrim.dialer.ui.theme.LocalOz
 import com.khizrim.dialer.ui.theme.OzType
 import kotlinx.coroutines.Dispatchers
