@@ -261,7 +261,7 @@ private fun Ways(vm: DialerViewModel, p: Person, unknown: Boolean, done: (() -> 
         if (choice) {
             val simText = if (default == Method.PHONE && sims.size > 1) vm.simLabel(personSim)?.let { " · $it" }.orEmpty() else ""
             Row(
-                Modifier.fillMaxWidth().height(44.dp)
+                Modifier.fillMaxWidth().heightIn(min = 44.dp)
                     .press({ vm.openSheet(p, SheetMode.DEFAULT) }, shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp, bottomStart = 12.dp, bottomEnd = 12.dp), label = stringResource(R.string.on_tap_title))
                     .padding(horizontal = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -273,11 +273,17 @@ private fun Ways(vm: DialerViewModel, p: Person, unknown: Boolean, done: (() -> 
                             append((default?.let { stringResource(it.title) } ?: stringResource(R.string.ask_every_time)) + simText)
                         }
                     },
-                    style = OzType.small, color = oz.fg3, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false),
+                    style = OzType.small, color = oz.fg3, maxLines = 2, overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f).padding(vertical = 4.dp),
                 )
-                // стрелка вплотную к значению: она про него, а не про край группы
-                OzIcon(R.drawable.ic_oz_chevron_down, oz.fg3, 16.dp, Modifier.padding(start = 4.dp))
+                // явное действие словом: смена обычного способа не прячется в жест
+                Text(stringResource(R.string.card_change), style = OzType.small.copy(fontWeight = FontWeight.Medium), color = oz.accent, modifier = Modifier.padding(start = 12.dp))
             }
+            // сначала приложение, под ним его действия: читается «WhatsApp → видео»
+            Box(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp).height(1.dp).background(oz.line))
+            val names = apps.map { it.ifEmpty { stringResource(R.string.net_phone) } }
+            Segments(names, apps.indexOf(app)) { app = apps[it] }
+            Spacer(Modifier.height(4.dp))
         }
 
         if (app.isEmpty() && p.phones.size > 1) {
@@ -292,31 +298,25 @@ private fun Ways(vm: DialerViewModel, p: Person, unknown: Boolean, done: (() -> 
                         R.drawable.ic_oz_phone, short,
                         choice && default == Method.PHONE && atUsualNumber && simId == personSim,
                         { done { vm.callPerson(p, number, simId) } },
-                        { vm.makeUsual(p, Method.PHONE, number.takeIf { p.phones.size > 1 }, simId) },
+                        null,
                     ))
                 } else add(Verb(
                     R.drawable.ic_oz_phone, stringResource(R.string.call),
                     choice && default == Method.PHONE && atUsualNumber,
                     { done { vm.callPerson(p, number, null) } },
-                    if (choice) ({ vm.makeUsual(p, Method.PHONE, number.takeIf { p.phones.size > 1 }) }) else null,
+                    null,
                 ))
             }
             if (Method.SMS in p.methods) add(Verb(
                 R.drawable.ic_oz_sms, stringResource(R.string.way_sms),
                 choice && default == Method.SMS && atUsualNumber,
                 { done { vm.performOther(p, Method.SMS, number) } },
-                if (choice) ({ vm.makeUsual(p, Method.SMS, number.takeIf { p.phones.size > 1 }) }) else null,
+                null,
             ))
         } else p.methods.filter { appOf(it) == app }.sortedBy(::orderOf).map { m ->
-            Verb(m.icon, stringResource(m.short), choice && m == default, { done { vm.performOther(p, m) } }, { vm.makeUsual(p, m) })
+            Verb(m.icon, stringResource(m.short), choice && m == default, { done { vm.performOther(p, m) } }, null)
         }
         VerbRow(verbs)
-
-        if (choice) {
-            Box(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp).height(1.dp).background(oz.line))
-            val names = apps.map { it.ifEmpty { stringResource(R.string.net_phone) } }
-            Segments(names, apps.indexOf(app)) { app = apps[it] }
-        }
     }
 }
 
