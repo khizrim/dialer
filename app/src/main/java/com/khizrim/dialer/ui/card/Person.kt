@@ -229,11 +229,11 @@ private data class Verb(val icon: Int, val label: String, val usual: Boolean, va
 @Composable
 private fun Ways(vm: DialerViewModel, p: Person, unknown: Boolean, done: (() -> Unit) -> Unit, modifier: Modifier) {
     val oz = LocalOz.current
-    val shape = RoundedCornerShape(28.dp)
+    val shape = RoundedCornerShape(32.dp)
     val number0 = p.mainNumber.orEmpty()
 
     if (unknown) {
-        Column(modifier.fillMaxWidth().glass(shape).background(oz.fg.copy(alpha = 0.03f)).padding(4.dp)) {
+        Column(modifier.fillMaxWidth().glass(shape).background(oz.fg.copy(alpha = 0.03f)).padding(8.dp)) {
             VerbRow(listOf(
                 Verb(R.drawable.ic_oz_phone, stringResource(R.string.call), false, { done { vm.callNumber(number0) } }, null),
                 Verb(R.drawable.ic_oz_sms, stringResource(R.string.way_sms), false, { done { vm.smsTo(number0) } }, null),
@@ -257,13 +257,13 @@ private fun Ways(vm: DialerViewModel, p: Person, unknown: Boolean, done: (() -> 
     val personSim = vm.personSim(number)
 
     // лёгкий оттенок поверх стекла: на белой бумаге граница группы иначе не видна
-    Column(modifier.fillMaxWidth().glass(shape).background(oz.fg.copy(alpha = 0.03f)).padding(4.dp)) {
+    Column(modifier.fillMaxWidth().glass(shape).background(oz.fg.copy(alpha = 0.03f)).padding(8.dp)) {
         if (choice) {
             val simText = if (default == Method.PHONE && sims.size > 1) vm.simLabel(personSim)?.let { " · $it" }.orEmpty() else ""
             Row(
-                Modifier.fillMaxWidth().height(40.dp)
+                Modifier.fillMaxWidth().height(44.dp)
                     .press({ vm.openSheet(p, SheetMode.DEFAULT) }, shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp, bottomStart = 12.dp, bottomEnd = 12.dp), label = stringResource(R.string.on_tap_title))
-                    .padding(start = 4.dp, end = 12.dp),
+                    .padding(horizontal = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
@@ -313,7 +313,7 @@ private fun Ways(vm: DialerViewModel, p: Person, unknown: Boolean, done: (() -> 
         VerbRow(verbs)
 
         if (choice) {
-            Box(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp).height(1.dp).background(oz.line))
+            Box(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp).height(1.dp).background(oz.line))
             val names = apps.map { it.ifEmpty { stringResource(R.string.net_phone) } }
             Segments(names, apps.indexOf(app)) { app = apps[it] }
         }
@@ -343,7 +343,7 @@ private fun VerbRow(verbs: List<Verb>) {
 @Composable
 private fun NumberChips(items: List<String>, selected: Int, onPick: (Int) -> Unit) {
     val oz = LocalOz.current
-    Row(Modifier.fillMaxWidth().padding(start = 4.dp, end = 4.dp, bottom = 4.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+    Row(Modifier.fillMaxWidth().padding(bottom = 4.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
         items.forEachIndexed { i, s ->
             val on = i == selected
             Box(
