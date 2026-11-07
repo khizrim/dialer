@@ -44,6 +44,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.animation.togetherWith
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.RoundRect
@@ -97,6 +99,7 @@ import com.khizrim.dialer.ui.theme.OzType
 import com.khizrim.dialer.ui.theme.glass
 import com.khizrim.dialer.ui.theme.raisedFill
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
@@ -183,7 +186,15 @@ fun CallHost(actions: CallActions, locked: Boolean, origin: Rect?, onMinimized: 
             run(0f, velocity) { onMinimized() }
         }
 
-        LaunchedEffect(Unit) { if (CallManager.state == null) onGone() else run(1f) }
+        var drawn by remember { mutableStateOf(false) }
+        LaunchedEffect(Unit) {
+            if (CallManager.state == null) { onGone(); return@LaunchedEffect }
+            // окно звонка только что создано: ждём, пока экран соберётся и нарисуется, иначе пружина
+            // проглатывает первые сотни мс и звонок выскакивает почти целиком вместо того, чтобы вырасти
+            kotlinx.coroutines.withTimeoutOrNull(600) { androidx.compose.runtime.snapshotFlow { drawn }.first { it } }
+            androidx.compose.runtime.withFrameNanos { }
+            run(1f)
+        }
         // звонка нет: экран уходит в кнопку, которой его завершили
         LaunchedEffect(live == null) {
             if (live != null || leaving) return@LaunchedEffect
@@ -207,6 +218,7 @@ fun CallHost(actions: CallActions, locked: Boolean, origin: Rect?, onMinimized: 
                         shape = MorphShape(r, rad)
                         clip = true
                     }
+                    .drawWithContent { drawContent(); if (!drawn) drawn = true }
                     .background(if (c?.suspicious == true && c.phase == CallPhase.RINGING) oz.warnSoft else oz.bg)
                     .draggable(
                         drag, Orientation.Vertical, enabled = canMinimize && c?.dtmf == null,
@@ -270,17 +282,36 @@ private fun CallScreen(c: CallState, actions: CallActions, locked: Boolean, endB
             )
             if (sub.isNotEmpty()) Text(sub, style = OzType.time, color = if (c.suspicious && c.phase == CallPhase.RINGING) oz.warn else oz.fg3, modifier = Modifier.padding(top = 6.dp).semantics { liveRegion = LiveRegionMode.Polite })
         }
-        Box(Modifier.fillMaxWidth().heightIn(min = 300.dp), contentAlignment = Alignment.BottomCenter) {
-            when {
-                c.phase == CallPhase.RINGING -> Ringing(c, actions, locked, known, sheet)
-                c.phase == CallPhase.ENDED -> Ended(c, actions, known, sheet)
-                c.simChoice != null -> SimChoice(c.simChoice, actions)
-                c.dtmf != null -> Dtmf(c.dtmf, actions, endButton)
-                else -> Active(c, actions, endButton, sheet)
+        // «Ответить» → управление разговором → «Перезвонить»: низ экрана сменяется мягко, имя наверху стоит на месте
+        val mode = when {
+            c.phase == CallPhase.RINGING -> 0
+            c.phase == CallPhase.ENDED -> 1
+            c.simChoice != null -> 2
+            c.dtmf != null -> 3
+            else -> 4
+        }
+        androidx.compose.animation.AnimatedContent(
+            targetState = mode,
+            modifier = Modifier.fillMaxWidth().heightIn(min = 300.dp),
+            contentAlignment = Alignment.BottomCenter,
+            transitionSpec = {
+                (fadeIn(Motion.enter(Motion.FADE, delay = 60)) + androidx.compose.animation.scaleIn(Motion.enter(Motion.MOVE), initialScale = 0.96f)) togetherWith
+                    fadeOut(Motion.exit(90)) using androidx.compose.animation.SizeTransform(clip = false) { _, _ -> Motion.size() }
+            },
+            label = "callMode",
+        ) { m ->
+            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.BottomCenter) {
+                when (m) {
+                    0 -> Ringing(c, actions, locked, known, sheet)
+                    1 -> Ended(c, actions, known, sheet)
+                    2 -> c.simChoice?.let { SimChoice(it, actions) }
+                    3 -> c.dtmf?.let { Dtmf(it, actions, endButton) }
+                    else -> Active(c, actions, endButton, sheet)
+                }
             }
         }
         // второй входящий поверх разговора
-        AnimatedVisibility(other?.ringing == true && c.phase == CallPhase.ACTIVE, enter = fadeIn() + slideInVertically { it / 2 }, exit = fadeOut() + slideOutVertically { it / 2 }) {
+        AnimatedVisibility(other?.ringing == true && c.phase == CallPhase.ACTIVE, enter = fadeIn(Motion.enter(Motion.FADE)) + slideInVertically(Motion.enter(Motion.MOVE)) { it / 2 }, exit = fadeOut(Motion.exit(Motion.FADE)) + slideOutVertically(Motion.exit(Motion.FADE)) { it / 2 }) {
             val o = rememberLast(other)
             Column(Modifier.padding(12.dp).fillMaxWidth().glass(RoundedCornerShape(24.dp)).padding(vertical = 8.dp)) {
                 Text(stringResource(R.string.incoming_call), style = OzType.meta, color = oz.fg3, modifier = Modifier.padding(start = 22.dp, top = 6.dp))
@@ -398,10 +429,12 @@ private fun Toggle(icon: Int, label: String, on: Boolean, onClick: () -> Unit) {
         Modifier.width(80.dp).press(onClick, shape = RoundedCornerShape(20.dp), label = "$label, $state").padding(vertical = 6.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
+        val fill by androidx.compose.animation.animateColorAsState(if (on) oz.fg else oz.fg.copy(alpha = 0f), Motion.tint(), label = "toggle")
+        val ink by androidx.compose.animation.animateColorAsState(if (on) oz.bg else oz.fg, Motion.tint(), label = "toggleInk")
         Box(
-            Modifier.size(64.dp).background(if (on) oz.fg else Color.Transparent, CircleShape),
+            Modifier.size(64.dp).background(fill, CircleShape),
             contentAlignment = Alignment.Center,
-        ) { OzIcon(icon, if (on) oz.bg else oz.fg, 26.dp) }
+        ) { OzIcon(icon, ink, 26.dp) }
         Text(label, style = OzType.meta, color = oz.fg2, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 6.dp))
     }
 }

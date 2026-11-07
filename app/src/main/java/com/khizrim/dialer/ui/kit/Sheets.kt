@@ -1,7 +1,9 @@
 package com.khizrim.dialer.ui.kit
 
 import androidx.annotation.DrawableRes
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
+import com.khizrim.dialer.ui.theme.Motion
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -72,6 +74,8 @@ fun Sheet(
         modifier
             .fillMaxWidth()
             .heightIn(max = max)
+            // содержимое листа поменялось (раскрылся выбор, пришёл номер): лист плавно меняет высоту, а не прыгает
+            .animateContentSize(Motion.size())
             .background(oz.sheet, OzShape.sheetTop)
             .dismissDrag(l)
             .navigationBarsPadding()

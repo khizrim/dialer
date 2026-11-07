@@ -184,6 +184,7 @@ fun ContactsScreen(vm: DialerViewModel, l: Layer) {
         snapshotFlow { list.isScrollInProgress || found.isScrollInProgress }.collect { if (it) focusManager.clearFocus() }
     }
     val searching = q.isNotBlank()
+    val firstSwap = remember { booleanArrayOf(true) }
     // новый запрос — к лучшему результату у поля
     LaunchedEffect(q) { if (searching) found.scrollToItem(0) }
 
@@ -191,15 +192,25 @@ fun ContactsScreen(vm: DialerViewModel, l: Layer) {
     val navBottom = with(density) { WindowInsets.navigationBars.getBottom(this).toDp() }
     val statusTop = with(density) { WindowInsets.statusBars.getTop(this).toDp() }
 
+    // первый символ запроса или стёрли запрос: список меняется целиком (алфавит ↔ результаты у поля),
+    // новый мягко проявляется, а не подменяет старый за один кадр
+    val swap = remember { androidx.compose.animation.core.Animatable(1f) }
+    LaunchedEffect(searching) {
+        if (!firstSwap[0]) { swap.snapTo(0.35f); swap.animateTo(1f, Motion.enter(Motion.MOVE)) }
+        firstSwap[0] = false
+    }
+
     CompositionLocalProvider(LocalGlass provides haze) {
         Box(Modifier.fillMaxSize().background(oz.bg).dismissDrag(l)) {
             LazyColumn(
-                Modifier.fillMaxSize().haze(haze).background(oz.bg),
+                Modifier.fillMaxSize().haze(haze).background(oz.bg).graphicsLayer { alpha = swap.value },
                 state = if (searching) found else list,
                 reverseLayout = searching,
                 contentPadding = PaddingValues(top = statusTop, bottom = maxOf(imeBottom, navBottom) + 96.dp),
             ) {
                 items(items, key = { it.key }) { item ->
+                    // строки съезжаются на новые места; без затухания при уходе, чтобы при наборе не было двух слоёв
+                    Box(Modifier.animateItem(fadeInSpec = Motion.enter(Motion.FADE), placementSpec = Motion.offset(), fadeOutSpec = null)) {
                     when (item) {
                         // стекло внутри того, что оно размывает, рисовало бы само себя: здесь только вуаль
                         CItem.Hero -> CompositionLocalProvider(LocalGlass provides null) { Hero(onNew = { vm.addNamedContact(q) }, onSettings = { focusManager.clearFocus(); vm.openSettings() }) }
@@ -213,6 +224,7 @@ fun ContactsScreen(vm: DialerViewModel, l: Layer) {
                         CItem.Create -> Box(Modifier.fillMaxWidth().padding(vertical = 12.dp), contentAlignment = Alignment.Center) {
                             TextAction(stringResource(R.string.edit_new_title), oz.fg3, { vm.addNamedContact("") }, style = OzType.small)
                         }
+                    }
                     }
                 }
             }

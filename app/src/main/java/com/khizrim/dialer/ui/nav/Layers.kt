@@ -46,7 +46,11 @@ import com.khizrim.dialer.ui.theme.Motion
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.withFrameNanos
 
 /** Откуда приходит слой и куда уходит. */
 enum class Kind {
@@ -76,6 +80,11 @@ class Layer internal constructor(val dest: Any, val kind: Kind, val id: Int, pri
     /** Высота того, что экран держит у нижнего края (группа способов у экрана человека): тост встаёт над ней. */
     var floor by mutableFloatStateOf(Float.NaN)
     var onClosed: (() -> Unit)? = null
+    /**
+     * Слой уже нарисован хоть раз. Пока его содержимое собирается (первый кадр экрана человека — сотни мс
+     * на телефоне), пружина не стартует: иначе её часы идут, пока кадр стоит, и слой выскакивает сразу на 70% пути.
+     */
+    internal var drawn by mutableStateOf(false)
     private var job: Job? = null
 
     fun stop() { job?.cancel(); job = null }
@@ -83,6 +92,11 @@ class Layer internal constructor(val dest: Any, val kind: Kind, val id: Int, pri
     fun animateTo(target: Float, velocity: Float = 0f, then: (() -> Unit)? = null) {
         stop()
         job = scope.launch {
+            if (!drawn) {
+                withTimeoutOrNull(600) { snapshotFlow { drawn }.first { it } }
+                // ещё кадр: тяжёлая сборка и первая отрисовка остались позади, пружина начинает с ровного кадра
+                withFrameNanos { }
+            }
             val spec: androidx.compose.animation.core.AnimationSpec<Float> = if (reduced) Motion.enter(Motion.FADE) else Motion.layer()
             animate(p, target, if (reduced) 0f else velocity, spec) { v, _ -> p = v }
             then?.invoke()
@@ -248,6 +262,7 @@ fun LayerHost(nav: Nav, base: @Composable () -> Unit, content: @Composable (Laye
 
         nav.layers.forEachIndexed { i, l ->
             key(l.id) {
+                val mark = Modifier.drawWithContent { drawContent(); if (!l.drawn) l.drawn = true }
                 CompositionLocalProvider(LocalLayer provides l) {
                     when (l.kind) {
                         Kind.SHEET, Kind.PANEL -> Box(Modifier.fillMaxSize()) {
@@ -272,7 +287,8 @@ fun LayerHost(nav: Nav, base: @Composable () -> Unit, content: @Composable (Laye
                                             scaleX = 1f - 0.08f * b; scaleY = scaleX
                                             translationX = b * lean * l.backDir
                                         }
-                                    },
+                                    }
+                                    .then(mark),
                             ) { content(l) }
                         }
                         Kind.RISE -> Box(Modifier.fillMaxSize()) {
@@ -290,7 +306,8 @@ fun LayerHost(nav: Nav, base: @Composable () -> Unit, content: @Composable (Laye
                                             scaleX = 1f - 0.08f * b; scaleY = scaleX
                                             translationX = b * lean * l.backDir
                                         }
-                                    },
+                                    }
+                                    .then(mark),
                             ) { content(l) }
                         }
                         Kind.PUSH -> Box(
@@ -300,7 +317,8 @@ fun LayerHost(nav: Nav, base: @Composable () -> Unit, content: @Composable (Laye
                                 .graphicsLayer {
                                     l.extent = w
                                     if (reduced) alpha = l.p else translationX = (1f - l.p) * w
-                                },
+                                }
+                                .then(mark),
                         ) { content(l) }
                     }
                 }

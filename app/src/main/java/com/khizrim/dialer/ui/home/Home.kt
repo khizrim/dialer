@@ -183,7 +183,8 @@ private fun SilentRow(vm: DialerViewModel, e: HomeEntry, modifier: Modifier) {
             Text(text, style = OzType.row, color = oz.fg2, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Dates.recentTime(e.lastAt)?.let { Text(it, style = OzType.meta, color = oz.fg3, modifier = Modifier.padding(top = 2.dp)) }
         }
-        OzIcon(R.drawable.ic_oz_chevron_down, oz.fg3, 20.dp, Modifier.graphicsLayer { rotationZ = if (vm.silentOpen) 180f else 0f })
+        val turn by animateFloatAsState(if (vm.silentOpen) 180f else 0f, Motion.pixels(500f), label = "chevron")
+        OzIcon(R.drawable.ic_oz_chevron_down, oz.fg3, 20.dp, Modifier.graphicsLayer { rotationZ = turn })
     }
 }
 
@@ -328,11 +329,20 @@ private fun Dock(vm: DialerViewModel, modifier: Modifier) {
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         val alert = com.khizrim.dialer.ui.kit.rememberLast(vm.callAlert)
-        AnimatedVisibility(vm.callAlert != null, enter = fadeIn() + expandVertically(), exit = fadeOut() + shrinkVertically()) {
+        AnimatedVisibility(
+            vm.callAlert != null,
+            enter = fadeIn(Motion.enter(Motion.FADE, delay = 60)) + expandVertically(Motion.size()),
+            exit = fadeOut(Motion.exit(90)) + shrinkVertically(Motion.size()),
+        ) {
             alert?.let { Notice(vm, it) }
         }
-        val favs = vm.favorites
-        if (favs.isNotEmpty()) {
+        val favs = rememberLastNonEmpty(vm.favorites)
+        // первая звезда или последняя снятая: строка избранных раскрывается и сворачивается, док не прыгает
+        AnimatedVisibility(
+            vm.favorites.isNotEmpty(),
+            enter = fadeIn(Motion.enter(Motion.FADE, delay = 60)) + expandVertically(Motion.size(), expandFrom = Alignment.Top),
+            exit = fadeOut(Motion.exit(90)) + shrinkVertically(Motion.size(), shrinkTowards = Alignment.Top),
+        ) {
             LazyRow(
                 Modifier.fillMaxWidth().height(48.dp).glass(RoundedCornerShape(24.dp)),
                 contentPadding = PaddingValues(horizontal = 6.dp),
@@ -342,6 +352,7 @@ private fun Dock(vm: DialerViewModel, modifier: Modifier) {
                     val m = vm.defaultOf(p)
                     Row(
                         Modifier
+                            .animateItem(fadeInSpec = Motion.enter(Motion.FADE), placementSpec = Motion.offset(), fadeOutSpec = Motion.exit(Motion.FADE))
                             .height(40.dp)
                             .press({ vm.perform(p, m) }, onLongClick = { nav.openCard(p.id) }, shape = RoundedCornerShape(20.dp),
                                 label = stringResource(R.string.favorite_label, p.name, stringResource(m?.title ?: R.string.choose_method)))
@@ -397,4 +408,12 @@ private fun Notice(vm: DialerViewModel, alert: com.khizrim.dialer.telecom.CallAl
         }, style = OzType.small)
         if (alert.dismissable) TextAction(stringResource(R.string.close), oz.fg3, vm::dismissAlert, style = OzType.small)
     }
+}
+
+/** Последний непустой список: пока строка сворачивается, в ней ещё видно, что в ней было. */
+@Composable
+private fun <T> rememberLastNonEmpty(list: List<T>): List<T> {
+    val box = remember { arrayOf<List<T>>(emptyList()) }
+    if (list.isNotEmpty()) box[0] = list
+    return box[0]
 }

@@ -7,6 +7,9 @@ import androidx.compose.animation.core.FiniteAnimationSpec
 import androidx.compose.animation.core.SpringSpec
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.VisibilityThreshold
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
@@ -47,6 +50,15 @@ object Motion {
 
     /** То же для пикселей: строки, круги, сдвиги. */
     fun pixels(stiffness: Float = 420f): SpringSpec<Float> = spring(dampingRatio = 1f, stiffness = stiffness, visibilityThreshold = 0.5f)
+
+    /** Блок меняет высоту (группа способов, лист, подсказки): та же пружина без отскока, чуть быстрее слоя. */
+    fun size(): FiniteAnimationSpec<IntSize> = spring(dampingRatio = 1f, stiffness = 500f, visibilityThreshold = IntSize.VisibilityThreshold)
+
+    /** Сдвиг внутри экрана в пикселях (ползунок выбора, строки): как [size]. */
+    fun offset(): FiniteAnimationSpec<IntOffset> = spring(dampingRatio = 1f, stiffness = 500f, visibilityThreshold = IntOffset.VisibilityThreshold)
+
+    /** Цвет отметки, значка, текста: короткий переход вместо щелчка. */
+    fun <T> tint(): FiniteAnimationSpec<T> = tween(FADE, 0, Ease)
 
     fun <T> enter(ms: Int, delay: Int = 0): FiniteAnimationSpec<T> = tween(ms, delay, EnterEasing)
     fun <T> exit(ms: Int): FiniteAnimationSpec<T> = tween(ms, 0, ExitEasing)

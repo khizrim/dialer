@@ -1,7 +1,18 @@
 package com.khizrim.dialer.ui.card
 
 import androidx.annotation.DrawableRes
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.animateIntOffsetAsState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.offset
+import androidx.compose.ui.unit.IntOffset
+import com.khizrim.dialer.ui.theme.Motion
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -11,6 +22,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -106,24 +118,18 @@ fun PersonScreen(vm: DialerViewModel, l: Layer, id: Long) {
     val days = remember(history) { history.withIndex().groupBy({ it.value.day }, { it.value }).toList() }
     val statusTop = with(density) { WindowInsets.statusBars.getTop(this).toDp() }
     val navBottom = with(density) { WindowInsets.navigationBars.getBottom(this).toDp() }
-    val dockDp = with(density) { dockPx.toDp() }
     fun done(action: () -> Unit) { nav.close(l); action() }
 
     CompositionLocalProvider(LocalGlass provides haze) {
         Box(Modifier.fillMaxSize().background(oz.bg).dismissDrag(l)) {
-            // снизу вверх: имя у способов связи, над ним свежая история, старая уходит вверх
-            LazyColumn(
-                Modifier.fillMaxSize().haze(haze),
-                state = rememberLazyListState(),
-                reverseLayout = true,
-                contentPadding = PaddingValues(top = statusTop + 24.dp, bottom = navBottom + 12.dp + dockDp + 24.dp),
-            ) {
-                item(key = "who") { Who(vm, p, unknown, top = if (history.isEmpty()) 0.dp else 28.dp) }
-                days.asReversed().forEachIndexed { di, (day, list) ->
-                    list.asReversed().forEachIndexed { i, h -> item(key = "h$di:$i") { Event(h) } }
-                    item(key = "d$di") { Day(day, first = di == days.size - 1) }
-                }
-            }
+            // снизу вверх: имя у способов связи, над ним свежая история, старая уходит вверх.
+            // Высоту группы способов читает только список: пока группа плавно меняет высоту, история не пересчитывается.
+            History(
+                Modifier.fillMaxSize().haze(haze), { dockPx },
+                statusTop, navBottom,
+                who = { Who(vm, p, unknown, top = if (history.isEmpty()) 0.dp else 28.dp) },
+                days = days,
+            )
             // история уходит под строку состояния мягко, без резкого края
             Box(
                 Modifier.fillMaxWidth().height(statusTop + 24.dp)
@@ -139,6 +145,30 @@ fun PersonScreen(vm: DialerViewModel, l: Layer, id: Long) {
                         .onSizeChanged { dockPx = it.height; l.floor = it.height.toFloat() },
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun History(
+    modifier: Modifier,
+    dockPx: () -> Int,
+    statusTop: androidx.compose.ui.unit.Dp,
+    navBottom: androidx.compose.ui.unit.Dp,
+    who: @Composable () -> Unit,
+    days: List<Pair<String, List<HistoryEntry>>>,
+) {
+    val dockDp = with(LocalDensity.current) { dockPx().toDp() }
+    LazyColumn(
+        modifier,
+        state = rememberLazyListState(),
+        reverseLayout = true,
+        contentPadding = PaddingValues(top = statusTop + 24.dp, bottom = navBottom + 12.dp + dockDp + 24.dp),
+    ) {
+        item(key = "who") { who() }
+        days.asReversed().forEachIndexed { di, (day, list) ->
+            list.asReversed().forEachIndexed { i, h -> item(key = "h$di:$i") { Event(h) } }
+            item(key = "d$di") { Day(day, first = di == days.size - 1) }
         }
     }
 }
@@ -185,7 +215,8 @@ private fun Who(vm: DialerViewModel, p: Person, unknown: Boolean, top: androidx.
 }
 
 @Composable
-private fun Act(@DrawableRes icon: Int, label: String, tint: Color, onClick: () -> Unit) {
+private fun Act(@DrawableRes icon: Int, label: String, tint0: Color, onClick: () -> Unit) {
+    val tint by animateColorAsState(tint0, Motion.tint(), label = "act")
     Box(Modifier.size(44.dp).press(onClick, shape = CircleShape, label = label).semantics { contentDescription = label }, contentAlignment = Alignment.Center) {
         OzIcon(icon, tint, 22.dp)
     }
@@ -257,7 +288,7 @@ private fun Ways(vm: DialerViewModel, p: Person, unknown: Boolean, done: (() -> 
     val personSim = vm.personSim(number)
 
     // лёгкий оттенок поверх стекла: на белой бумаге граница группы иначе не видна
-    Column(modifier.fillMaxWidth().glass(shape).background(oz.fg.copy(alpha = 0.03f)).padding(8.dp)) {
+    Column(modifier.fillMaxWidth().animateContentSize(Motion.size()).glass(shape).background(oz.fg.copy(alpha = 0.03f)).padding(8.dp)) {
         if (choice) {
             val simText = if (default == Method.PHONE && sims.size > 1) vm.simLabel(personSim)?.let { " · $it" }.orEmpty() else ""
             Row(
@@ -286,37 +317,49 @@ private fun Ways(vm: DialerViewModel, p: Person, unknown: Boolean, done: (() -> 
             Spacer(Modifier.height(4.dp))
         }
 
-        if (app.isEmpty() && p.phones.size > 1) {
-            NumberChips(p.phones.map { it.label.takeIf { l -> l.isNotBlank() } ?: PhoneFormat.pretty(it.number) }, numIdx) { numIdx = it }
-        }
+        // другое приложение — другие действия: старые тают, новые проявляются, группа плавно меняет высоту
+        androidx.compose.animation.AnimatedContent(
+            targetState = app,
+            transitionSpec = {
+                (fadeIn(Motion.enter(Motion.FADE, delay = 60)) togetherWith fadeOut(Motion.exit(90)))
+                    .using(SizeTransform(clip = false) { _, _ -> Motion.size() })
+            },
+            label = "ways",
+        ) { a ->
+            Column {
+                if (a.isEmpty() && p.phones.size > 1) {
+                    NumberChips(p.phones.map { it.label.takeIf { l -> l.isNotBlank() } ?: PhoneFormat.pretty(it.number) }, numIdx) { numIdx = it }
+                }
 
-        val verbs = if (app.isEmpty()) buildList {
-            if (Method.PHONE in p.methods) {
-                if (sims.size > 1) sims.forEach { (simId, label) ->
-                    val short = label.substringAfter(" · ", label)
-                    add(Verb(
-                        R.drawable.ic_oz_phone, short,
-                        choice && default == Method.PHONE && atUsualNumber && simId == personSim,
-                        { done { vm.callPerson(p, number, simId) } },
+                val verbs = if (a.isEmpty()) buildList {
+                    if (Method.PHONE in p.methods) {
+                        if (sims.size > 1) sims.forEach { (simId, label) ->
+                            val short = label.substringAfter(" · ", label)
+                            add(Verb(
+                                R.drawable.ic_oz_phone, short,
+                                choice && default == Method.PHONE && atUsualNumber && simId == personSim,
+                                { done { vm.callPerson(p, number, simId) } },
+                                null,
+                            ))
+                        } else add(Verb(
+                            R.drawable.ic_oz_phone, stringResource(R.string.call),
+                            choice && default == Method.PHONE && atUsualNumber,
+                            { done { vm.callPerson(p, number, null) } },
+                            null,
+                        ))
+                    }
+                    if (Method.SMS in p.methods) add(Verb(
+                        R.drawable.ic_oz_sms, stringResource(R.string.way_sms),
+                        choice && default == Method.SMS && atUsualNumber,
+                        { done { vm.performOther(p, Method.SMS, number) } },
                         null,
                     ))
-                } else add(Verb(
-                    R.drawable.ic_oz_phone, stringResource(R.string.call),
-                    choice && default == Method.PHONE && atUsualNumber,
-                    { done { vm.callPerson(p, number, null) } },
-                    null,
-                ))
+                } else p.methods.filter { appOf(it) == a }.sortedBy(::orderOf).map { m ->
+                    Verb(m.icon, stringResource(m.short), choice && m == default, { done { vm.performOther(p, m) } }, null)
+                }
+                VerbRow(verbs)
             }
-            if (Method.SMS in p.methods) add(Verb(
-                R.drawable.ic_oz_sms, stringResource(R.string.way_sms),
-                choice && default == Method.SMS && atUsualNumber,
-                { done { vm.performOther(p, Method.SMS, number) } },
-                null,
-            ))
-        } else p.methods.filter { appOf(it) == app }.sortedBy(::orderOf).map { m ->
-            Verb(m.icon, stringResource(m.short), choice && m == default, { done { vm.performOther(p, m) } }, null)
         }
-        VerbRow(verbs)
     }
 }
 
@@ -325,7 +368,7 @@ private fun VerbRow(verbs: List<Verb>) {
     val oz = LocalOz.current
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
         verbs.forEach { v ->
-            val tint = if (v.usual) oz.accent else oz.fg
+            val tint by animateColorAsState(if (v.usual) oz.accent else oz.fg, Motion.tint(), label = "verb")
             Column(
                 Modifier.weight(1f).height(64.dp).press(v.onClick, v.onHold, RoundedCornerShape(20.dp), label = v.label),
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -339,43 +382,52 @@ private fun VerbRow(verbs: List<Verb>) {
     }
 }
 
+/**
+ * Подсветка выбранного под рядом равных ячеек: не перескакивает, а едет к новой ячейке той же пружиной.
+ * [mark] рисует саму подсветку (заливку или тонкую рамку) размером с ячейку.
+ */
+@Composable
+private fun Slider(count: Int, selected: Int, height: androidx.compose.ui.unit.Dp, gap: androidx.compose.ui.unit.Dp, mark: @Composable (Modifier) -> Unit, cells: @Composable (Int, Modifier) -> Unit) {
+    BoxWithConstraints(Modifier.fillMaxWidth().height(height)) {
+        val density = LocalDensity.current
+        val cell = (maxWidth - gap * (count - 1)) / count
+        val target = with(density) { IntOffset(((cell + gap) * selected.coerceIn(0, count - 1)).roundToPx(), 0) }
+        val x by animateIntOffsetAsState(target, Motion.offset(), label = "slider")
+        if (selected in 0 until count) mark(Modifier.offset { x }.width(cell).height(height))
+        Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(gap)) {
+            repeat(count) { i -> cells(i, Modifier.weight(1f).fillMaxHeight()) }
+        }
+    }
+}
+
 /** Номера у телефона: выбранный обведён тонкой линией. Не заливка, чтобы не спорить с приложениями ниже. */
 @Composable
 private fun NumberChips(items: List<String>, selected: Int, onPick: (Int) -> Unit) {
     val oz = LocalOz.current
-    Row(Modifier.fillMaxWidth().padding(bottom = 4.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-        items.forEachIndexed { i, s ->
-            val on = i == selected
-            Box(
-                Modifier.weight(1f).height(32.dp)
-                    .then(if (on) Modifier.border(1.dp, oz.fg3.copy(alpha = 0.5f), CircleShape) else Modifier)
-                    .press({ onPick(i) }, shape = CircleShape, label = s),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(s, style = OzType.meta.copy(fontSize = 13.sp, fontWeight = FontWeight.Medium), color = if (on) oz.fg else oz.fg3, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    Box(Modifier.padding(bottom = 4.dp)) {
+        Slider(
+            items.size, selected, 32.dp, 4.dp,
+            mark = { m -> Box(m.border(1.dp, oz.fg3.copy(alpha = 0.5f), CircleShape)) },
+        ) { i, m ->
+            val c by animateColorAsState(if (i == selected) oz.fg else oz.fg3, Motion.tint(), label = "chip")
+            Box(m.press({ onPick(i) }, shape = CircleShape, label = items[i]), contentAlignment = Alignment.Center) {
+                Text(items[i], style = OzType.meta.copy(fontSize = 13.sp, fontWeight = FontWeight.Medium), color = c, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
     }
 }
 
-/** Переключатель: выбранное — тихая заливка, остальное серым. */
+/** Переключатель: выбранное — тихая заливка, она переезжает к нажатому; остальное серым. */
 @Composable
 private fun Segments(items: List<String>, selected: Int, onPick: (Int) -> Unit) {
     val oz = LocalOz.current
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-        items.forEachIndexed { i, s ->
-            val on = i == selected
-            Box(
-                Modifier.weight(1f).height(44.dp)
-                    .background(if (on) oz.fg.copy(alpha = 0.08f) else Color.Transparent, CircleShape)
-                    .press({ onPick(i) }, shape = CircleShape, label = s),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    s, style = OzType.small.copy(fontWeight = FontWeight.Medium),
-                    color = if (on) oz.fg else oz.fg3, maxLines = 1, overflow = TextOverflow.Ellipsis,
-                )
-            }
+    Slider(
+        items.size, selected, 44.dp, 4.dp,
+        mark = { m -> Box(m.background(oz.fg.copy(alpha = 0.08f), CircleShape)) },
+    ) { i, m ->
+        val c by animateColorAsState(if (i == selected) oz.fg else oz.fg3, Motion.tint(), label = "seg")
+        Box(m.press({ onPick(i) }, shape = CircleShape, label = items[i]), contentAlignment = Alignment.Center) {
+            Text(items[i], style = OzType.small.copy(fontWeight = FontWeight.Medium), color = c, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
     }
 }

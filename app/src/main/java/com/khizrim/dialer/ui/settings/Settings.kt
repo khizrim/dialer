@@ -99,7 +99,7 @@ fun SettingsPage(vm: DialerViewModel, l: Layer) {
                 Group(stringResource(R.string.set_calls))
                 val current = vm.sims.firstOrNull { it.first == vm.simForCalls }?.second ?: stringResource(R.string.set_sim_ask)
                 ValueRow(stringResource(R.string.set_sim), current) { simOpen = !simOpen }
-                AnimatedVisibility(simOpen, enter = fadeIn() + expandVertically(), exit = fadeOut() + shrinkVertically()) {
+                AnimatedVisibility(simOpen, enter = fadeIn(com.khizrim.dialer.ui.theme.Motion.enter(com.khizrim.dialer.ui.theme.Motion.FADE, delay = 60)) + expandVertically(com.khizrim.dialer.ui.theme.Motion.size()), exit = fadeOut(com.khizrim.dialer.ui.theme.Motion.exit(90)) + shrinkVertically(com.khizrim.dialer.ui.theme.Motion.size())) {
                     Column {
                         (listOf<Pair<String?, String>>(null to stringResource(R.string.set_sim_ask)) + vm.sims).forEach { (id, label) ->
                             Choice(label, vm.simForCalls == id) { vm.chooseSimForCalls(id); simOpen = false }

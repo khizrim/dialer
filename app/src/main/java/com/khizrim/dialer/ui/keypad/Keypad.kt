@@ -6,6 +6,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -85,7 +86,7 @@ fun KeypadPanel(vm: DialerViewModel, l: Layer) {
             enter = fadeIn(Motion.enter(Motion.FADE)) + slideInVertically(Motion.enter(Motion.MOVE)) { it / 4 },
             exit = fadeOut(Motion.exit(Motion.FADE)) + slideOutVertically(Motion.exit(Motion.FADE)) { it / 4 },
         ) {
-            Column(Modifier.padding(horizontal = 12.dp).padding(bottom = 8.dp).fillMaxWidth().glass(RoundedCornerShape(22.dp)).padding(vertical = 4.dp)) {
+            Column(Modifier.padding(horizontal = 12.dp).padding(bottom = 8.dp).fillMaxWidth().animateContentSize(Motion.size()).glass(RoundedCornerShape(22.dp)).padding(vertical = 4.dp)) {
                 vm.hits.take(3).forEach { h -> HitRow(h, onCard = { nav.openCard(h.person.id) }, onCall = { vm.callNumber(h.phone) }) }
             }
         }
@@ -133,7 +134,10 @@ private fun NumberField(vm: DialerViewModel, typed: String) {
     val digits = PhoneFormat.digits(typed)
     val known = vm.hits.any { PhoneFormat.digits(it.phone).endsWith(digits.takeLast(10)) && digits.length >= 7 }
     Box(Modifier.fillMaxWidth().height(28.dp).padding(horizontal = 20.dp), contentAlignment = Alignment.Center) {
-        if (digits.length >= 7 && !known) {
+        androidx.compose.animation.AnimatedVisibility(
+            digits.length >= 7 && !known,
+            enter = fadeIn(Motion.enter(Motion.FADE)), exit = fadeOut(Motion.exit(Motion.FADE)),
+        ) {
             val tag = com.khizrim.dialer.callerid.rememberCallerTag(typed)
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (tag != null) Text(tag, style = OzType.meta, color = oz.fg3, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(end = 4.dp))
