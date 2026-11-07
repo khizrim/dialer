@@ -60,8 +60,12 @@ def start(wait=6):
     nodes()
 
 # Переходы интерфейса «с нуля» (сборки 264+): лента, док, экран человека, листы, клавиатура, звонок.
-CARD = "Аня Смирнова"      # не в избранном: нажатие на имя открывает экран человека
+CARD = "Никита"            # не в избранном: нажатие на имя открывает экран человека
 TWO = "Ирина Два Номера"   # два номера: переключатель номеров на экране человека
+
+def keypad():
+    # круглая кнопка клавиатуры справа от «Поиска» (у неё нет текста для uiautomator)
+    if not tap("Открыть клавиатуру", wait=0.1): sh("shell", "input", "tap", "975", "2240")
 
 def card(name=CARD):
     start(); tap(name, wait=2.5)
@@ -78,14 +82,14 @@ def walk(theme):
     card(); record(t("04-person-swipe-down-fast"), 4, lambda: swipe(540, 700, 540, 2000, 200, 2.2))
     card(); record(t("05-person-drag-cancel"), 5, lambda: slow_drag(540, 700, 1000, hold_at=0.5, wait=2.0))
     card(); record(t("06-person-star"), 5, lambda: (tap("Добавить в избранное", wait=2.0), tap("Убрать из избранного", wait=2.0)))
-    start(); tap("Поиск", wait=2.5); tap(TWO, wait=2.5)
+    start(); tap("Поиск", wait=2.5); (tap(TWO, wait=2.5) or tap("Сергей Работа", wait=2.5))
     record(t("07-person-two-numbers"), 6, lambda: (tap("+7 495", wait=1.6), tap("+7 916", wait=1.6)))
     start(); record(t("08-home-tap-search"), 4, lambda: tap("Поиск", wait=2.2))
     contacts(); record(t("09-contacts-type-erase"), 7, lambda: (subprocess.run(["adb", "shell", "input", "text", "an"]), time.sleep(1.8),
                                                                  [sh("shell", "input", "keyevent", "KEYCODE_DEL") for _ in range(2)], time.sleep(1.8)))
     contacts(); back(1.0); record(t("10-contacts-drag-down"), 6, lambda: slow_drag(540, 600, 2000, wait=2.2))
     start(); record(t("11-dock-pull-up-slow"), 6, lambda: slow_drag(540, 2250, 1000, hold_at=0.6, wait=2.2))
-    start(); record(t("12-keypad-open-type"), 7, lambda: (tap("Открыть клавиатуру", wait=1.4), keys("8916"), time.sleep(1.5)))
+    start(); record(t("12-keypad-open-type"), 7, lambda: (keypad(), time.sleep(1.4), keys("8916"), time.sleep(1.5)))
     record(t("13-keypad-erase-close"), 7, lambda: ([sh("shell", "input", "keyevent", "KEYCODE_DEL") for _ in range(4)], time.sleep(1.0), back(2.0)))
     start(); record(t("14-row-menu"), 5, lambda: tap(CARD, long=True, wait=2.2))
     record(t("15-menu-to-other-way"), 5, lambda: tap("Другой способ", wait=2.2))

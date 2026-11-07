@@ -63,4 +63,6 @@ jobs:
           find . -mindepth 1 -maxdepth 1 ! -name .git ! -name '[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]' -exec rm -rf {} +
           find /tmp/pub/$S -name '*.mp4' -size +8M -delete
           mv /tmp/pub/$S ./$S
-          git add -A; git commit -qm "motion $S"; git push -q origin motion-shots
+          git add -A; git commit -qm "motion $S"
+          # две записи могут закончиться одновременно: подтягиваем чужую и пробуем ещё раз
+          for i in 1 2 3 4 5; do git push -q origin motion-shots && break; sleep $((i * 5)); git pull -q --rebase origin motion-shots || true; done
