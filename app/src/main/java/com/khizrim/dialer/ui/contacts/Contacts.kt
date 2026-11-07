@@ -124,28 +124,30 @@ fun ContactsScreen(vm: DialerViewModel, l: Layer) {
     val q = vm.textQuery
     val collator = remember { Collator.getInstance(Locale.getDefault()) }
     val favTitle = stringResource(R.string.favorites)
-    val sorted = remember(vm.people) { vm.people.sortedWith { a, b -> collator.compare(a.shownName, b.shownName) } }
+    val sorted = remember(vm.people) { vm.people.distinctBy { it.id }.sortedWith { a, b -> collator.compare(a.shownName, b.shownName) } }
     val res = androidx.compose.ui.platform.LocalContext.current.resources
 
     val items = remember(sorted, q, vm.textHits, vm.favorites) {
         buildList {
             add(CItem.Hero)
             if (q.isBlank()) {
-                val favs = vm.favorites
+                val favs = vm.favorites.distinctBy { it.id }
                 if (favs.isNotEmpty()) {
                     add(CItem.Label(favTitle, "favlabel"))
                     favs.forEach { add(CItem.Row(it, null, "f" + it.id)) }
                 }
-                var letter: String? = null
-                sorted.forEach { p ->
-                    val l0 = letterOf(p)
-                    if (l0 != letter) { add(CItem.Letter(l0)); letter = l0 }
-                    add(CItem.Row(p, p.company?.takeIf { it.isNotBlank() }, "p" + p.id))
-                }
+                // по буквам: «Ё» и «Е», «É» и «E» сортировщик ставит вперемешку, поэтому сначала группы, потом строки,
+                // иначе одна буква встречается дважды и ключи списка совпадают
+                sorted.groupBy(::letterOf).entries
+                    .sortedWith(compareBy<Map.Entry<String, List<Person>>> { it.key == "#" }.thenComparator { a, b -> collator.compare(a.key, b.key) })
+                    .forEach { (l0, ps) ->
+                        add(CItem.Letter(l0))
+                        ps.forEach { p -> add(CItem.Row(p, p.company?.takeIf { it.isNotBlank() }, "p" + p.id)) }
+                    }
                 if (sorted.isNotEmpty()) add(CItem.Create)
             } else {
                 val hits = vm.textHits
-                if (hits.isEmpty()) add(CItem.Empty) else hits.forEach { add(CItem.Hit(it, "h" + it.person.id)) }
+                if (hits.isEmpty()) add(CItem.Empty) else hits.distinctBy { it.person.id }.forEach { add(CItem.Hit(it, "h" + it.person.id)) }
             }
         }
     }
@@ -176,7 +178,8 @@ fun ContactsScreen(vm: DialerViewModel, l: Layer) {
             ) {
                 items(items, key = { it.key }) { item ->
                     when (item) {
-                        CItem.Hero -> Hero(onNew = { vm.addNamedContact(q) }, onSettings = { focusManager.clearFocus(); vm.openSettings() })
+                        // стекло внутри того, что оно размывает, рисовало бы само себя: здесь только вуаль
+                        CItem.Hero -> CompositionLocalProvider(LocalGlass provides null) { Hero(onNew = { vm.addNamedContact(q) }, onSettings = { focusManager.clearFocus(); vm.openSettings() }) }
                         is CItem.Label -> Text(item.text, style = OzType.meta.copy(fontWeight = FontWeight.Medium), color = oz.fg3, modifier = Modifier.padding(start = 20.dp, top = 12.dp, bottom = 4.dp).semantics { heading() })
                         is CItem.Letter -> Text(item.letter, style = OzType.title.copy(fontSize = 20.sp), color = oz.fg3, modifier = Modifier.padding(start = 20.dp, top = 16.dp, bottom = 2.dp).semantics { heading() })
                         is CItem.Row -> PersonRow(vm, item.p, AnnotatedString(item.p.shownName), item.sub) { nav.openCard(item.p.id) }
