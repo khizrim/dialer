@@ -136,211 +136,128 @@ if mode == "onboarding":
 
 sh("shell", "cmd", "uimode", "night", "no")
 
-# J1 — главная: что я вижу и что могу сделать
-S("J1 главная")
-start(); ns = shot("home", "что на главной без действий")
+def card_icons(name):
+    """Звезда и карандаш справа от имени в карточке."""
+    nm = find(name, exact_only=True, region=(300, 2000))
+    if not nm: note(f"MISSING: имя «{name}» в карточке"); return None, None
+    ic = clickable_near(nm["y"] + 30, xmin=760, tol=110)
+    note(f"значки у имени: {[(i['x'], i['y']) for i in ic]}")
+    return (ic[-2] if len(ic) >= 2 else None), (ic[-1] if ic else None)
 
-# J2 — позвонить близкому основным способом (тап по избранному)
+
+def chip(label):
+    return find(label, exact_only=True, region=(1950, 2200))
+
+
+S("J1 главная"); start(); shot("home")
+
 S("J2 позвонить избранному")
-if tap("Папа", exact_only=True, region=(1500, H), wait=4):
-    shot("fav-tap-calls", f"telecom={telecom()}")
-    hangup(); shot("after-hangup")
+c = chip("Папа")
+if c:
+    tap_xy(c["x"], c["y"], wait=1.5, why="тап по чипу Папа"); shot("fav-tap-1s", f"telecom={telecom()}")
+    time.sleep(3); shot("fav-tap-4s", f"telecom={telecom()} last={lastcall()}"); hangup()
 start()
 
-# J3 — сменить способ по умолчанию для избранного (как это найдёт человек)
 S("J3 сменить способ избранного")
-c = dock_chip("Мама")
+c = chip("Мама")
 if c:
-    long_xy(c["x"], c["y"], why="долгое на «Мама» в доке"); shot("fav-long-press", "что открылось по долгому нажатию")
-    if find("Change", exact_only=True):
-        tap("Change", exact_only=True, wait=2); shot("card-change-sheet", "лист «что по нажатию»")
-        if tap("WhatsApp video", exact_only=True, wait=1.2): shot("after-pick-default", "тост и состояние")
-        time.sleep(1.5); shot("card-after-default")
-    else:
-        note("FINDING: в карточке нет «Change»")
-    back(); shot("dock-after-default", "значок у чипа поменялся?")
-else:
-    note("MISSING: чип «Мама» в доке")
-# способ 2: через лист «Другой способ» с долгого нажатия на значок в ленте
+    long_xy(c["x"], c["y"], why="долгое на чип «Мама»"); shot("mom-card", "карточка из дока")
+    star, edit = card_icons("Мама")
+    if tap("Change", exact_only=True, wait=2): shot("mom-change-sheet")
+    if tap("WhatsApp video", exact_only=True, wait=1.0): shot("mom-after-pick", "тост, карточка")
+    time.sleep(2); shot("mom-card-after")
+    back(); time.sleep(1); shot("dock-after-default", "значок у чипа Мама")
+    # долгое на значок способа в карточке (скрытый способ)
+    c = chip("Мама")
+    if c:
+        long_xy(c["x"], c["y"]); ns, _ = dump()
+        tg = find("Telegram", exact_only=True)
+        if tg:
+            ic = clickable_near(tg["y"], xmin=700)
+            if ic: long_xy(ic[0]["x"], ic[0]["y"], why="долгое на значок Telegram"); shot("mom-long-tg-icon", "сделать основным долгим")
+        back()
+    shot("dock-after-tg")
 start()
 
-# J4 — убрать человека из избранного
 S("J4 убрать из избранного")
-c = dock_chip("Папа")
+c = chip("Папа")
 if c:
-    long_xy(c["x"], c["y"], why="долгое на «Папа»"); ns = shot("card-papa")
-    nm = find("Папа", exact_only=True, region=(0, 1900))
-    if nm:
-        icons = clickable_near(nm["y"] + 20, xmin=700)
-        note(f"значки рядом с именем: {[(i['x'], i['y']) for i in icons]}")
-        if len(icons) >= 2:
-            tap_xy(icons[-2]["x"], icons[-2]["y"], wait=0.6, why="звезда"); shot("star-tapped-0.6s", "сразу после нажатия")
-            time.sleep(1.5); shot("star-tapped-2s", "звезда погасла? карточка обновилась?")
-            # нажать ещё раз — вернуть (проверка, что вторая попытка делает то, что видно)
-            tap_xy(icons[-2]["x"], icons[-2]["y"], wait=2, why="звезда ещё раз"); shot("star-tapped-again")
-            tap_xy(icons[-2]["x"], icons[-2]["y"], wait=2, why="звезда третий раз"); shot("star-tapped-third")
-    back(); shot("dock-after-unstar", "Папа ушёл из дока?")
-else:
-    note("MISSING: чип «Папа»")
-q = sh("shell", "content query --uri content://com.android.contacts/contacts --projection display_name:starred --where \"display_name='Папа'\"")
-note(f"Папа в контактах: {q.strip()}")
+    long_xy(c["x"], c["y"], why="долгое на чип «Папа»"); shot("papa-card")
+    star, edit = card_icons("Папа")
+    if star:
+        tap_xy(star["x"], star["y"], wait=0.7, why="звезда"); shot("papa-star-0.7s")
+        time.sleep(2); shot("papa-star-3s", "звезда погасла?")
+        tap_xy(star["x"], star["y"], wait=2.5, why="звезда ещё раз (видя, что не погасла)"); shot("papa-star-again")
+    back(); shot("dock-after-unstar")
+note("Папа: " + sh("shell", "content query --uri content://com.android.contacts/contacts --projection display_name:starred --where \"display_name='Папа'\"").strip())
+start(); shot("dock-after-restart")
 
-# J5 — добавить в избранное (через поиск)
-S("J5 добавить в избранное")
+S("J4b избранное из списка контактов")
+tap("Search", exact_only=True, region=(2100, H), wait=3); back(1); shot("contacts-favs")
+f = find("Мама", exact_only=True, region=(300, 800))
+if f:
+    long_xy(f["x"], f["y"], why="долгое на Маму в «Избранных»"); shot("contacts-fav-long", "что-то случилось?")
+    swipe(700, f["y"], 100, f["y"], 250, wait=1.5); shot("contacts-fav-swipe", "смахнуть влево")
 start()
-tap("Search", exact_only=True, region=(1900, H), wait=3); shot("search-open", "поиск открыт, клавиатура?")
-text("Katya") ; shot("search-latin-katya", "латиница: найдётся Катя?")
-sh("shell", "input", "keyevent", "KEYCODE_MOVE_END")
-for _ in range(6): sh("shell", "input", "keyevent", "KEYCODE_DEL")
-text("Ilya"); shot("search-ilya")
-tap("Илья Петров", wait=2.5); shot("card-ilya", "карточка из поиска")
-nm = find("Илья Петров", exact_only=True)
-if nm:
-    icons = clickable_near(nm["y"] + 20, xmin=700)
-    if len(icons) >= 2:
-        tap_xy(icons[-2]["x"], icons[-2]["y"], wait=2, why="звезда"); shot("ilya-starred")
-back(); back(); shot("home-after-star", "Илья появился в доке?")
 
-# J6 — перезвонить на пропущенный
-S("J6 перезвонить на пропущенный")
-start(); ns = shot("home-missed")
+S("J5 карточка из поиска и звезда")
+tap("Search", exact_only=True, region=(2100, H), wait=3)
+text("Petrov"); shot("search-petrov")
+tap("Илья Петров", wait=2.5); shot("ilya-card-with-ime", "клавиатура закрывает карточку?")
+back(1.5); shot("ilya-card-after-back", "назад: убрало клавиатуру или карточку?")
+star, edit = card_icons("Илья Петров")
+if star: tap_xy(star["x"], star["y"], wait=2.5, why="звезда"); shot("ilya-starred")
+start(); shot("home-ilya-in-dock")
+
+
+S("J8 карточка с двумя номерами")
+c = chip("Дима")
+if c:
+    long_xy(c["x"], c["y"]); shot("dima-card")
+    if tap("History", wait=1.5): shot("dima-history")
+    w = find("+7 (495) 700-10-20")
+    if w: tap_xy(w["x"], w["y"], wait=1.5, why="рабочий номер"); shot("dima-work-call", f"telecom={telecom()} last={lastcall()}"); time.sleep(2); hangup()
+start()
+
+S("J6b карточка из ленты")
 a = find("Аня Смирнова", exact_only=True)
 if a:
-    tap_xy(W - 120, a["y"] + 20, wait=4, why="значок справа у Ани"); shot("callback-ann", f"telecom={telecom()}")
-    hangup(); shot("after-callback")
+    tap_xy(a["x"], a["y"], wait=2.5, why="имя Ани в ленте"); shot("ann-card")
+    if tap("History", wait=1.5): shot("ann-history")
+    star, edit = card_icons("Аня Смирнова")
+    if edit: tap_xy(edit["x"], edit["y"], wait=4, why="карандаш"); shot("ann-edit-system", "системный редактор")
+    back(2); back(2); shot("after-editor")
 start()
 
-# J7 — понять, что за незнакомый номер, и что с ним сделать
-S("J7 незнакомый номер")
-ns, _ = dump()
-num = next((n for n in ns if re.search(r"\+7|8 800|800 555", n["t"]) and n["y"] < 2000), None)
-if num:
-    tap_xy(300, num["y"] + 20, wait=2.5, why=f"имя-номер {num['t']}"); shot("number-card")
-    if tap("History", wait=1.5): shot("number-history")
-    if tap("Block", exact_only=True, wait=2): shot("block-confirm"); back()
-    back()
-    long_xy(300, num["y"] + 20, why="долгое на номер"); shot("number-row-menu"); back()
-else:
-    note("MISSING: строка незнакомого номера")
-
-# J8 — человек с двумя номерами: позвонить на рабочий
-S("J8 два номера")
-start()
-tap("Search", exact_only=True, region=(1900, H), wait=3); text("Dima"); shot("search-dima-nick", "находится по нику?")
-for _ in range(6): sh("shell", "input", "keyevent", "KEYCODE_DEL")
-text("Kozlov"); shot("search-kozlov")
-if not tap("Дмитрий Козлов", wait=2.5):
-    back(); start(); c = dock_chip("Дима") or dock_chip("Дмитрий")
-    if c: long_xy(c["x"], c["y"])
-shot("card-dima", "два номера: какой основной, как позвонить на рабочий")
-if tap("History", wait=1.5): shot("card-dima-history")
-w = find("+7 495", region=(0, 2000)) or find("495")
-if w: tap_xy(w["x"], w["y"], wait=4, why="рабочий номер"); shot("call-work", f"telecom={telecom()} last={lastcall()}"); hangup()
-start()
-
-# J9 — один раз связаться другим способом (WhatsApp вместо обычного)
-S("J9 другой способ разово")
-a = find("Аня Смирнова", exact_only=True)
-if a:
-    long_xy(W - 120, a["y"] + 20, why="долгое на значок Ани"); shot("other-way-sheet")
-    if tap("WhatsApp call", exact_only=True, wait=2.5): shot("after-wa-call", "без WhatsApp: что скажет?")
-    start(); shot("return-offer", "предложение сделать основным?")
-start()
-
-# J10 — убрать лишнее с главной
-S("J10 почистить главную")
-ns, _ = dump()
-rows = [n for n in ns if n["t"] and 300 < n["y"] < 1700 and n["x"] < 600 and len(n["t"]) > 2]
-if rows:
-    r = rows[-1]
-    swipe(900, r["y"] + 20, 150, r["y"] + 20, 250, wait=0.8); shot("row-swiped", f"скрыли {r['t']}")
-    if tap("Undo", exact_only=True, wait=1.5): shot("undo")
-for _ in range(4): swipe(540, 600, 540, 1700, 250, wait=0.6)
-shot("feed-top", "самый верх ленты")
-if tap("Hide everyone", wait=2): shot("hide-everyone-confirm"); back()
-start()
-
-# J11 — набрать номер вручную
-S("J11 набрать номер")
-c = find("Search", exact_only=True, region=(1900, H))
-if c: tap_xy(W - 120, c["y"], wait=2, why="кнопка клавиатуры справа от поиска")
-shot("keypad")
-for d in "7916": sh("shell", "input", "keyevent", f"KEYCODE_{d}"); time.sleep(0.2)
-time.sleep(1); shot("keypad-7916", "подсказки людей")
-for d in "1234567": sh("shell", "input", "keyevent", f"KEYCODE_{d}"); time.sleep(0.2)
-time.sleep(1); shot("keypad-unknown", "незнакомый: добавить в контакты?")
-sh("shell", "input", "keyevent", "KEYCODE_ENTER"); time.sleep(4); shot("dial-from-keypad", f"telecom={telecom()}")
-time.sleep(3); shot("in-call")
-if tap("Speaker", wait=1): shot("in-call-speaker")
-if tap("Keypad", exact_only=True, wait=1) or tap("Digits", wait=1): shot("in-call-dtmf")
-hangup(); shot("after-dial")
-start()
-c = find("Search", exact_only=True, region=(1900, H))
+S("J11 набор с маской")
+c = find("Search", exact_only=True, region=(2100, H))
 if c: tap_xy(W - 120, c["y"], wait=2)
-for d in "5282": sh("shell", "input", "keyevent", f"KEYCODE_{d}"); time.sleep(0.2)
-time.sleep(1); shot("keypad-t9-kate", "T9 «Катя»=5282")
-back(); start()
+for d in "89161234567": sh("shell", "input", "keyevent", f"KEYCODE_{d}"); time.sleep(0.15)
+time.sleep(1); shot("keypad-8916", "маска для 8…")
+for _ in range(11): sh("shell", "input", "keyevent", "KEYCODE_DEL")
+for d in "4951112233": sh("shell", "input", "keyevent", f"KEYCODE_{d}"); time.sleep(0.15)
+time.sleep(1); shot("keypad-495", "10 цифр без кода")
+ns, _ = dump()
+cb = [n for n in ns if n["c"] and n["y"] > 2050 and 380 < n["x"] < 700]
+if cb: tap_xy(cb[0]["x"], cb[0]["y"], wait=1.5, why="кнопка вызова"); shot("outgoing-1s", f"telecom={telecom()}")
+time.sleep(3); shot("outgoing-4s", f"telecom={telecom()}")
+hangup(); start()
 
-# J12 — входящий от своего и от незнакомого
-S("J12 входящие")
-sh("emu", "gsm", "call", "79161112233"); time.sleep(5); shot("incoming-mom", f"telecom={telecom()}")
-if tap("Answer", wait=3): shot("answered-mom")
-time.sleep(2); shot("in-call-mom")
-sh("emu", "gsm", "cancel", "79161112233"); time.sleep(3); shot("mom-ended")
-sh("shell", "input", "keyevent", "KEYCODE_WAKEUP"); time.sleep(1)
-sh("emu", "gsm", "call", "74951112233"); time.sleep(5); shot("incoming-unknown")
-if tap("Decline", wait=3): shot("declined")
-sh("emu", "gsm", "cancel", "74951112233"); time.sleep(2)
-sh("emu", "gsm", "call", "79035556677"); time.sleep(4); sh("emu", "gsm", "cancel", "79035556677"); time.sleep(3)
-sh("shell", "input", "keyevent", "KEYCODE_WAKEUP"); sh("shell", "wm", "dismiss-keyguard"); time.sleep(1)
-sh("shell", "cmd", "statusbar", "expand-notifications"); time.sleep(2); shot("missed-notification"); sh("shell", "cmd", "statusbar", "collapse")
-start(); shot("home-after-incoming")
-
-# J13 — найти настройки и тишину для незнакомых
-S("J13 настройки")
-swipe(540, 2250, 540, 900, 400, wait=2.5); shot("dock-pull-contacts", "потянули док вверх")
-back(1); shot("pulled-back-ime")
-if tap("Settings", exact_only=True, wait=2.5) is None:
-    ns, _ = dump(); hero = find("Contacts", exact_only=True)
-    if hero:
-        icons = clickable_near(hero["y"], xmin=800)
-        if icons: tap_xy(icons[-1]["x"], icons[-1]["y"], wait=2.5, why="шестерёнка")
-shot("settings")
-swipe(540, 1900, 540, 700, 400); shot("settings-2")
-if tap("Blocked numbers", wait=2): shot("blocked"); back()
-back(); shot("settings-back")
-home()
-
-# J14 — изменить контакт / создать новый
-S("J14 изменить контакт")
-start()
-c = dock_chip("Мама")
-if c:
-    long_xy(c["x"], c["y"]); nm = find("Мама", exact_only=True, region=(0, 1900))
-    if nm:
-        icons = clickable_near(nm["y"] + 20, xmin=700)
-        if icons: tap_xy(icons[-1]["x"], icons[-1]["y"], wait=3, why="карандаш"); shot("edit-system")
-    back(2); back(2); shot("after-edit")
-start()
-tap("Search", exact_only=True, region=(1900, H), wait=3); back(1)
-shot("contacts-list", "список: избранные, буквы, указатель")
-swipe(540, 1600, 540, 500, 300); shot("contacts-scrolled")
-r = find("Ю", exact_only=True)
-shot("contacts-rail")
-back(); back()
-
-# J15 — тёмная тема, то же самое
-S("J15 тёмная")
-sh("shell", "cmd", "uimode", "night", "yes"); start(); shot("dark-home")
-c = dock_chip("Мама")
-if c: long_xy(c["x"], c["y"]); shot("dark-card")
-sh("shell", "cmd", "uimode", "night", "no")
-
-# J16 — русский
-S("J16 русский")
-sh("shell", "cmd", "locale", "set-app-locales", PKG, "--locales", "ru-RU"); start(); shot("ru-home")
-c = dock_chip("Мама")
-if c: long_xy(c["x"], c["y"]); shot("ru-card")
-if tap("Изменить", exact_only=True, wait=2): shot("ru-change-sheet")
-sh("shell", "cmd", "locale", "set-app-locales", PKG, "--locales", "")
+S("J12 входящий, приложение свернуто")
+sh("shell", "input", "keyevent", "KEYCODE_HOME"); time.sleep(2)
+sh("emu", "gsm", "call", "+79161112233"); time.sleep(5); shot("incoming-bg", f"telecom={telecom()}")
+a = find("Answer", exact_only=True)
+if a: tap_xy(a["x"], a["y"], wait=3); shot("answered")
+time.sleep(2); shot("in-call")
+for lbl in ("Speaker", "Mute", "Microphone", "Digits", "More"):
+    n = find(lbl, exact_only=True)
+    note(f"в звонке «{lbl}»: {'есть' if n else 'нет'}")
+sh("emu", "gsm", "cancel", "+79161112233"); time.sleep(3); shot("call-ended")
+sh("shell", "input", "keyevent", "KEYCODE_WAKEUP"); sh("shell", "wm", "dismiss-keyguard")
+sh("shell", "input", "keyevent", "KEYCODE_SLEEP"); time.sleep(2)
+sh("emu", "gsm", "call", "+79035556677"); time.sleep(5); sh("shell", "input", "keyevent", "KEYCODE_WAKEUP"); time.sleep(2); shot("incoming-locked")
+sh("emu", "gsm", "cancel", "+79035556677"); time.sleep(3)
+sh("shell", "wm", "dismiss-keyguard"); time.sleep(1)
+sh("shell", "cmd", "statusbar", "expand-notifications"); time.sleep(2); shot("missed-notif-plus"); sh("shell", "cmd", "statusbar", "collapse")
+start(); shot("home-end")
 note("done")
