@@ -93,6 +93,7 @@ object TextSearch {
         val vs = variants(query)
         if (vs.isEmpty()) return emptyList()
         val digits = query.filter { it.isDigit() }
+        val lat = norm(query.trim()).takeIf { q -> q.any { it in 'a'..'z' } && q.none { it in 'а'..'я' } }
         val numeric = digits.length >= 3 && digits.length >= query.count { !it.isWhitespace() } - 2
         return people.mapNotNull { p ->
             var best: TextHit? = null
@@ -103,6 +104,11 @@ object TextSearch {
                 listOf(MatchField.NICKNAME to p.nickname, MatchField.COMPANY to p.company, MatchField.TITLE to p.title).forEach { (f, text) ->
                     if (text != null) locate(norm(text), v)?.let { (_, r) -> offer(TextHit(p, null, f, text, via, 20 + r * 10 + via.ordinal)) }
                 }
+            }
+            // после прямых вариантов, чтобы у них осталась подсветка; латиница сравнивается и с именем в латинице: «ilya» → Илья, «yulya» → Юля (по буквам «ilya» дал бы «илйа»)
+            if (lat != null) {
+                locate(toLat(name), lat)?.let { (_, r) -> offer(TextHit(p, null, MatchField.NAME, null, MatchVia.TRANSLIT, r * 10 + MatchVia.TRANSLIT.ordinal)) }
+                p.nickname?.let { n -> locate(toLat(norm(n)), lat)?.let { (_, r) -> offer(TextHit(p, null, MatchField.NICKNAME, n, MatchVia.TRANSLIT, 20 + r * 10 + MatchVia.TRANSLIT.ordinal)) } }
             }
             if (numeric) p.phones.firstOrNull { it.number.filter(Char::isDigit).contains(digits) }?.let {
                 offer(TextHit(p, null, MatchField.PHONE, it.number, MatchVia.DIRECT, 40))

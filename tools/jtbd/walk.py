@@ -202,6 +202,8 @@ start()
 
 S("J5 карточка из поиска и звезда")
 tap("Search", exact_only=True, region=(2100, H), wait=3)
+text("Ilya"); shot("search-ilya", "латиница с мягким знаком")
+for _ in range(5): sh("shell", "input", "keyevent", "KEYCODE_DEL")
 text("Petrov"); shot("search-petrov")
 tap("Илья Петров", wait=2.5); shot("ilya-card-with-ime", "клавиатура закрывает карточку?")
 back(1.5); shot("ilya-card-after-back", "назад: убрало клавиатуру или карточку?")

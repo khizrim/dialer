@@ -69,7 +69,6 @@ import com.khizrim.dialer.DialerViewModel
 import com.khizrim.dialer.R
 import com.khizrim.dialer.SheetMode
 import com.khizrim.dialer.data.MatchField
-import com.khizrim.dialer.data.MatchVia
 import com.khizrim.dialer.data.PhoneFormat
 import com.khizrim.dialer.data.TextHit
 import com.khizrim.dialer.model.Person
@@ -182,8 +181,8 @@ fun ContactsScreen(vm: DialerViewModel, l: Layer) {
                         CItem.Hero -> CompositionLocalProvider(LocalGlass provides null) { Hero(onNew = { vm.addNamedContact(q) }, onSettings = { focusManager.clearFocus(); vm.openSettings() }) }
                         is CItem.Label -> Text(item.text, style = OzType.meta.copy(fontWeight = FontWeight.Medium), color = oz.fg3, modifier = Modifier.padding(start = 20.dp, top = 12.dp, bottom = 4.dp).semantics { heading() })
                         is CItem.Letter -> Text(item.letter, style = OzType.title.copy(fontSize = 20.sp), color = oz.fg3, modifier = Modifier.padding(start = 20.dp, top = 16.dp, bottom = 2.dp).semantics { heading() })
-                        is CItem.Row -> PersonRow(vm, item.p, AnnotatedString(item.p.shownName), item.sub) { nav.openCard(item.p.id) }
-                        is CItem.Hit -> PersonRow(vm, item.h.person, mark(item.h.person.shownName, item.h.nameRange), why(item.h, res)) { nav.openCard(item.h.person.id) }
+                        is CItem.Row -> PersonRow(vm, item.p, AnnotatedString(item.p.shownName), item.sub) { focusManager.clearFocus(); nav.openCard(item.p.id) }
+                        is CItem.Hit -> PersonRow(vm, item.h.person, mark(item.h.person.shownName, item.h.nameRange), why(item.h, res)) { focusManager.clearFocus(); nav.openCard(item.h.person.id) }
                         CItem.Empty -> NothingFound(vm, q)
                         CItem.Create -> Box(Modifier.fillMaxWidth().padding(vertical = 12.dp), contentAlignment = Alignment.Center) {
                             TextAction(stringResource(R.string.edit_new_title), oz.fg3, { vm.addNamedContact("") }, style = OzType.small)
@@ -341,10 +340,6 @@ private fun why(h: TextHit, res: android.content.res.Resources): String? {
         MatchField.TITLE -> h.fieldText?.let { res.getString(R.string.found_title, it) }
         MatchField.PHONE -> h.fieldText?.let { PhoneFormat.pretty(it) }
     }
-    val via = when (h.via) {
-        MatchVia.DIRECT -> null
-        MatchVia.LAYOUT -> res.getString(R.string.found_layout)
-        MatchVia.TRANSLIT -> res.getString(R.string.found_translit)
-    }
-    return listOfNotNull(field, via).joinToString(" · ").ifEmpty { null }
+    // как именно нашлось (раскладка, транслит) человеку не важно: он видит, что нашёлся тот, кого искал
+    return field
 }

@@ -14,7 +14,7 @@ object PhoneFormat {
     private data class Rule(val prefix: String?, val min: Int, val template: String)
 
     private val national = mapOf(
-        "RU" to listOf(Rule("8", 2, "8 (XXX) XXX-XX-XX"), Rule(null, 8, "XXX XXX-XX-XX"), Rule(null, 5, "XXX-XX-XX")),
+        "RU" to listOf(Rule("8", 2, "8 (XXX) XXX-XX-XX"), Rule("7", 11, "7 (XXX) XXX-XX-XX"), Rule(null, 8, "XXX XXX-XX-XX"), Rule(null, 5, "XXX-XX-XX")),
         "US" to listOf(Rule("1", 2, "1 (XXX) XXX-XXXX"), Rule(null, 8, "(XXX) XXX-XXXX"), Rule(null, 5, "XXX-XXXX")),
     )
 
@@ -76,6 +76,8 @@ object PhoneFormat {
         val raw = number.filter { it.isDigit() || it == '+' }
         if (raw.isEmpty()) return number
         val f = formatTyping(raw, region)
+        // сеть иногда присылает номер без «+»: 79035556677 — это тот же +7 (903) 555-66-77
+        if (f.startsWith("7 (") && raw.length == 11) return "+$f"
         return if (f == raw && raw.length > 4) number else f
     }
 

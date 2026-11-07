@@ -89,7 +89,8 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
 
     var people by mutableStateOf<List<Person>>(emptyList()); private set
     private var byNumber: Map<String, Person> = emptyMap()
-    private var byId: Map<Long, Person> = emptyMap()
+    // состояние, а не простое поле: открытая карточка читает человека отсюда и должна видеть смену звезды сразу
+    private var byId by mutableStateOf<Map<Long, Person>>(emptyMap())
     private var calls: List<CallRecord> = emptyList()
     private var interactions: List<Interaction> = emptyList()
     var blocked by mutableStateOf<List<String>>(emptyList()); private set
@@ -756,17 +757,22 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun toggleFavorite(p: Person) {
-        val next = !p.starred
+        // берём свежего человека: карточка могла держать старую копию, и второе нажатие повторило бы то же действие
+        val cur = person(p.id) ?: p
+        val next = !cur.starred
+        fun setStar(v: Boolean) {
+            people = people.map { if (it.id == cur.id) it.copy(starred = v) else it }
+            byId = people.associateBy { it.id }
+            rebuildHome()
+        }
+        // звезда меняется сразу под пальцем; если система не дала записать — возвращаем и говорим
+        setStar(next)
+        say(str(if (next) R.string.added_favorite else R.string.removed_favorite), action = str(R.string.undo)) {
+            person(cur.id)?.let(::toggleFavorite)
+        }
         viewModelScope.launch {
-            val ok = withContext(Dispatchers.IO) { ContactsSource.setStarred(ctx, p, next) }
-            if (ok) {
-                people = people.map { if (it.id == p.id) it.copy(starred = next) else it }
-                rebuildHome()
-                byId = people.associateBy { it.id }
-                say(str(if (next) R.string.added_favorite else R.string.removed_favorite))
-            } else {
-                say(str(R.string.favorite_failed))
-            }
+            val ok = withContext(Dispatchers.IO) { ContactsSource.setStarred(ctx, cur, next) }
+            if (!ok) { setStar(!next); say(str(R.string.favorite_failed)) }
         }
     }
 

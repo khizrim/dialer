@@ -282,8 +282,6 @@
     <string name="found_company">company: %1$s</string>
     <string name="found_title">job title: %1$s</string>
     <string name="found_nickname">nickname: %1$s</string>
-    <string name="found_layout">typed in the other keyboard layout</string>
-    <string name="found_translit">transliteration</string>
     <string name="favorites">Favorites</string>
     <string name="favorite_label">%1$s, favorite: %2$s</string>
     <string name="clear_log">Clear call log</string>
