@@ -16,7 +16,7 @@ android {
         targetSdk = 35
         // каждая сборка CI получает новый номер, чтобы APK ставился поверх старого
         versionCode = (System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 0) + 100
-        versionName = "0.8.1"
+        versionName = "0.8.2"
     }
 
     // Один постоянный ключ для всех сборок: иначе каждый APK из CI подписан новым
