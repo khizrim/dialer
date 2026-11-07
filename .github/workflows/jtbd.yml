@@ -1,0 +1,64 @@
+name: JTBD walkthrough
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [claude/project-thread-o1oqxb]
+    paths: ['tools/jtbd/**', '.github/workflows/jtbd.yml', 'app/**']
+
+permissions:
+  contents: write
+
+concurrency:
+  group: jtbd-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  walk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 17 }
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules && sudo udevadm trigger --name-match=kvm
+      - name: Build debug APK
+        run: ./gradlew assembleDebug --no-daemon
+      - name: Walk scenarios in emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disk-size: 3000M
+          cores: 4
+          ram-size: 4096M
+          disable-animations: false
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          script: bash tools/jtbd/run.sh
+      - name: Shrink shots
+        if: always()
+        run: |
+          [ -d shots ] || exit 0
+          pip install -q pillow || true
+          python3 - <<'PY'
+          import glob
+          from PIL import Image
+          for f in glob.glob('shots/*.png'):
+              im = Image.open(f).convert('RGB'); im.thumbnail((540, 1200)); im.save(f[:-4] + '.jpg', quality=80)
+          PY
+          rm -f shots/*.png || true
+      - name: Publish shots branch
+        if: always()
+        run: |
+          [ -d shots ] || exit 0
+          git config user.name ci; git config user.email ci@users.noreply.github.com
+          git checkout --orphan jtbd-shots
+          git rm -rq --cached . ; find . -mindepth 1 -maxdepth 1 ! -name shots ! -name .git -exec rm -rf {} +
+          git add shots; git commit -qm "jtbd shots ${GITHUB_SHA::7}"
+          git push -f origin jtbd-shots
