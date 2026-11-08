@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- The handset from the Ozero Phone icon pack (ic_oz_phone), filled and stroked in one paint so it keeps the pack's weight,
-     light at the top, deep at the bottom. Scale x3 on the 72 dp visible area, centred on the glyph box. -->
+     light at the top, deep at the bottom. Scale 1.98 (8% under x3, so it weighs the same as the Mail ring on the home screen), centred on the glyph box. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <group android:translateX="27.432" android:translateY="28.620" android:scaleX="2.16" android:scaleY="2.16">
+    <group android:translateX="29.646" android:translateY="30.735" android:scaleX="1.98" android:scaleY="1.98">
         <path
             android:pathData="M8.2 3.8c.5 0 .9.3 1.1.7l1.3 3c.2.5.1 1-.3 1.4l-1.4 1.3c1 2.1 2.7 3.8 4.8 4.8l1.3-1.4c.4-.4.9-.5 1.4-.3l3 1.3c.4.2.7.6.7 1.1v2.4c0 .9-.7 1.6-1.6 1.6C10.4 19.7 4.3 13.6 4.3 5.4c0-.9.7-1.6 1.6-1.6z"
             android:strokeWidth="2"
