@@ -38,6 +38,7 @@ import com.khizrim.dialer.model.Method
 import com.khizrim.dialer.telecom.CallOrigin
 import com.khizrim.dialer.ui.theme.LocalOz
 import com.khizrim.dialer.ui.theme.OzType
+import com.khizrim.dialer.ui.theme.on
 import com.khizrim.dialer.ui.theme.raisedFill
 
 @Composable
@@ -125,7 +126,7 @@ fun AccentRound(
             .raisedFill(fill, CircleShape)
             .press(onClick, onLongClick, CircleShape, pressColor = Color.White.copy(alpha = .14f), label = label),
         contentAlignment = Alignment.Center,
-    ) { OzIcon(icon, Color.White, iconSize) }
+    ) { OzIcon(icon, LocalOz.current.on(fill), iconSize) }
 }
 
 /** Где на экране лежит элемент: отсюда вырастает экран звонка. */

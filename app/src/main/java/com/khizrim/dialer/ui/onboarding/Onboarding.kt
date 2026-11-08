@@ -175,5 +175,5 @@ private fun MainButton(text: String, onClick: () -> Unit) {
             .raisedFill(oz.accentFill, OzShape.main)
             .press(onClick, shape = OzShape.main, pressColor = Color.White.copy(alpha = .12f)),
         contentAlignment = Alignment.Center,
-    ) { Text(text, style = OzType.strong, color = Color.White) }
+    ) { Text(text, style = OzType.strong, color = oz.onAccent) }
 }

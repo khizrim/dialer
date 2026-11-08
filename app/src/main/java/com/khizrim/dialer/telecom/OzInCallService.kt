@@ -262,10 +262,10 @@ object CallNotifications {
         val size = 96
         val bmp = android.graphics.Bitmap.createBitmap(size, size, android.graphics.Bitmap.Config.ARGB_8888)
         val canvas = android.graphics.Canvas(bmp)
-        val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply { color = 0xFFE6F1FF.toInt() }
+        val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply { color = 0xFFE2F6F1.toInt() }
         canvas.drawCircle(size / 2f, size / 2f, size / 2f, paint)
         context.getDrawable(R.drawable.ic_oz_phone)?.mutate()?.let { d ->
-            d.setTint(0xFF1A6FE0.toInt())
+            d.setTint(0xFF0B7468.toInt())
             d.setBounds(size / 4, size / 4, size * 3 / 4, size * 3 / 4)
             d.draw(canvas)
         }

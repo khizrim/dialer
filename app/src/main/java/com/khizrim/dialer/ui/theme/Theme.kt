@@ -21,8 +21,10 @@ import androidx.compose.ui.unit.sp
 import com.khizrim.dialer.R
 
 /**
- * Палитра «Озеро», общая с Ozero Mail: белая бумага, прохладные серые, один яркий утренний синий
- * для кнопок ([accentFill], одинаковый в обеих темах) и его тёмный тон для текста ([accent]).
+ * Палитра «Озеро» (бренд-спека v1, 8.11.2026): бумага, тёплая поверхность, свой бирюзовый вместо синего,
+ * подальше от зелёного WhatsApp и системы. [accentFill] — заливка кнопок звонка, [accent] — текст и значки,
+ * [onAccent] — что лежит на заливке: белое днём, чернила ночью (светлая бирюза не держит белый).
+ * Яркая бирюза #12B5A0 только для иконки и больших форм, никогда для текста.
  */
 @Immutable
 data class OzColors(
@@ -35,6 +37,9 @@ data class OzColors(
     val line: Color,
     val accent: Color,
     val accentFill: Color,
+    val onAccent: Color,
+    /** Подложка под выбранное: чипы, выбранная строка, кружок уведомления. */
+    val accentSoft: Color,
     val danger: Color,
     val dangerFill: Color,
     val warn: Color,
@@ -52,25 +57,28 @@ data class OzColors(
 )
 
 val LightOz = OzColors(
-    bg = Color(0xFFFFFFFF), sheet = Color(0xFFFFFFFF), soft = Color(0xFFF2F5FA),
-    fg = Color(0xFF142036), fg2 = Color(0xFF3D4A63), fg3 = Color(0xFF66728A), line = Color(0xFFE9EEF5),
-    accent = Color(0xFF1A6FE0), accentFill = Color(0xFF2F8CFF),
+    bg = Color(0xFFFFFFFF), sheet = Color(0xFFFFFFFF), soft = Color(0xFFF6F2EC),
+    fg = Color(0xFF12192A), fg2 = Color(0xFF3D4A63), fg3 = Color(0xFF6B7280), line = Color(0xFFE9EEF5),
+    accent = Color(0xFF0B7468), accentFill = Color(0xFF0B8577), onAccent = Color.White, accentSoft = Color(0xFFE2F6F1),
     danger = Color(0xFFC94452), dangerFill = Color(0xFFDF5260), warn = Color(0xFFA8551B), warnSoft = Color(0xFFFBF1E8),
-    press = Color(0x12142036), scrim = Color(0x570A1428), toastAct = Color(0xFF8CC2FF),
-    toastBg = Color(0xFF1B2639), toastFg = Color(0xFFF2F5FA), handle = Color(0xFFE3E9F2), isDark = false,
+    press = Color(0x1212192A), scrim = Color(0x570A1428), toastAct = Color(0xFF5FE0C8),
+    toastBg = Color(0xFF12192A), toastFg = Color(0xFFF2F5FA), handle = Color(0xFFE3E9F2), isDark = false,
 )
 
 val DarkOz = OzColors(
-    bg = Color(0xFF141923), sheet = Color(0xFF1F2633), soft = Color(0xFF1A202C),
-    fg = Color(0xFFE5E9F1), fg2 = Color(0xFFB9C2D3), fg3 = Color(0xFF8792A7), line = Color(0xFF242B39),
-    accent = Color(0xFF6AB2FF), accentFill = Color(0xFF2F8CFF),
-    // на кнопке «Сбросить» лежит белая трубка, поэтому заливка та же, что днём, а не светлый текстовый тон
+    bg = Color(0xFF12192A), sheet = Color(0xFF1A2234), soft = Color(0xFF172031), line = Color(0xFF253047),
+    fg = Color(0xFFE9EDF4), fg2 = Color(0xFFB9C2D3), fg3 = Color(0xFF94A3B8),
+    accent = Color(0xFF5FE0C8), accentFill = Color(0xFF12B5A0), onAccent = Color(0xFF12192A), accentSoft = Color(0xFF123A38),
+    // на кнопке «Сбросить» лежит белая трубка, поэтому красная заливка та же, что днём
     danger = Color(0xFFEE6672), dangerFill = Color(0xFFDF5260), warn = Color(0xFFF0A46B), warnSoft = Color(0xFF2A2320),
-    press = Color(0x14FFFFFF), scrim = Color(0x8C000000), toastAct = Color(0xFF1A6FE0),
-    toastBg = Color(0xFFE5E9F1), toastFg = Color(0xFF141923), handle = Color(0xFF2B3343), isDark = true,
+    press = Color(0x14FFFFFF), scrim = Color(0x8C000000), toastAct = Color(0xFF0B7468),
+    toastBg = Color(0xFFE9EDF4), toastFg = Color(0xFF12192A), handle = Color(0xFF2B3343), isDark = true,
 )
 
 val LocalOz = staticCompositionLocalOf { LightOz }
+
+/** Что класть на заливку: на бирюзе — [OzColors.onAccent], на красной и прочих — белое. */
+fun OzColors.on(fill: Color): Color = if (fill == accentFill) onAccent else Color.White
 
 @OptIn(ExperimentalTextApi::class)
 private fun variable(weights: List<Int>, optical: TextUnit? = null) = FontFamily(
@@ -131,9 +139,9 @@ object OzType {
 fun DialerTheme(dark: Boolean = isSystemInDarkTheme(), content: @Composable () -> Unit) {
     val oz = if (dark) DarkOz else LightOz
     val scheme = if (dark) {
-        darkColorScheme(background = oz.bg, surface = oz.sheet, onBackground = oz.fg, onSurface = oz.fg, primary = oz.accentFill)
+        darkColorScheme(background = oz.bg, surface = oz.sheet, onBackground = oz.fg, onSurface = oz.fg, primary = oz.accentFill, onPrimary = oz.onAccent)
     } else {
-        lightColorScheme(background = oz.bg, surface = oz.sheet, onBackground = oz.fg, onSurface = oz.fg, primary = oz.accentFill)
+        lightColorScheme(background = oz.bg, surface = oz.sheet, onBackground = oz.fg, onSurface = oz.fg, primary = oz.accentFill, onPrimary = oz.onAccent)
     }
     CompositionLocalProvider(LocalOz provides oz) {
         MaterialTheme(colorScheme = scheme, content = content)

@@ -224,7 +224,7 @@ private fun SwitchRow(title: String, on: Boolean, onToggle: () -> Unit) {
                 .padding(3.dp),
             contentAlignment = if (on) Alignment.CenterEnd else Alignment.CenterStart,
         ) {
-            Box(Modifier.size(20.dp).background(if (on) Color.White else oz.fg3, CircleShape))
+            Box(Modifier.size(20.dp).background(if (on) oz.onAccent else oz.fg3, CircleShape))
         }
     }
 }

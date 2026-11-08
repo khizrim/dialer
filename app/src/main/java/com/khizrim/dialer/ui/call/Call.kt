@@ -96,6 +96,7 @@ import com.khizrim.dialer.ui.theme.LocalOz
 import com.khizrim.dialer.ui.theme.LocalReducedMotion
 import com.khizrim.dialer.ui.theme.Motion
 import com.khizrim.dialer.ui.theme.OzType
+import com.khizrim.dialer.ui.theme.on
 import com.khizrim.dialer.ui.theme.glass
 import com.khizrim.dialer.ui.theme.raisedFill
 import kotlinx.coroutines.delay
@@ -388,7 +389,7 @@ private fun BigRound(icon: Int, label: String, fill: Color, needsPull: Boolean, 
                     else scope.launch { animate(0f, -30f, 0f, Motion.pixels(400f)) { x, _ -> y = x }; animate(y, 0f, 0f, Motion.pixels(300f)) { x, _ -> y = x } }
                 }, shape = CircleShape, pressColor = Color.White.copy(alpha = .14f), label = label),
             contentAlignment = Alignment.Center,
-        ) { OzIcon(icon, Color.White, 30.dp) }
+        ) { OzIcon(icon, oz.on(fill), 30.dp) }
         Text(label, style = OzType.small, color = oz.fg2, modifier = Modifier.padding(top = 10.dp))
     }
 }

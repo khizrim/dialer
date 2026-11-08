@@ -130,7 +130,7 @@ val LocalGlass = staticCompositionLocalOf<HazeState?> { null }
 fun Modifier.glass(shape: Shape): Modifier {
     val oz = LocalOz.current
     val state = LocalGlass.current
-    val veil = if (oz.isDark) Color(0xFF1F2633).copy(alpha = .66f) else Color.White.copy(alpha = .62f)
+    val veil = if (oz.isDark) Color(0xFF1A2234).copy(alpha = .66f) else Color.White.copy(alpha = .62f)
     val rim = if (oz.isDark) Color.White.copy(alpha = .07f) else Color(0xFFE9EEF5).copy(alpha = .9f)
     val shade = if (oz.isDark) Color.Black.copy(alpha = .45f) else oz.fg.copy(alpha = .14f)
     val base = this.shadow(8.dp, shape, ambientColor = shade, spotColor = shade)
@@ -139,7 +139,7 @@ fun Modifier.glass(shape: Shape): Modifier {
             .hazeChild(state, HazeStyle(backgroundColor = oz.bg, tint = HazeTint(veil), blurRadius = 24.dp, noiseFactor = 0f))
             .border(1.dp, rim, shape)
     } else {
-        base.clip(shape).background(if (oz.isDark) Color(0xFF1F2633).copy(alpha = .96f) else Color.White.copy(alpha = .95f)).border(1.dp, rim, shape)
+        base.clip(shape).background(if (oz.isDark) Color(0xFF1A2234).copy(alpha = .96f) else Color.White.copy(alpha = .95f)).border(1.dp, rim, shape)
     }
 }
 

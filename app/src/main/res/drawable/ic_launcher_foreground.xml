@@ -1,25 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- The handset from the Ozero Phone icon pack (ic_oz_phone), filled and stroked in one paint so it keeps the pack's weight,
-     light at the top, deep at the bottom. Scale 1.90 (12% under x3, so it weighs the same as the Mail ring on the home screen), centred on the glyph box. -->
-<vector xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:aapt="http://schemas.android.com/aapt"
-    android:width="108dp"
-    android:height="108dp"
-    android:viewportWidth="108"
-    android:viewportHeight="108">
-    <group android:translateX="30.630" android:translateY="31.675" android:scaleX="1.90" android:scaleY="1.90">
-        <path
-            android:pathData="M8.2 3.8c.5 0 .9.3 1.1.7l1.3 3c.2.5.1 1-.3 1.4l-1.4 1.3c1 2.1 2.7 3.8 4.8 4.8l1.3-1.4c.4-.4.9-.5 1.4-.3l3 1.3c.4.2.7.6.7 1.1v2.4c0 .9-.7 1.6-1.6 1.6C10.4 19.7 4.3 13.6 4.3 5.4c0-.9.7-1.6 1.6-1.6z"
-            android:strokeWidth="2"
-            android:strokeLineJoin="round">
-            <aapt:attr name="android:fillColor">
-                <gradient android:type="linear" android:startX="0" android:startY="2.8" android:endX="0" android:endY="20.7"
-                    android:startColor="#FF6AB2FF" android:endColor="#FF142036" />
-            </aapt:attr>
-            <aapt:attr name="android:strokeColor">
-                <gradient android:type="linear" android:startX="0" android:startY="2.8" android:endX="0" android:endY="20.7"
-                    android:startColor="#FF6AB2FF" android:endColor="#FF142036" />
-            </aapt:attr>
-        </path>
-    </group>
+<vector xmlns:android="http://schemas.android.com/apk/res/android" xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
+    <path android:pathData="M0,0 H108 V37.69 H90.00 L89.15,39.82 L88.24,41.84 L87.28,43.73 L86.26,45.51 L85.19,47.17 L84.06,48.73 L82.87,50.17 L81.64,51.52 L80.34,52.75 L78.99,53.89 L77.58,54.93 L76.11,55.88 L74.59,56.74 L73.01,57.50 L71.37,58.18 L69.68,58.78 L67.92,59.30 L66.11,59.74 L64.24,60.10 L62.31,60.39 L60.32,60.61 L58.27,60.77 L56.17,60.86 L54.00,60.89 L51.83,60.86 L49.73,60.77 L47.68,60.61 L45.69,60.39 L43.76,60.10 L41.89,59.74 L40.08,59.30 L38.32,58.78 L36.63,58.18 L34.99,57.50 L33.41,56.74 L31.89,55.88 L30.42,54.93 L29.01,53.89 L27.66,52.75 L26.36,51.52 L25.13,50.17 L23.94,48.73 L22.81,47.17 L21.74,45.51 L20.72,43.73 L19.76,41.84 L18.85,39.82 L18.00,37.69 H0 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear" android:startX="0" android:startY="0" android:endX="0" android:endY="61.03"
+                android:startColor="#FFFFFF" android:endColor="#EEE8DD"/>
+        </aapt:attr>
+    </path>
 </vector>

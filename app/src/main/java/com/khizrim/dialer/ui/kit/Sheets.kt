@@ -37,6 +37,7 @@ import com.khizrim.dialer.ui.nav.dismissDrag
 import com.khizrim.dialer.ui.theme.LocalOz
 import com.khizrim.dialer.ui.theme.OzShape
 import com.khizrim.dialer.ui.theme.OzType
+import com.khizrim.dialer.ui.theme.on
 import com.khizrim.dialer.ui.theme.raisedFill
 
 /** Последнее непустое значение: лист дорисовывает своё содержимое, пока уходит. */
@@ -144,7 +145,7 @@ fun MainButton(
     modifier: Modifier = Modifier,
     @DrawableRes icon: Int? = null,
     fill: Color = LocalOz.current.accentFill,
-    content: Color = Color.White,
+    content: Color = LocalOz.current.on(fill),
     onLongClick: (() -> Unit)? = null,
 ) {
     val shape = RoundedCornerShape(18.dp)
