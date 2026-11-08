@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
@@ -239,7 +240,12 @@ fun ContactsScreen(vm: DialerViewModel, l: Layer) {
             }
 
             if (q.isBlank() && letters.size > 1) {
-                Rail(letters.map { it.first }, Modifier.align(Alignment.CenterEnd).padding(end = 2.dp)) { i ->
+                // алфавит на всю высоту между заголовком и поиском, а не сжатым столбиком посередине
+                Rail(
+                    letters.map { it.first },
+                    Modifier.align(Alignment.CenterEnd).fillMaxHeight()
+                        .padding(top = statusTop + 88.dp, bottom = maxOf(imeBottom, navBottom) + 84.dp),
+                ) { i ->
                     focusManager.clearFocus()
                     scope.launch { list.scrollToItem(letters[i].second) }
                 }
@@ -417,7 +423,10 @@ private fun SearchPill(q: String, onChange: (String) -> Unit, focus: FocusReques
     }
 }
 
-/** Алфавит справа: ведёт список за пальцем. */
+/**
+ * Алфавит справа: ведёт список за пальцем. Буквы раскладываются по всей доступной высоте
+ * (до 28 dp на букву), полоса касания шире самих букв — попасть легко, выглядит так же тихо.
+ */
 @Composable
 private fun Rail(letters: List<String>, modifier: Modifier, onLetter: (Int) -> Unit) {
     val oz = LocalOz.current
@@ -427,16 +436,21 @@ private fun Rail(letters: List<String>, modifier: Modifier, onLetter: (Int) -> U
         val i = (y / h * letters.size).toInt().coerceIn(0, letters.size - 1)
         if (i != at) { at = i; onLetter(i) }
     }
-    Column(
-        modifier
-            .width(22.dp)
-            .onSizeChanged { h = it.height.coerceAtLeast(1) }
-            .pointerInput(letters) { detectTapGestures { pick(it.y); at = -1 } }
-            .pointerInput(letters) { detectVerticalDragGestures(onDragEnd = { at = -1 }, onDragCancel = { at = -1 }) { c, _ -> pick(c.position.y) } },
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        letters.forEachIndexed { i, s ->
-            Text(s, style = OzType.channel.copy(fontSize = 11.sp, lineHeight = 15.sp), color = if (i == at) oz.accent else oz.fg3)
+    Box(modifier, contentAlignment = Alignment.Center) {
+        Column(
+            Modifier
+                .width(28.dp)
+                .heightIn(max = 28.dp * letters.size)
+                .fillMaxHeight()
+                .onSizeChanged { h = it.height.coerceAtLeast(1) }
+                .pointerInput(letters) { detectTapGestures { pick(it.y); at = -1 } }
+                .pointerInput(letters) { detectVerticalDragGestures(onDragStart = { pick(it.y) }, onDragEnd = { at = -1 }, onDragCancel = { at = -1 }) { c, _ -> pick(c.position.y) } },
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.SpaceEvenly,
+        ) {
+            letters.forEachIndexed { i, s ->
+                Text(s, style = OzType.channel.copy(fontSize = 12.sp, lineHeight = 16.sp), color = if (i == at) oz.accent else oz.fg3)
+            }
         }
     }
 }

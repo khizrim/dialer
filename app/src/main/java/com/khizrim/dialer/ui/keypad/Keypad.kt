@@ -62,7 +62,20 @@ import com.khizrim.dialer.ui.theme.Motion
 import com.khizrim.dialer.ui.theme.OzShape
 import com.khizrim.dialer.ui.theme.OzType
 import com.khizrim.dialer.ui.theme.glass
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalViewConfiguration
+import androidx.compose.ui.platform.ViewConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import java.util.Locale
+
+/** Сколько надо протянуть палец по клавишам, чтобы лист поехал вниз, а не засчиталось нажатие. */
+private val KEY_SLOP = 40.dp
+
+/** Та же конфигурация, но с порогом жеста побольше — только для перетаскивания листа поверх клавиш. */
+private class CalmSlop(private val base: ViewConfiguration, private val slop: Float) : ViewConfiguration by base {
+    override val touchSlop: Float get() = slop
+}
 
 private val KEYS = listOf('1', '2', '3', '4', '5', '6', '7', '8', '9', '*', '0', '#')
 private val LATIN = mapOf('2' to "ABC", '3' to "DEF", '4' to "GHI", '5' to "JKL", '6' to "MNO", '7' to "PQRS", '8' to "TUV", '9' to "WXYZ", '0' to "+")
@@ -94,14 +107,27 @@ fun KeypadPanel(vm: DialerViewModel, l: Layer) {
             Modifier
                 .fillMaxWidth()
                 .background(oz.sheet, OzShape.sheetTop)
-                .dismissDrag(l)
                 .navigationBarsPadding()
                 .padding(bottom = 8.dp),
         ) {
-            Grab()
-            NumberField(vm, typed)
-            Keys(vm)
-            Foot(vm, digits.isNotEmpty())
+            // за ручку и поле номера лист тянется сразу, как обычно
+            Column(Modifier.fillMaxWidth().dismissDrag(l)) {
+                Grab()
+                NumberField(vm, typed)
+            }
+            // по клавишам — только явным длинным движением вниз: быстрый набор с дрожью пальца
+            // не должен превращаться в жест закрытия и съедать нажатия
+            val vc = LocalViewConfiguration.current
+            val density = LocalDensity.current
+            val calm = remember(vc, density) { CalmSlop(vc, with(density) { KEY_SLOP.toPx() }) }
+            CompositionLocalProvider(LocalViewConfiguration provides calm) {
+                Column(Modifier.fillMaxWidth().dismissDrag(l)) {
+                    CompositionLocalProvider(LocalViewConfiguration provides vc) {
+                        Keys(vm)
+                        Foot(vm, digits.isNotEmpty(), typed.isNotEmpty())
+                    }
+                }
+            }
         }
     }
 }
@@ -184,7 +210,7 @@ private fun Keys(vm: DialerViewModel) {
 }
 
 @Composable
-private fun Foot(vm: DialerViewModel, hasDigits: Boolean) {
+private fun Foot(vm: DialerViewModel, hasDigits: Boolean, hasText: Boolean) {
     val oz = LocalOz.current
     val two = vm.sims.size > 1 && vm.simForCalls == null
     Row(Modifier.fillMaxWidth().height(104.dp).padding(horizontal = 18.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -207,8 +233,8 @@ private fun Foot(vm: DialerViewModel, hasDigits: Boolean) {
             AccentRound(R.drawable.ic_oz_phone, stringResource(R.string.call), vm::callTyped, size = 72.dp, iconSize = 28.dp)
         }
         Box(Modifier.weight(1f).fillMaxHeight(), contentAlignment = Alignment.Center) {
-            // стереть — только когда есть что стирать
-            val a by animateFloatAsState(if (hasDigits) 1f else 0f, Motion.enter(Motion.FADE), label = "bs")
+            // стереть — только когда есть что стирать, в том числе одни «*» и «#»
+            val a by animateFloatAsState(if (hasText) 1f else 0f, Motion.enter(Motion.FADE), label = "bs")
             if (a > 0f) {
                 Box(
                     Modifier.size(56.dp).graphicsLayer { alpha = a }
