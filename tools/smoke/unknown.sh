@@ -6,7 +6,7 @@ S=shots; mkdir -p $S
 shot() { sleep ${2:-3}; adb exec-out screencap -p > $S/$1.png; adb shell uiautomator dump /sdcard/u.xml >/dev/null 2>&1; adb shell cat /sdcard/u.xml | tr '>' '\n' | grep -o 'text="[^"]*"\|content-desc="[^"]*"' | grep -v '=""' > $S/$1.txt; }
 tap_text() { # первый узел с этим текстом или описанием
   adb shell uiautomator dump /sdcard/u.xml >/dev/null 2>&1
-  b=$(adb shell cat /sdcard/u.xml | tr '>' '\n' | grep -m1 -E "(text|content-desc)=\"[^\"]*$1" | grep -o 'bounds="[^"]*"' | grep -o '[0-9]\+' | tr '\n' ' ')
+  b=$(adb shell cat /sdcard/u.xml | tr '>' '\n' | grep -m1 -F "$1" | grep -o 'bounds="[^"]*"' | grep -o '[0-9]\+' | tr '\n' ' ')
   set -- $b; [ -n "$4" ] && adb shell input tap $(( ($1+$3)/2 )) $(( ($2+$4)/2 ))
 }
 adb wait-for-device
@@ -31,8 +31,8 @@ for mode in off on; do
     done
   fi
   adb shell monkey -p $P -c android.intent.category.LAUNCHER 1; shot $mode-01-home 8
-  tap_text "без звука\|silenced\|silent\|unknown"; shot $mode-02-silent-open 3
-  tap_text "+7 (495) 111\|74951112200\|495"; shot $mode-03-unknown-card 4
+  tap_text "unknown, silenced"; shot $mode-02-silent-open 3
+  tap_text "text=\"+7 (495) 111-22-00"; shot $mode-03-unknown-card 4
   adb shell input keyevent BACK; sleep 2
   adb shell input swipe 540 1400 540 600 300; shot $mode-04-contacts 3
   adb shell input text 8005; shot $mode-05-search-number 3
