@@ -33,7 +33,7 @@ jobs:
           echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/ozero.keystore"
           echo "OZERO_KEYSTORE=$RUNNER_TEMP/ozero.keystore" >> "$GITHUB_ENV"
       - name: Build release APK
-        run: ./gradlew assembleRelease --no-daemon
+        run: ./gradlew assembleRelease assembleDebug --no-daemon
       - name: Smoke in emulator
         uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -45,7 +45,16 @@ jobs:
           cores: 4
           ram-size: 3072M
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
-          script: bash tools/smoke/run.sh
+          script: bash tools/smoke/unknown.sh
+      - name: Publish shots
+        if: always()
+        run: |
+          [ -d shots ] || exit 0
+          git config user.name ci; git config user.email ci@users.noreply.github.com
+          git checkout --orphan smoke-shots
+          git rm -rq --cached . ; find . -mindepth 1 -maxdepth 1 ! -name shots ! -name .git -exec rm -rf {} +
+          git add shots; git commit -qm "shots ${GITHUB_SHA::7}"
+          git push -f origin smoke-shots
       - name: Shots
         if: always()
         uses: actions/upload-artifact@v4
