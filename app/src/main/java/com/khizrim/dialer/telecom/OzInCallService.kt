@@ -44,7 +44,12 @@ class OzInCallService : InCallService() {
 
     override fun onCallAdded(call: Call) {
         val mayBeSilenced = Prefs(this).silenceUnknownActive(this) || CallerIdPrefs(this).action == SpamAction.SILENCE
-        if (call.state == Call.STATE_RINGING && mayBeSilenced) {
+        // входящий во время разговора не всегда приходит уже в состоянии «звонит» (у Samsung бывает NEW):
+        // решаем по направлению, иначе он проскочит мимо тишины с полноэкранным уведомлением
+        val incoming = call.state == Call.STATE_RINGING ||
+            (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && call.details?.callDirection == Call.Details.DIRECTION_INCOMING &&
+                call.state != Call.STATE_ACTIVE && call.state != Call.STATE_HOLDING)
+        if (incoming && mayBeSilenced) {
             // поиск в контактах и в базе номеров не на главном потоке: большая книга не задержит входящий
             val number = call.details?.handle?.schemeSpecificPart.orEmpty()
             io.execute {
