@@ -1,0 +1,12 @@
+    [Call id=TC@2, state=ACTIVE, tpac=ComponentInfo{com.android.phone/com.android.services.telephony.TelephonyConnectionService}, 1, UserHandle{0}, cmgr=ComponentInfo{com.android.phone/com.android.services.telephony.TelephonyConnectionService}, 1, UserHandle{0}, handle=tel:**********33, vidst=A, childs(0), has_parent(false), cap=[ hld sup_hld mut !v2a spd_aud], prop=[]], voip=false
+    [Call id=TC@2, state=ACTIVE, tpac=ComponentInfo{com.android.phone/com.android.services.telephony.TelephonyConnectionService}, 1, UserHandle{0}, cmgr=ComponentInfo{com.android.phone/com.android.services.telephony.TelephonyConnectionService}, 1, UserHandle{0}, handle=tel:**********33, vidst=A, childs(0), has_parent(false), cap=[ hld sup_hld mut !v2a spd_aud], prop=[]], voip=false
+        missedReason: [css_silenced ]
+      12:18:46.748 - SKIP_RINGING (Silent ringing requested):NCSSF.sC->ICFG.sF->ICFG.sF->ICFG.sF->CAMSM.pM_2002@ATI
+      12:18:46.781 - SILENCE:TSI.sR(ckd)@AT0
+      12:18:47.084 - SILENCE:TSI.sR(ckd)@AUM
+      12:18:47.784 - SILENCE:TSI.sR(ckd)@AUY
+      12:18:49.285 - SILENCE:TSI.sR(ckd)@AUc
+      12:18:51.787 - SILENCE:TSI.sR(ckd)@AVs
+      12:18:56.429 - START_RINGER:NCSSF.aC->ICFG.sF->ICFG.sF->ICFG.sF->CAMSM.pM_2002@AX0
+      12:18:56.500 - START_VIBRATOR (hasVibrator=true, userRequestsVibrate=true, ringerMode=2, isVibrating=false):NCSSF.aC->ICFG.sF->ICFG.sF->ICFG.sF->CAMSM.pM_2002->ARP.hP@AX0
+      12:19:00.520 - STOP_RINGER:CSW.sA->CAMSM.pM_1002(cap)@AZY
