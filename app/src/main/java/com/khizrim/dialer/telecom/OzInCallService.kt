@@ -65,8 +65,14 @@ class OzInCallService : InCallService() {
     private fun addSilenced(call: Call) {
         CallManager.silence(call)
         CallNotifications.showSilenced(this)
-        runCatching { getSystemService(TelecomManager::class.java)?.silenceRinger() }
+        val telecom = getSystemService(TelecomManager::class.java)
+        runCatching { telecom?.silenceRinger() }
         CallManager.add(call)
+        // во время разговора телефон играет сигнал второй линии и может включить его снова,
+        // поэтому, пока тихий звонок ещё звонит, глушим ещё несколько раз
+        listOf(300L, 1000L, 2500L, 5000L, 10000L).forEach { d ->
+            main.postDelayed({ if (call.state == Call.STATE_RINGING) runCatching { telecom?.silenceRinger() } }, d)
+        }
     }
 
     private fun addVisible(call: Call) {
