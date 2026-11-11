@@ -43,6 +43,9 @@ class OzInCallService : InCallService() {
     private val main = android.os.Handler(android.os.Looper.getMainLooper())
 
     override fun onCallAdded(call: Call) {
+        // звонок мессенджера (WhatsApp, Telegram) или звонок с другого устройства — не наш: у него свой экран,
+        // а наш, открытый поверх, перебрасывал бы пользователя между окнами
+        if (foreign(call)) return
         val mayBeSilenced = Prefs(this).silenceUnknownActive(this) || CallerIdPrefs(this).action == SpamAction.SILENCE
         // входящий во время разговора не всегда приходит уже в состоянии «звонит» (у Samsung бывает NEW):
         // решаем по направлению, иначе он проскочит мимо тишины с полноэкранным уведомлением
@@ -89,7 +92,15 @@ class OzInCallService : InCallService() {
         }
     }
 
+    private fun foreign(call: Call): Boolean {
+        val d = call.details ?: return false
+        if (d.hasProperty(Call.Details.PROPERTY_IS_EXTERNAL_CALL)) return true
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && d.hasProperty(Call.Details.PROPERTY_SELF_MANAGED)) return true
+        return false
+    }
+
     override fun onCallRemoved(call: Call) {
+        if (foreign(call)) return
         CallManager.remove(call)
         if (!CallManager.hasVisibleCall) CallNotifications.cancel(this)
     }
