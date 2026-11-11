@@ -6,6 +6,10 @@
     <string name="call_mic_off">Muted</string>
     <string name="call_digits">Keypad</string>
     <string name="outgoing_no_answer">Outgoing, no answer</string>
+    <plurals name="quiet_unknown">
+        <item quantity="one">%1$d unknown, silenced or blocked</item>
+        <item quantity="other">%1$d unknown, silenced or blocked</item>
+    </plurals>
     <plurals name="silent_unknown">
         <item quantity="one">%1$d unknown, silenced</item>
         <item quantity="other">%1$d unknown, silenced</item>

@@ -90,6 +90,8 @@ data class HomeEntry(
     val inSilentGroup: Boolean = false,
     /** Направление последнего контакта: IN, OUT, MISSED или null (нет звонка). */
     val dir: Dir? = null,
+    /** Последний звонок незнакомого заблокирован (нами, внешним определителем или системой): строка в тихой группе. */
+    val blocked: Boolean = false,
 ) {
     val title: String get() = person?.shownName ?: com.khizrim.dialer.data.PhoneFormat.pretty(number.orEmpty())
 }

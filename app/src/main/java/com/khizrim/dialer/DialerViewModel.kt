@@ -226,24 +226,36 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
         if (silent.isEmpty()) return base.sortedBy { it.lastAt }
         // незнакомые без звука никогда не вытесняют людей: одна строка-заголовок на месте последнего из них;
         // раскрытая группа стоит сразу над заголовком (в прошлое), свежие ближе к нему
-        val header = HomeEntry("silent", null, null, silent.maxOf { it.lastAt }, null, silent = silent.size)
+        val header = HomeEntry("silent", null, null, silent.maxOf { it.lastAt }, null, silent = silent.size, blocked = silent.any { it.blocked })
         val sorted = (base + header).sortedBy { it.lastAt }
         if (!silentOpen) return sorted
         val at = sorted.indexOf(header)
         return sorted.subList(0, at) + silent.sortedBy { it.lastAt }.map { it.copy(inSilentGroup = true) } + sorted.subList(at, sorted.size)
     }
     /** Незнакомый, чей звонок прошёл без звука (включено «Не беспокоить незнакомым»). */
-    fun isSilenced(e: HomeEntry): Boolean = e.person == null && silenceUnknown && e.missedNote != null
+    fun isSilenced(e: HomeEntry): Boolean = e.person == null && (e.blocked || silenceUnknown && e.missedNote != null)
     val homeHasMissed: Boolean get() = home.any { it.missedNote != null }
 
     private fun rebuildHome() {
-        class Acc(var last: Long = 0L, var lastMissed: Long = 0L, var lastOther: Long = 0L, var number: String? = null, var lastCall: CallRecord? = null, var lastAct: com.khizrim.dialer.data.Interaction? = null) {
+        class Acc(var last: Long = 0L, var lastMissed: Long = 0L, var lastOther: Long = 0L, var number: String? = null, var lastCall: CallRecord? = null, var lastAct: com.khizrim.dialer.data.Interaction? = null, var lastBlocked: Long = 0L) {
             val missedAt = ArrayList<Long>()
         }
         val acc = LinkedHashMap<String, Acc>()
         calls.forEach { r ->
-            if (r.type == android.provider.CallLog.Calls.BLOCKED_TYPE || r.type == android.provider.CallLog.Calls.VOICEMAIL_TYPE) return@forEach
-            val a = acc.getOrPut(keyOf(r.number)) { Acc() }
+            if (r.type == android.provider.CallLog.Calls.VOICEMAIL_TYPE) return@forEach
+            val key = keyOf(r.number)
+            // заблокированный звонок (нами, определителем вроде Яндекса или самим Samsung): у человека из контактов
+            // не показываем, а незнакомый не должен пропасть бесследно — он ляжет в тихую группу
+            if (r.type == android.provider.CallLog.Calls.BLOCKED_TYPE) {
+                if (!key.startsWith("n:")) return@forEach
+                val a = acc.getOrPut(key) { Acc() }
+                if (a.number == null) a.number = r.number
+                if (r.date >= a.last) a.lastCall = r
+                a.last = maxOf(a.last, r.date)
+                a.lastBlocked = maxOf(a.lastBlocked, r.date)
+                return@forEach
+            }
+            val a = acc.getOrPut(key) { Acc() }
             if (a.number == null) a.number = r.number
             if (r.date >= a.last) a.lastCall = r
             a.last = maxOf(a.last, r.date)
@@ -260,12 +272,14 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
             if (prefs.hiddenAt(key) >= a.last) return@mapNotNull null
             val person = personByKey[key]
             if (person == null && !key.startsWith("n:")) return@mapNotNull null
-            val missed = if (a.lastMissed > a.lastOther) Dates.missed(res, a.lastMissed, a.missedAt.count { it > a.lastOther }) else null
+            val blocked = person == null && a.lastBlocked == a.last && a.lastBlocked > 0L
+            val missed = if (!blocked && a.lastMissed > a.lastOther) Dates.missed(res, a.lastMissed, a.missedAt.count { it > a.lastOther }) else null
             // исходящий без ответа — тоже стоит сказать; обычный звонок второй строки не получает
             val lc = a.lastCall
             // направление видно только у исходящих: входящий отвеченный — обычный случай, без подписи
             val act = a.lastAct
             val note = when {
+                blocked -> str(R.string.h_blocked)
                 missed != null -> null
                 // направление показывает стрелка у времени; словами — только «без ответа»
                 lc != null && lc.date == a.last && lc.type == android.provider.CallLog.Calls.OUTGOING_TYPE ->
@@ -275,13 +289,14 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
                 else -> null
             }
             val dir = when {
+                blocked -> com.khizrim.dialer.model.Dir.IN
                 missed != null -> com.khizrim.dialer.model.Dir.MISSED
                 act != null && act.at == a.last -> com.khizrim.dialer.model.Dir.OUT
                 lc != null && lc.date == a.last && lc.type == android.provider.CallLog.Calls.OUTGOING_TYPE -> com.khizrim.dialer.model.Dir.OUT
                 lc != null && lc.date == a.last -> com.khizrim.dialer.model.Dir.IN
                 else -> null
             }
-            HomeEntry(key, person, if (person == null) a.number else null, a.last, missed, note, dir = dir)
+            HomeEntry(key, person, if (person == null) a.number else null, a.last, missed, note, dir = dir, blocked = blocked)
         }.sortedBy { it.lastAt }.takeLast(FEED_SIZE).ifEmpty {
             // истории ещё нет: показываем избранных, чтобы главная не была пустой
             // истории нет: лента пустая, а не притворяется журналом из избранных (они и так в «Причале»)

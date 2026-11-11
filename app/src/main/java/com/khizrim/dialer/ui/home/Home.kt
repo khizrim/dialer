@@ -174,7 +174,8 @@ private fun Feed(vm: DialerViewModel, rows: List<Any>, list: androidx.compose.fo
 @Composable
 private fun SilentRow(vm: DialerViewModel, e: HomeEntry, modifier: Modifier) {
     val oz = LocalOz.current
-    val text = pluralStringResource(R.plurals.silent_unknown, e.silent, e.silent)
+    // среди них есть заблокированные — говорим «в тишине», а не «без звука»
+    val text = pluralStringResource(if (e.blocked) R.plurals.quiet_unknown else R.plurals.silent_unknown, e.silent, e.silent)
     Row(
         modifier.fillMaxWidth().height(64.dp).press(vm::toggleSilent, label = text).padding(horizontal = 12.dp),
         verticalAlignment = Alignment.CenterVertically,

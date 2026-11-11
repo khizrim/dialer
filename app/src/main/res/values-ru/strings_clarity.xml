@@ -6,6 +6,12 @@
     <string name="call_mic_off">Микрофон выкл.</string>
     <string name="call_digits">Цифры</string>
     <string name="outgoing_no_answer">Исходящий, без ответа</string>
+    <plurals name="quiet_unknown">
+        <item quantity="one">%1$d незнакомый в тишине</item>
+        <item quantity="few">%1$d незнакомых в тишине</item>
+        <item quantity="many">%1$d незнакомых в тишине</item>
+        <item quantity="other">%1$d незнакомых в тишине</item>
+    </plurals>
     <plurals name="silent_unknown">
         <item quantity="one">%1$d незнакомый без звука</item>
         <item quantity="few">%1$d незнакомых без звука</item>
