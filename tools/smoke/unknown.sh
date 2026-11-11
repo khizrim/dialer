@@ -16,7 +16,7 @@ adb shell cmd role add-role-holder android.app.role.DIALER $P 0 || true
 adb shell cmd role add-role-holder android.app.role.CALL_SCREENING $P 0 || true
 bash tools/smoke/seed.sh >/dev/null
 now=$(($(date +%s)*1000))
-for n in "+74951112200:1:10:60" "+79031234500:2:20:30" "+78005553535:3:40:0" "+74997001199:3:70:0"; do
+for n in "+79991110000:6:15:0" "+79991110011:6:25:0" "+74951112200:1:10:60" "+79031234500:2:20:30" "+78005553535:3:40:0" "+74997001199:3:70:0"; do
   IFS=: read num t m d <<< "$n"
   adb shell content insert --uri content://call_log/calls --bind number:s:"$num" --bind type:i:$t --bind date:l:$((now-m*60000)) --bind duration:l:$d --bind new:i:1
 done
