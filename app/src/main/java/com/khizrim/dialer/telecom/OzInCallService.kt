@@ -64,6 +64,7 @@ class OzInCallService : InCallService() {
     @android.annotation.SuppressLint("MissingPermission")
     private fun addSilenced(call: Call) {
         CallManager.silence(call)
+        CallNotifications.rememberSilenced(this, call.details?.handle?.schemeSpecificPart.orEmpty())
         CallNotifications.showSilenced(this)
         val telecom = getSystemService(TelecomManager::class.java)
         runCatching { telecom?.silenceRinger() }
@@ -182,7 +183,9 @@ object CallNotifications {
         val nm = context.getSystemService(NotificationManager::class.java) ?: return
         val old = runCatching { nm.activeNotifications.filter { it.tag?.startsWith(TAG_MISSED) == true }.map { it.tag } }.getOrDefault(emptyList())
         if (count <= 0) { old.forEach { nm.cancel(it, ID_MISSED) }; nm.cancel(ID_MISSED); nm.cancel(ID_MISSED_SUMMARY); return }
-        val fresh = newMissed(context).ifEmpty { listOfNotNull(number?.let { MissedGroup(it, 1, System.currentTimeMillis(), null) }) }
+        val fresh = newMissed(context).ifEmpty {
+            listOfNotNull(number?.takeUnless { wasSilenced(context, it, System.currentTimeMillis() - 240_000L) }?.let { MissedGroup(it, 1, System.currentTimeMillis(), null) })
+        }
         if (fresh.isEmpty()) { nm.cancel(ID_MISSED); return }
         nm.cancel(ID_MISSED) // старое сводное уведомление без тега
         val keep = fresh.map { TAG_MISSED + com.khizrim.dialer.data.Numbers.key(it.number) }.toSet()
@@ -211,7 +214,7 @@ object CallNotifications {
             Calls.CONTENT_URI, arrayOf(Calls.NUMBER, Calls.DATE, Calls.PHONE_ACCOUNT_ID),
             "${Calls.TYPE} = ${Calls.MISSED_TYPE} AND ${Calls.NEW} = 1", null, "${Calls.DATE} DESC",
         )?.use { cur -> while (cur.moveToNext() && rows.size < 200) rows += Triple(cur.getString(0).orEmpty(), cur.getLong(1), cur.getString(2)) }
-        rows.filter { it.first.isNotBlank() }
+        rows.filter { it.first.isNotBlank() && !wasSilenced(context, it.first, it.second) }
             .groupBy { com.khizrim.dialer.data.Numbers.key(it.first) }
             .values.map { g -> MissedGroup(g.first().first, g.size, g.first().second, g.first().third) }
             .sortedByDescending { it.last }
@@ -277,6 +280,19 @@ object CallNotifications {
         }
         android.graphics.drawable.Icon.createWithBitmap(bmp)
     }.getOrNull()
+
+    /** Номер заглушили: его пропущенный не должен потом звенеть уведомлением с кнопками, он уже в тихой сводке. */
+    fun rememberSilenced(context: Context, number: String) {
+        if (number.isBlank()) return
+        context.getSharedPreferences("ozero", Context.MODE_PRIVATE).edit()
+            .putLong("silencedAt:" + com.khizrim.dialer.data.Numbers.key(number), System.currentTimeMillis()).apply()
+    }
+
+    /** Этот пропущенный был заглушён (звонок не позже чем через минуту после того, как его заглушили). */
+    private fun wasSilenced(context: Context, number: String, date: Long): Boolean {
+        val at = context.getSharedPreferences("ozero", Context.MODE_PRIVATE).getLong("silencedAt:" + com.khizrim.dialer.data.Numbers.key(number), 0L)
+        return at > 0L && at >= date - 60_000L
+    }
 
     /** Одно тихое сводное уведомление о незнакомых без звука. */
     fun showSilenced(context: Context) {
