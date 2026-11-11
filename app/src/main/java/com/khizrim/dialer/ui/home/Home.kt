@@ -207,7 +207,7 @@ private fun FeedRow(vm: DialerViewModel, e: HomeEntry, modifier: Modifier) {
     val tag = if (p == null && e.number != null) com.khizrim.dialer.callerid.rememberCallerTag(e.number) else null
     val sub = buildString {
         append(e.missedNote ?: e.note ?: time ?: stringResource(if (e.dir == Dir.OUT) R.string.h_outgoing else R.string.h_incoming))
-        if (e.missedNote != null && time != null) append(", ").append(time)
+        if ((e.missedNote != null || e.blocked) && time != null) append(", ").append(time)
         if (tag != null) append(", ").append(tag)
     }
     val armed = x < -w * 0.35f
