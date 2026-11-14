@@ -116,6 +116,7 @@ fun SettingsPage(vm: DialerViewModel, l: Layer) {
             ValueRow(stringResource(R.string.blocked_numbers), vm.blocked.size.takeIf { it > 0 }?.toString(), onClick = vm::openBlocked)
 
             Group(stringResource(R.string.set_appearance))
+            SwitchRow(stringResource(R.string.set_newest_on_top), vm.newestOnTop, vm::toggleNewestOnTop)
             SwitchRow(stringResource(R.string.set_fav_nickname), vm.favNickname, vm::toggleFavNickname)
             ValueRow(stringResource(R.string.set_language), stringResource(R.string.set_language_system)) {
                 // язык приложения задаётся системой (Android 13+), иначе — языком телефона

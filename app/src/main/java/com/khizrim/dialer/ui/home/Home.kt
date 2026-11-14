@@ -95,7 +95,7 @@ private data class FeedDay(val text: String)
 private object FeedTop
 
 /**
- * Главная — лента людей, свежие внизу, у большого пальца. Управление висит над ней на стекле:
+ * Главная — лента людей, свежие внизу, у большого пальца (или сверху, если так привычнее — в настройках). Управление висит над ней на стекле:
  * избранные, поиск и клавиатура. Потянуть док вверх — контакты, ровно за пальцем.
  */
 @Composable
@@ -107,39 +107,51 @@ fun Home(vm: DialerViewModel, onDock: (Int) -> Unit) {
     val density = LocalDensity.current
     val res = LocalContext.current.resources
     val feed = vm.homeStack
-    val rows = remember(feed) {
+    val onTop = vm.newestOnTop
+    val rows = remember(feed, onTop) {
+        // от свежих к старым, по дням; незнакомые без звука держатся своего места, без подписи
+        val days = mutableListOf<Pair<String?, MutableList<HomeEntry>>>()
+        feed.asReversed().forEach { e ->
+            val d = if (e.inSilentGroup) days.lastOrNull()?.first else if (e.lastAt > 0L) Dates.day(res, e.lastAt) else null
+            if (days.isEmpty() || days.last().first != d) days.add(d to mutableListOf())
+            days.last().second.add(e)
+        }
         buildList<Any> {
-            var day: String? = null
-            feed.asReversed().forEach { e ->
-                if (e.inSilentGroup) { add(e); return@forEach }
-                val d = if (e.lastAt > 0L) Dates.day(res, e.lastAt) else null
-                if (day != null && d != day) add(FeedDay(day!!))
-                day = d
-                add(e)
+            // список идёт от первой строки: внизу экрана (свежие внизу) или сверху (обычный порядок) —
+            // подпись дня всегда над своими строками
+            days.forEach { (d, group) ->
+                if (onTop) d?.let { add(FeedDay(it)) }
+                addAll(group)
+                if (!onTop) d?.let { add(FeedDay(it)) }
             }
-            day?.let { add(FeedDay(it)) }
             if (feed.size > 3) add(FeedTop)
         }
+    }
+    // пришёл новый звонок, а лента стоит у свежего края — он виден сразу, а не прячется за краем
+    val newest = feed.lastOrNull()?.key
+    androidx.compose.runtime.LaunchedEffect(newest, onTop) {
+        if (list.firstVisibleItemIndex <= 1) list.scrollToItem(0)
     }
 
     CompositionLocalProvider(LocalGlass provides haze) {
         Box(Modifier.fillMaxSize()) {
-            Feed(vm, rows, list, bottom = with(density) { dockPx.toDp() } + 8.dp, Modifier.fillMaxSize().haze(haze).background(oz.bg))
-            TopBand(rows, list)
+            Feed(vm, rows, list, onTop, bottom = with(density) { dockPx.toDp() } + 8.dp, Modifier.fillMaxSize().haze(haze).background(oz.bg))
+            TopBand(rows, list, onTop)
             Dock(vm, Modifier.align(Alignment.BottomCenter).onSizeChanged { dockPx = it.height; onDock(it.height) })
         }
     }
 }
 
 @Composable
-private fun Feed(vm: DialerViewModel, rows: List<Any>, list: androidx.compose.foundation.lazy.LazyListState, bottom: Dp, modifier: Modifier) {
+private fun Feed(vm: DialerViewModel, rows: List<Any>, list: androidx.compose.foundation.lazy.LazyListState, onTop: Boolean, bottom: Dp, modifier: Modifier) {
     val oz = LocalOz.current
     val reduced = LocalReducedMotion.current
-    val top = with(LocalDensity.current) { WindowInsets.statusBars.getTop(this).toDp() } + 52.dp
+    // свежие внизу: сверху место под полосу над самыми старыми; свежие сверху: лента начинается сразу под строкой состояния
+    val top = with(LocalDensity.current) { WindowInsets.statusBars.getTop(this).toDp() } + if (onTop) 4.dp else 52.dp
     LazyColumn(
         modifier.padding(horizontal = 8.dp),
         state = list,
-        reverseLayout = true,
+        reverseLayout = !onTop,
         contentPadding = PaddingValues(top = top, bottom = bottom),
     ) {
         if (rows.isEmpty()) {
@@ -282,15 +294,23 @@ private fun FeedRow(vm: DialerViewModel, e: HomeEntry, modifier: Modifier) {
 
 /** Полоса наверху появляется, только когда под ней что-то лежит, и называет день, если это не сегодня. */
 @Composable
-private fun TopBand(rows: List<Any>, list: androidx.compose.foundation.lazy.LazyListState) {
+private fun TopBand(rows: List<Any>, list: androidx.compose.foundation.lazy.LazyListState, onTop: Boolean) {
     val oz = LocalOz.current
     val res = LocalContext.current.resources
-    val under by remember { derivedStateOf { list.canScrollForward } }
-    val day by remember(rows) {
+    // сверху экрана — дальний конец списка (свежие внизу) или его начало (свежие сверху)
+    val under by remember(onTop) { derivedStateOf { if (onTop) list.canScrollBackward else list.canScrollForward } }
+    val day by remember(rows, onTop) {
         derivedStateOf {
-            val last = list.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: return@derivedStateOf null
-            // ближайшая подпись дня выше (дальше по списку) — день самой верхней строки
-            (last until rows.size).firstNotNullOfOrNull { (rows.getOrNull(it) as? FeedDay)?.text }
+            val visible = list.layoutInfo.visibleItemsInfo
+            if (onTop) {
+                val first = visible.firstOrNull()?.index ?: return@derivedStateOf null
+                // ближайшая подпись дня над самой верхней строкой
+                (first downTo 0).firstNotNullOfOrNull { (rows.getOrNull(it) as? FeedDay)?.text }
+            } else {
+                val last = visible.lastOrNull()?.index ?: return@derivedStateOf null
+                // ближайшая подпись дня выше (дальше по списку) — день самой верхней строки
+                (last until rows.size).firstNotNullOfOrNull { (rows.getOrNull(it) as? FeedDay)?.text }
+            }
         }
     }
     val a by animateFloatAsState(if (under) 1f else 0f, Motion.enter(Motion.FADE), label = "band")

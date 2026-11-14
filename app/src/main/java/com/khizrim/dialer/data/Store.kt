@@ -147,6 +147,11 @@ class Prefs(context: Context) {
         get() = sp.getBoolean("favNickname", true)
         set(v) { sp.edit().putBoolean("favNickname", v).apply() }
 
+    /** Лента вызовов: false — свежие внизу, у большого пальца; true — обычный порядок, свежие сверху. */
+    var newestOnTop: Boolean
+        get() = sp.getBoolean("newestOnTop", false)
+        set(v) { sp.edit().putBoolean("newestOnTop", v).apply() }
+
     var silenceUnknown: Boolean
         get() = sp.getBoolean("silenceUnknown", false)
         set(v) { sp.edit().putBoolean("silenceUnknown", v).apply() }

@@ -181,6 +181,8 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     /** Избранные для тихого ряда над нижней панелью главной. */
     var favNickname by mutableStateOf(prefs.favNickname); private set
     fun toggleFavNickname() { favNickname = !favNickname; prefs.favNickname = favNickname }
+    var newestOnTop by mutableStateOf(prefs.newestOnTop); private set
+    fun toggleNewestOnTop() { newestOnTop = !newestOnTop; prefs.newestOnTop = newestOnTop }
     /** Как подписан избранный: никнейм, если выбран и есть, иначе имя без фамилии. */
     private fun favBase(p: Person): String = p.nickname?.takeIf { favNickname && it.isNotBlank() } ?: if (p.nameIsNumber) p.shownName else p.name.substringBefore(' ')
     /** Подпись в «Причале»: ник или первое слово имени; если у двоих оно одинаковое — с буквой фамилии («Саша К.»). */
