@@ -34,4 +34,12 @@
         <item quantity="other">%1$d missed calls from %2$s</item>
     </plurals>
     <string name="sim_usual">%1$s · usual</string>
+    <plurals name="silent_deleted">
+        <item quantity="one">%1$d unknown removed from the log</item>
+        <item quantity="other">%1$d unknown removed from the log</item>
+    </plurals>
+    <plurals name="silent_hidden">
+        <item quantity="one">%1$d unknown hidden</item>
+        <item quantity="other">%1$d unknown hidden</item>
+    </plurals>
 </resources>

@@ -950,7 +950,50 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     }
 
 
+    /** Заглушённые незнакомые, которые смахнули всей группой: из журнала удалим, когда пройдёт «Вернуть». */
+    private var pendingPurge: Purge? = null
+    private class Purge(val numbers: Set<String>, val until: Long)
+
+    /** Подпись под смахиваемой тихой группой: удалить из журнала можно, только если есть доступ на запись. */
+    val silentSwipeDeletes: Boolean get() = canClearLog
+
+    /**
+     * Смахнуть тихую группу — убрать всех заглушённых разом. Из ленты сразу, из системного журнала —
+     * их пропущенные, сброшенные и заблокированные звонки, когда истечёт «Вернуть». Обычные разговоры
+     * с этими номерами (курьер, которому вы перезванивали) остаются.
+     */
+    fun clearSilent() {
+        val group = home.filter(::isSilenced)
+        if (group.isEmpty()) return
+        commitPendingRecord(); commitPurge()
+        val keys = group.map { it.key }.toSet()
+        val numbers = calls.filter { keyOf(it.number) in keys }.map { it.number }.toSet()
+        removed = group.map { e -> home.indexOf(e) to e }
+        home.removeAll(group)
+        prefs.hide(keys)
+        silentOpen = false
+        tidy = true
+        val text = ctx.resources.getQuantityString(if (silentSwipeDeletes) R.plurals.silent_deleted else R.plurals.silent_hidden, group.size, group.size)
+        say(text, undo = true)
+        pendingPurge = Purge(numbers, System.currentTimeMillis())
+    }
+
+    private fun commitPurge() {
+        val p = pendingPurge ?: return
+        pendingPurge = null
+        if (!canClearLog || p.numbers.isEmpty()) return  // без доступа на запись они просто скрыты из ленты
+        viewModelScope.launch(Dispatchers.IO) {
+            val types = listOf(android.provider.CallLog.Calls.MISSED_TYPE, android.provider.CallLog.Calls.REJECTED_TYPE, android.provider.CallLog.Calls.BLOCKED_TYPE)
+            val where = android.provider.CallLog.Calls.NUMBER + "=? AND " + android.provider.CallLog.Calls.DATE + "<=? AND " +
+                android.provider.CallLog.Calls.TYPE + " IN (" + types.joinToString(",") + ")"
+            p.numbers.forEach { n ->
+                runCatching { ctx.contentResolver.delete(android.provider.CallLog.Calls.CONTENT_URI, where, arrayOf(n, p.until.toString())) }
+            }
+        }
+    }
+
     fun undo() {
+        pendingPurge = null
         pendingCalls?.let { recentCalls = it }
         pendingRecord = null; pendingCalls = null
         removed.sortedBy { it.first }.forEach { (at, e) ->
@@ -1027,12 +1070,13 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     fun say(text: String, undo: Boolean = false, action: String? = null, onAction: (() -> Unit)? = null) {
         toastJob?.cancel()
         if (toast?.undo == true && pendingRecord != null) commitPendingRecord()
+        if (toast?.undo == true) commitPurge()
         toastAction = onAction
         toast = ToastState(text, undo, action)
         toastJob = viewModelScope.launch {
             delay(if (undo || action != null) 6000 else 2600)  // «Вернуть» живёт дольше: его надо успеть найти глазами
             toast = null
-            if (undo) { tidy = false; removed = emptyList(); commitPendingRecord() }
+            if (undo) { tidy = false; removed = emptyList(); commitPendingRecord(); commitPurge() }
         }
     }
 
