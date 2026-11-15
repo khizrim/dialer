@@ -70,6 +70,8 @@ import com.khizrim.dialer.model.Method
 import com.khizrim.dialer.model.MethodKind
 import com.khizrim.dialer.model.Person
 import com.khizrim.dialer.ui.kit.OzIcon
+import com.khizrim.dialer.ui.kit.SwipeToDelete
+import com.khizrim.dialer.ui.kit.TextAction
 import com.khizrim.dialer.ui.kit.press
 import com.khizrim.dialer.ui.kit.rememberLast
 import com.khizrim.dialer.ui.nav.Layer
@@ -129,6 +131,9 @@ fun PersonScreen(vm: DialerViewModel, l: Layer, id: Long) {
                 statusTop, navBottom,
                 who = { Who(vm, p, unknown, top = if (history.isEmpty()) 0.dp else 28.dp) },
                 days = days,
+                onDelete = vm::deleteHistory,
+                // очистка стоит в дальнем конце истории, над самой старой записью; одну запись проще смахнуть
+                onClear = if (history.size > 1) ({ vm.askClearHistory(p) }) else null,
             )
             // история уходит под строку состояния мягко, без резкого края
             Box(
@@ -157,6 +162,8 @@ private fun History(
     navBottom: androidx.compose.ui.unit.Dp,
     who: @Composable () -> Unit,
     days: List<Pair<String, List<HistoryEntry>>>,
+    onDelete: (HistoryEntry) -> Unit,
+    onClear: (() -> Unit)?,
 ) {
     val dockDp = with(LocalDensity.current) { dockPx().toDp() }
     LazyColumn(
@@ -167,8 +174,19 @@ private fun History(
     ) {
         item(key = "who") { who() }
         days.asReversed().forEachIndexed { di, (day, list) ->
-            list.asReversed().forEachIndexed { i, h -> item(key = "h$di:$i") { Event(h) } }
-            item(key = "d$di") { Day(day, first = di == days.size - 1) }
+            list.asReversed().forEachIndexed { i, h ->
+                // ключ — сама запись: смахнутая уходит, соседи съезжают, а не перерисовываются чужими
+                val key = h.record?.let { "c" + it.id + ":" + it.date } ?: h.act?.let { "a" + it.at + it.method.name } ?: "h$di:$i"
+                item(key = key) {
+                    SwipeToDelete({ onDelete(h) }, Modifier.animateItem(fadeInSpec = null, placementSpec = Motion.offset(), fadeOutSpec = Motion.exit(Motion.FADE))) { Event(h) }
+                }
+            }
+            item(key = "d" + day) { Day(day, first = di == days.size - 1 && onClear == null) }
+        }
+        if (onClear != null) item(key = "clear") {
+            Box(Modifier.fillMaxWidth().padding(bottom = 8.dp), contentAlignment = Alignment.Center) {
+                TextAction(stringResource(R.string.clear_history), LocalOz.current.fg3, onClear, style = OzType.small)
+            }
         }
     }
 }

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <plurals name="calls_deleted">
+        <item quantity="one">Удалён %d звонок</item>
+        <item quantity="few">Удалено %d звонка</item>
+        <item quantity="many">Удалено %d звонков</item>
+        <item quantity="other">Удалено %d звонка</item>
+    </plurals>
+    <plurals name="delete_n">
+        <item quantity="one">Удалить %d</item>
+        <item quantity="few">Удалить %d</item>
+        <item quantity="many">Удалить %d</item>
+        <item quantity="other">Удалить %d</item>
+    </plurals>
+    <string name="clear_history">Очистить историю</string>
+    <string name="clear_history_title">Очистить историю?</string>
+    <string name="clear_history_title_named">Очистить историю %1$s?</string>
+    <string name="clear_history_text">Звонки исчезнут из журнала телефона. Контакт останется.</string>
+    <string name="history_cleared">История очищена</string>
+    <string name="delete_swipe">Удалить</string>
+</resources>

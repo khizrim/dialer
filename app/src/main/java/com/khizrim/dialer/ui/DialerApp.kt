@@ -91,6 +91,11 @@ fun DialerApp(vm: DialerViewModel) {
         if (!vm.ready) { Box(Modifier.fillMaxSize().background(oz.bg)); return@CompositionLocalProvider }
         if (vm.needsOnboarding) { Onboarding(vm); return@CompositionLocalProvider }
         val nav = rememberNav()
+        // первое удаление звонка: система спрашивает доступ к журналу один раз, затем удаление идёт само
+        val askWrite = androidx.activity.compose.rememberLauncherForActivityResult(
+            androidx.activity.result.contract.ActivityResultContracts.RequestPermission(),
+        ) { ok -> vm.writeGranted(ok) }
+        LaunchedEffect(vm.needsWrite) { if (vm.needsWrite) askWrite.launch(android.Manifest.permission.WRITE_CALL_LOG) }
         var dock by remember { mutableIntStateOf(0) }
         // лента главной просвечивает сквозь всё стекло над ней: док, подсказки клавиатуры, капсулу звонка
         val feedGlass = remember { dev.chrisbanes.haze.HazeState() }
