@@ -344,25 +344,38 @@ private fun Dock(vm: DialerViewModel, modifier: Modifier) {
             enter = fadeIn(Motion.enter(Motion.FADE, delay = 60)) + expandVertically(Motion.size(), expandFrom = Alignment.Top),
             exit = fadeOut(Motion.exit(90)) + shrinkVertically(Motion.size(), shrinkTowards = Alignment.Top),
         ) {
+            val favList = rememberLazyListState()
+            // прокрутка встаёт по целому чипу: первый видимый всегда у края, крайний не режется посередине
             LazyRow(
-                Modifier.fillMaxWidth().height(48.dp).glass(RoundedCornerShape(24.dp)),
-                contentPadding = PaddingValues(horizontal = 6.dp),
+                Modifier.fillMaxWidth().height(52.dp).glass(RoundedCornerShape(26.dp)),
+                state = favList,
+                flingBehavior = androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior(favList),
+                contentPadding = PaddingValues(horizontal = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 items(favs, key = { it.id }) { p ->
                     val m = vm.defaultOf(p)
+                    val photo = com.khizrim.dialer.ui.kit.rememberContactPhoto(p.photo)
                     Row(
                         Modifier
                             .animateItem(fadeInSpec = Motion.enter(Motion.FADE), placementSpec = Motion.offset(), fadeOutSpec = Motion.exit(Motion.FADE))
-                            .height(40.dp)
-                            .press({ vm.perform(p, m) }, onLongClick = { nav.openCard(p.id) }, shape = RoundedCornerShape(20.dp),
+                            .height(44.dp)
+                            .press({ vm.perform(p, m) }, onLongClick = { nav.openCard(p.id) }, shape = RoundedCornerShape(22.dp),
                                 label = stringResource(R.string.favorite_label, p.name, stringResource(m?.title ?: R.string.choose_method)))
-                            .padding(horizontal = 12.dp),
+                            // с фото чип начинается с лица: круг 32 стоит концентрично скруглению чипа
+                            .padding(start = if (photo != null) 6.dp else 12.dp, end = 12.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
+                        if (photo != null) {
+                            com.khizrim.dialer.ui.kit.ContactPhoto(photo, 32.dp)
+                            Spacer(Modifier.width(8.dp))
+                        }
                         Text(vm.favLabel(p), style = OzType.row.copy(fontWeight = FontWeight.Medium), color = oz.fg, maxLines = 1)
-                        Spacer(Modifier.width(6.dp))
-                        MethodMark(m, size = 16.dp)
+                        // значок — только когда это не обычный звонок: обычный звонок ничего не сообщает
+                        if (m != Method.PHONE) {
+                            Spacer(Modifier.width(6.dp))
+                            MethodMark(m, size = 16.dp)
+                        }
                     }
                 }
             }
