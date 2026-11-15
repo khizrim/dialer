@@ -7,8 +7,9 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.produceState
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ImageBitmap
@@ -26,10 +27,11 @@ private val thumbs = LruCache<String, ImageBitmap>(48)
 @Composable
 fun rememberContactPhoto(uri: String?): ImageBitmap? {
     val context = LocalContext.current
-    val photo by produceState(uri?.let { thumbs.get(it) }, uri) {
-        value = uri?.let { thumbs.get(it) ?: loadThumb(context, it) }
+    val photo = remember(uri) { mutableStateOf(uri?.let { thumbs.get(it) }) }
+    LaunchedEffect(uri) {
+        if (uri != null && photo.value == null) photo.value = loadThumb(context, uri)
     }
-    return photo
+    return photo.value
 }
 
 private suspend fun loadThumb(context: android.content.Context, uri: String): ImageBitmap? = withContext(Dispatchers.IO) {
