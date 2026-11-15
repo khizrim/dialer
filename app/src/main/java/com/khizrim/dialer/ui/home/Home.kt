@@ -31,6 +31,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
@@ -40,7 +41,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -60,7 +60,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.khizrim.dialer.DialerViewModel
 import com.khizrim.dialer.MenuContext
 import com.khizrim.dialer.R
@@ -345,34 +344,40 @@ private fun Dock(vm: DialerViewModel, modifier: Modifier) {
             enter = fadeIn(Motion.enter(Motion.FADE, delay = 60)) + expandVertically(Motion.size(), expandFrom = Alignment.Top),
             exit = fadeOut(Motion.exit(90)) + shrinkVertically(Motion.size(), shrinkTowards = Alignment.Top),
         ) {
-            // пять мест одинаковой ширины: у каждого человека своё постоянное место, без прокрутки вбок
-            Row(
-                Modifier.fillMaxWidth().height(64.dp).glass(RoundedCornerShape(24.dp)).padding(4.dp),
+            val favList = rememberLazyListState()
+            // прокрутка встаёт по целому чипу: первый видимый всегда у края, крайний не режется посередине
+            LazyRow(
+                Modifier.fillMaxWidth().height(52.dp).glass(RoundedCornerShape(26.dp)),
+                state = favList,
+                flingBehavior = androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior(favList),
+                contentPadding = PaddingValues(horizontal = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                favs.take(FAV_SEATS).forEach { p ->
-                    key(p.id) {
-                        val m = vm.defaultOf(p)
-                        Column(
-                            Modifier
-                                .weight(1f)
-                                .fillMaxHeight()
-                                .press({ vm.perform(p, m) }, onLongClick = { nav.openCard(p.id) }, shape = RoundedCornerShape(20.dp),
-                                    label = stringResource(R.string.favorite_label, p.name, stringResource(m?.title ?: R.string.choose_method)))
-                                .padding(horizontal = 2.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center,
-                        ) {
-                            Text(vm.favLabel(p), style = OzType.row.copy(fontSize = 15.sp, lineHeight = 20.sp), color = oz.fg, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            // строка способа есть у всех мест, чтобы имена стояли на одной линии; значок — только когда это не обычный звонок
-                            Box(Modifier.height(14.dp), contentAlignment = Alignment.Center) {
-                                if (m != Method.PHONE) MethodMark(m, size = 12.dp)
-                            }
+                items(favs, key = { it.id }) { p ->
+                    val m = vm.defaultOf(p)
+                    val photo = com.khizrim.dialer.ui.kit.rememberContactPhoto(p.photo)
+                    Row(
+                        Modifier
+                            .animateItem(fadeInSpec = Motion.enter(Motion.FADE), placementSpec = Motion.offset(), fadeOutSpec = Motion.exit(Motion.FADE))
+                            .height(44.dp)
+                            .press({ vm.perform(p, m) }, onLongClick = { nav.openCard(p.id) }, shape = RoundedCornerShape(22.dp),
+                                label = stringResource(R.string.favorite_label, p.name, stringResource(m?.title ?: R.string.choose_method)))
+                            // с фото чип начинается с лица: круг 32 стоит концентрично скруглению чипа
+                            .padding(start = if (photo != null) 6.dp else 12.dp, end = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        if (photo != null) {
+                            com.khizrim.dialer.ui.kit.ContactPhoto(photo, 32.dp)
+                            Spacer(Modifier.width(8.dp))
+                        }
+                        Text(vm.favLabel(p), style = OzType.row.copy(fontWeight = FontWeight.Medium), color = oz.fg, maxLines = 1)
+                        // значок — только когда это не обычный звонок: обычный звонок ничего не сообщает
+                        if (m != Method.PHONE) {
+                            Spacer(Modifier.width(6.dp))
+                            MethodMark(m, size = 16.dp)
                         }
                     }
                 }
-                // меньше пяти избранных: места остаются той же ширины, пустые справа
-                repeat((FAV_SEATS - favs.size).coerceAtLeast(0)) { Spacer(Modifier.weight(1f)) }
             }
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -418,9 +423,6 @@ private fun Notice(vm: DialerViewModel, alert: com.khizrim.dialer.telecom.CallAl
         if (alert.dismissable) TextAction(stringResource(R.string.close), oz.fg3, vm::dismissAlert, style = OzType.small)
     }
 }
-
-/** Сколько избранных помещается на главном: дальше — наверху контактов. */
-private const val FAV_SEATS = 5
 
 /** Последний непустой список: пока строка сворачивается, в ней ещё видно, что в ней было. */
 @Composable
