@@ -27,14 +27,15 @@ private val thumbs = LruCache<String, ImageBitmap>(48)
 fun rememberContactPhoto(uri: String?): ImageBitmap? {
     val context = LocalContext.current
     val photo by produceState(uri?.let { thumbs.get(it) }, uri) {
-        if (uri == null || value != null) return@produceState
-        value = withContext(Dispatchers.IO) {
-            runCatching {
-                context.contentResolver.openInputStream(Uri.parse(uri))?.use { BitmapFactory.decodeStream(it) }?.asImageBitmap()
-            }.getOrNull()
-        }?.also { thumbs.put(uri, it) }
+        value = uri?.let { thumbs.get(it) ?: loadThumb(context, it) }
     }
     return photo
+}
+
+private suspend fun loadThumb(context: android.content.Context, uri: String): ImageBitmap? = withContext(Dispatchers.IO) {
+    runCatching {
+        context.contentResolver.openInputStream(Uri.parse(uri))?.use { BitmapFactory.decodeStream(it) }?.asImageBitmap()
+    }.getOrNull()?.also { thumbs.put(uri, it) }
 }
 
 @Composable
