@@ -149,6 +149,23 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
         hasCallLog = granted(Manifest.permission.READ_CALL_LOG)
         callAlert = com.khizrim.dialer.telecom.CallReadiness.check(ctx, isDefaultDialer, prefs.xiaomiHintSeen, prefs.silenceUnknown)
         if (isDefaultDialer && !keepMissed) com.khizrim.dialer.telecom.CallReadiness.clearMissed(ctx)
+        loadData()
+    }
+
+    /**
+     * Журнал или контакты поменялись, пока приложение на экране (звонок только что закончился,
+     * запись удалили в другой звонилке): перечитываем данные, не трогая того, что открыто.
+     */
+    private var changeJob: Job? = null
+    fun dataChanged() {
+        changeJob?.cancel()
+        // телефон пишет звонок несколькими изменениями подряд: ждём, пока они улягутся
+        changeJob = viewModelScope.launch { delay(250); loadData() }
+    }
+
+    private fun loadData() {
+        hasContacts = granted(Manifest.permission.READ_CONTACTS)
+        hasCallLog = granted(Manifest.permission.READ_CALL_LOG)
         loadJob?.cancel()
         loadJob = viewModelScope.launch {
             val loaded = withContext(Dispatchers.IO) {
