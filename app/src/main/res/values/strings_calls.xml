@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Один журнал: удаление и очистка одинаковы на всех экранах -->
+    <plurals name="calls_deleted">
+        <item quantity="one">%d call deleted</item>
+        <item quantity="other">%d calls deleted</item>
+    </plurals>
+    <plurals name="delete_n">
+        <item quantity="one">Delete %d</item>
+        <item quantity="other">Delete %d</item>
+    </plurals>
+    <string name="clear_history">Clear history</string>
+    <string name="clear_history_title">Clear history?</string>
+    <string name="clear_history_title_named">Clear history %1$s?</string>
+    <string name="clear_history_text">Calls will disappear from the phone\'s call log. The contact stays.</string>
+    <string name="history_cleared">History cleared</string>
+    <string name="delete_swipe">Delete</string>
+    <string name="delete_all">Delete all</string>
+</resources>

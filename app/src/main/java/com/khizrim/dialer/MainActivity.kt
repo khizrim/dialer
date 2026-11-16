@@ -43,8 +43,21 @@ class MainActivity : ComponentActivity() {
         if (!keepMissed) CallNotifications.clearSummaries(this)
     }
 
+    /** Пока приложение видно, журнал и контакты слушаем: закончился звонок — строка уже в ленте, без перезахода. */
+    private val changes = object : android.database.ContentObserver(android.os.Handler(android.os.Looper.getMainLooper())) {
+        override fun onChange(selfChange: Boolean) { vm.dataChanged() }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        listOf(android.provider.CallLog.Calls.CONTENT_URI, android.provider.ContactsContract.Contacts.CONTENT_URI).forEach {
+            runCatching { contentResolver.registerContentObserver(it, true, changes) }
+        }
+    }
+
     override fun onStop() {
         super.onStop()
+        runCatching { contentResolver.unregisterContentObserver(changes) }
         // экран звонка поверх — это ещё тот же перезвон; ушли из приложения после него — следующий запуск уберёт сводки
         // (звонок ещё может не дойти до Telecom, когда экран звонка уже закрыл нас, поэтому первые секунды не считаем)
         if (!com.khizrim.dialer.telecom.CallManager.hasVisibleCall && android.os.SystemClock.elapsedRealtime() - callBackAt > 15_000) keepMissed = false

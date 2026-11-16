@@ -81,7 +81,6 @@ fun SettingsPage(vm: DialerViewModel, l: Layer) {
     val context = LocalContext.current
     val role = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { vm.reload() }
     var simOpen by remember { mutableStateOf(false) }
-    val askWrite = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ok -> if (ok) vm.askClearLog(missed = false) }
     val saveFile = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri -> uri?.let(vm::exportTo) }
     val openFile = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> uri?.let(vm::importFrom) }
     fun open(intent: Intent) { runCatching { context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) } }
@@ -130,9 +129,6 @@ fun SettingsPage(vm: DialerViewModel, l: Layer) {
             }
 
             Group(stringResource(R.string.set_app))
-            ValueRow(stringResource(R.string.clear_log), null) {
-                if (vm.canClearLog) vm.askClearLog(missed = false) else askWrite.launch(android.Manifest.permission.WRITE_CALL_LOG)
-            }
             ValueRow(stringResource(R.string.set_permissions), null) { open(appDetails) }
             ValueRow(stringResource(R.string.set_version), versionName(context), onClick = null)
         }

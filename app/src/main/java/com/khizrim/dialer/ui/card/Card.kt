@@ -112,7 +112,7 @@ fun MenuSheet(vm: DialerViewModel, l: Layer) {
             Opt(stringResource(R.string.cid_search_web), { vm.searchWeb(number) }, icon = R.drawable.ic_oz_search)
         }
         if (number != null) Opt(stringResource(R.string.copy_number), { vm.closeMenu(); vm.copyNumber(number) }, icon = R.drawable.ic_oz_copy)
-        if (m.context == MenuContext.HOME) Opt(stringResource(R.string.remove_from_home), { vm.removeFromHome(e.key) }, icon = R.drawable.ic_oz_hide)
+        if (m.context == MenuContext.HOME && e.count > 0) Opt(stringResource(R.string.delete_swipe), { vm.closeMenu(); vm.deleteRow(e) }, icon = R.drawable.ic_oz_trash)
         if (p == null && number != null) Opt(stringResource(R.string.block), { vm.askBlock(number) }, icon = R.drawable.ic_oz_ban, color = oz.danger)
         Spacer(Modifier.height(8.dp))
     }

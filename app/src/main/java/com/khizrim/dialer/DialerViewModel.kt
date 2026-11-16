@@ -91,6 +91,9 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     private var byNumber: Map<String, Person> = emptyMap()
     // состояние, а не простое поле: открытая карточка читает человека отсюда и должна видеть смену звезды сразу
     private var byId by mutableStateOf<Map<Long, Person>>(emptyMap())
+    /** Журнал телефона и свои записи о мессенджерах как есть; [calls] и [interactions] — без того, что ждёт удаления. */
+    private var allCalls: List<CallRecord> = emptyList()
+    private var allActs: List<Interaction> = emptyList()
     private var calls: List<CallRecord> = emptyList()
     private var interactions: List<Interaction> = emptyList()
     var blocked by mutableStateOf<List<String>>(emptyList()); private set
@@ -118,9 +121,6 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     /** Найденные люди над клавиатурой; до набора — те, с кем общаетесь чаще. */
     var hits by mutableStateOf<List<SearchHit>>(emptyList()); private set
 
-    var tidy by mutableStateOf(false); private set
-    var leaving by mutableStateOf<String?>(null); private set
-    private var removed: List<Pair<Int, HomeEntry>> = emptyList()
 
     var sheet by mutableStateOf<SheetState?>(null); private set
     /** Лист «Как включить звонки через Telegram/WhatsApp». */
@@ -149,6 +149,23 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
         hasCallLog = granted(Manifest.permission.READ_CALL_LOG)
         callAlert = com.khizrim.dialer.telecom.CallReadiness.check(ctx, isDefaultDialer, prefs.xiaomiHintSeen, prefs.silenceUnknown)
         if (isDefaultDialer && !keepMissed) com.khizrim.dialer.telecom.CallReadiness.clearMissed(ctx)
+        loadData()
+    }
+
+    /**
+     * Журнал или контакты поменялись, пока приложение на экране (звонок только что закончился,
+     * запись удалили в другой звонилке): перечитываем данные, не трогая того, что открыто.
+     */
+    private var changeJob: Job? = null
+    fun dataChanged() {
+        changeJob?.cancel()
+        // телефон пишет звонок несколькими изменениями подряд: ждём, пока они улягутся
+        changeJob = viewModelScope.launch { delay(250); loadData() }
+    }
+
+    private fun loadData() {
+        hasContacts = granted(Manifest.permission.READ_CONTACTS)
+        hasCallLog = granted(Manifest.permission.READ_CALL_LOG)
         loadJob?.cancel()
         loadJob = viewModelScope.launch {
             val loaded = withContext(Dispatchers.IO) {
@@ -162,14 +179,12 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
             people = loaded.people
             byId = loaded.people.associateBy { it.id }
             byNumber = buildMap { loaded.people.forEach { p -> p.phones.forEach { put(Numbers.key(it.number), p) } } }
-            calls = loaded.calls
-            interactions = loaded.interactions
+            allCalls = loaded.calls
+            allActs = loaded.interactions
             blocked = loaded.blocked
-            recentCalls = loaded.calls.map { it to byNumber[Numbers.key(it.number)] }
-            unknownCalls = loaded.calls.filter { byNumber[Numbers.key(it.number)] == null }.take(100)
             search = loaded.search
+            derive()
             refreshHits()
-            rebuildHome()
             ready = true
             pendingMissed?.let { pendingMissed = null; openMissed(it) }
         }
@@ -215,97 +230,89 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     fun toggleSilent() { silentOpen = !silentOpen }
 
     /**
-     * Лента главной — она же журнал: каждый человек или номер одной строкой на месте последнего контакта,
-     * свежие внизу. «Пропущенные» оставляет только тех, у кого последний звонок пропущен.
+     * Лента главной — это журнал звонков: каждый звонок своей строкой, свежие сверху. Подряд идущие звонки
+     * с тем же человеком одного рода (пропущенные, состоявшиеся) в один день склеены в одну строку «(3)».
+     * Незнакомые без звука собраны в одну тихую строку на месте самого свежего из них; раскрытая группа
+     * стоит сразу под ней. «Пропущенные» оставляет только пропущенные.
      */
     val homeStack: List<HomeEntry> get() {
         val all = home.toList()
-        val silent = all.filter(::isSilenced)
-        val rest = all.filterNot(::isSilenced)
+        val silent = all.filter { it.quiet }
+        val rest = all.filterNot { it.quiet }
         val base = if (missedOnly) rest.filter { it.missedNote != null } else rest
-        if (silent.isEmpty()) return base.sortedBy { it.lastAt }
-        // незнакомые без звука никогда не вытесняют людей: одна строка-заголовок на месте последнего из них;
-        // раскрытая группа стоит сразу над заголовком (в прошлое), свежие ближе к нему
-        val header = HomeEntry("silent", null, null, silent.maxOf { it.lastAt }, null, silent = silent.size, blocked = silent.any { it.blocked })
-        val sorted = (base + header).sortedBy { it.lastAt }
-        if (!silentOpen) return sorted
-        val at = sorted.indexOf(header)
-        return sorted.subList(0, at) + silent.sortedBy { it.lastAt }.map { it.copy(inSilentGroup = true) } + sorted.subList(at, sorted.size)
+        if (silent.isEmpty()) return base
+        val header = HomeEntry(
+            "silent", null, null, silent.first().lastAt, null,
+            silent = silent.map { it.who }.distinct().size, blocked = silent.any { it.blocked },
+            records = silent.flatMap { it.records },
+        )
+        val at = base.indexOfFirst { it.lastAt < header.lastAt }.let { if (it < 0) base.size else it }
+        val out = base.toMutableList()
+        out.add(at, header)
+        if (silentOpen) out.addAll(at + 1, silent.map { it.copy(inSilentGroup = true) })
+        return out
     }
-    /** Незнакомый, чей звонок прошёл без звука (включено «Не беспокоить незнакомым»). */
-    fun isSilenced(e: HomeEntry): Boolean = e.person == null && (e.blocked || silenceUnknown && e.missedNote != null)
+    /** Незнакомый, чей звонок прошёл без звука или был заблокирован: строка тихой группы. */
+    fun isSilenced(e: HomeEntry): Boolean = e.quiet || e.silent > 0
     val homeHasMissed: Boolean get() = home.any { it.missedNote != null }
 
     private fun rebuildHome() {
-        class Acc(var last: Long = 0L, var lastMissed: Long = 0L, var lastOther: Long = 0L, var number: String? = null, var lastCall: CallRecord? = null, var lastAct: com.khizrim.dialer.data.Interaction? = null, var lastBlocked: Long = 0L) {
-            val missedAt = ArrayList<Long>()
-        }
-        val acc = LinkedHashMap<String, Acc>()
-        calls.forEach { r ->
-            if (r.type == android.provider.CallLog.Calls.VOICEMAIL_TYPE) return@forEach
-            val key = keyOf(r.number)
-            // заблокированный звонок (нами, определителем вроде Яндекса или самим Samsung): у человека из контактов
-            // не показываем, а незнакомый не должен пропасть бесследно — он ляжет в тихую группу
-            if (r.type == android.provider.CallLog.Calls.BLOCKED_TYPE) {
-                if (!key.startsWith("n:")) return@forEach
-                val a = acc.getOrPut(key) { Acc() }
-                if (a.number == null) a.number = r.number
-                if (r.date >= a.last) a.lastCall = r
-                a.last = maxOf(a.last, r.date)
-                a.lastBlocked = maxOf(a.lastBlocked, r.date)
-                return@forEach
-            }
-            val a = acc.getOrPut(key) { Acc() }
-            if (a.number == null) a.number = r.number
-            if (r.date >= a.last) a.lastCall = r
-            a.last = maxOf(a.last, r.date)
-            if (r.missed) { a.lastMissed = maxOf(a.lastMissed, r.date); a.missedAt += r.date } else a.lastOther = maxOf(a.lastOther, r.date)
-        }
-        interactions.forEach { i ->
-            val a = acc.getOrPut(i.key) { Acc() }
-            a.last = maxOf(a.last, i.at)
-            a.lastOther = maxOf(a.lastOther, i.at)
-            if (i.at >= (a.lastAct?.at ?: 0L)) a.lastAct = i
-        }
+        class Ev(val at: Long, val who: String, val number: String?, val record: CallRecord?, val act: Interaction?)
+        val evs = ArrayList<Ev>(calls.size + interactions.size)
+        calls.forEach { r -> if (r.type != android.provider.CallLog.Calls.VOICEMAIL_TYPE) evs += Ev(r.date, keyOf(r.number), r.number, r, null) }
+        // обычный звонок уже есть в журнале телефона: свою запись о нём второй строкой не показываем
+        interactions.forEach { i -> if (i.method != Method.PHONE) evs += Ev(i.at, i.key, null, null, i) }
+        evs.sortByDescending { it.at }
         val personByKey = people.associateBy { it.key }
-        val entries = acc.mapNotNull { (key, a) ->
-            if (prefs.hiddenAt(key) >= a.last) return@mapNotNull null
-            val person = personByKey[key]
-            if (person == null && !key.startsWith("n:")) return@mapNotNull null
-            val blocked = person == null && a.lastBlocked == a.last && a.lastBlocked > 0L
-            val missed = if (!blocked && a.lastMissed > a.lastOther) Dates.missed(res, a.lastMissed, a.missedAt.count { it > a.lastOther }) else null
-            // исходящий без ответа — тоже стоит сказать; обычный звонок второй строки не получает
-            val lc = a.lastCall
-            // направление видно только у исходящих: входящий отвеченный — обычный случай, без подписи
-            val act = a.lastAct
-            val note = when {
-                blocked -> str(R.string.h_blocked)
-                missed != null -> null
-                // направление показывает стрелка у времени; словами — только «без ответа»
-                lc != null && lc.date == a.last && lc.type == android.provider.CallLog.Calls.OUTGOING_TYPE ->
-                    if (lc.duration <= 0) str(R.string.outgoing_no_answer) else null
-                // последним было наше действие через мессенджер: говорим, каким способом
-                act != null && act.at == a.last -> act.method.label(ctx)
-                else -> null
+        val rows = ArrayList<HomeEntry>()
+        var lastDay: String? = null
+        for (ev in evs) {
+            if (rows.size >= FEED_SIZE) break
+            val person = personByKey[ev.who]
+            if (person == null && !ev.who.startsWith("n:")) continue
+            val r = ev.record
+            val blocked = r?.type == android.provider.CallLog.Calls.BLOCKED_TYPE
+            // заблокированный звонок человека из контактов — решение самого человека, в ленте его не показываем
+            if (blocked && person != null) continue
+            val missed = r?.missed == true
+            val quiet = person == null && (blocked || silenceUnknown && missed)
+            val kind = when { blocked -> 3; missed -> 2; r != null -> 1; else -> 0 }
+            val day = Dates.day(res, ev.at)
+            val prev = rows.lastOrNull()
+            if (r != null && prev != null && prev.who == ev.who && prev.acts.isEmpty() && prev.kind == kind && prev.quiet == quiet && lastDay == day) {
+                val recs = prev.records + r
+                rows[rows.size - 1] = prev.copy(records = recs, missedNote = if (missed) Dates.missed(res, prev.lastAt, recs.size) else null)
+                continue
             }
+            lastDay = day
+            val act = ev.act
             val dir = when {
                 blocked -> com.khizrim.dialer.model.Dir.IN
-                missed != null -> com.khizrim.dialer.model.Dir.MISSED
-                act != null && act.at == a.last -> com.khizrim.dialer.model.Dir.OUT
-                lc != null && lc.date == a.last && lc.type == android.provider.CallLog.Calls.OUTGOING_TYPE -> com.khizrim.dialer.model.Dir.OUT
-                lc != null && lc.date == a.last -> com.khizrim.dialer.model.Dir.IN
+                missed -> com.khizrim.dialer.model.Dir.MISSED
+                act != null || r?.type == android.provider.CallLog.Calls.OUTGOING_TYPE -> com.khizrim.dialer.model.Dir.OUT
+                else -> com.khizrim.dialer.model.Dir.IN
+            }
+            // подпись — только у необычного; направление показывает стрелка, время — край строки
+            val note = when {
+                blocked -> str(R.string.h_blocked)
+                missed -> null
+                act != null -> act.method.label(ctx)
+                r?.type == android.provider.CallLog.Calls.OUTGOING_TYPE && (r?.duration ?: 0L) <= 0L -> str(R.string.outgoing_no_answer)
+                r?.type == android.provider.CallLog.Calls.REJECTED_TYPE -> str(R.string.h_rejected)
                 else -> null
             }
-            HomeEntry(key, person, if (person == null) a.number else null, a.last, missed, note, dir = dir, blocked = blocked)
-        }.sortedBy { it.lastAt }.takeLast(FEED_SIZE).ifEmpty {
-            // истории ещё нет: показываем избранных, чтобы главная не была пустой
-            // истории нет: лента пустая, а не притворяется журналом из избранных (они и так в «Причале»)
-            emptyList()
+            val key = if (r != null) "c" + r.id + ":" + r.date else "a" + act!!.at + ":" + act.method.name
+            rows += HomeEntry(
+                key, person, if (person == null) ev.number else null, ev.at,
+                if (missed) Dates.missed(res, ev.at, 1) else null, note,
+                dir = dir, blocked = blocked, who = ev.who, quiet = quiet, kind = kind,
+                records = listOfNotNull(r), acts = listOfNotNull(act),
+            )
         }
         // обновляем список на месте, чтобы строки переезжали, а не мигали
-        if (entries.map { it.key } != home.map { it.key } || entries != home.toList()) {
+        if (rows != home.toList()) {
             home.clear()
-            home.addAll(entries)
+            home.addAll(rows)
         }
     }
 
@@ -348,27 +355,17 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     }
     fun showMissedOnly(v: Boolean) { missedOnly = v }
 
-    val canClearLog: Boolean get() = granted(Manifest.permission.WRITE_CALL_LOG)
-
-    /** «Очистить журнал»: все звонки или только пропущенные, если включён фильтр. С подтверждением. */
+    /** «Очистить журнал» в конце ленты: все звонки (или только пропущенные при фильтре), с подтверждением и «Вернуть». */
     fun askClearLog(missed: Boolean = missedOnly) {
+        val recs = if (missed) calls.filter { it.missed } else calls
+        val acts = if (missed) emptyList() else interactions
+        val n = recs.size + acts.size
+        if (n == 0) return
         confirm = ConfirmState(
             str(if (missed) R.string.clear_missed_title else R.string.clear_log_title),
             str(R.string.clear_log_text),
-            str(R.string.clear),
-        ) {
-            viewModelScope.launch {
-                val ok = withContext(Dispatchers.IO) {
-                    runCatching {
-                        if (missed) ctx.contentResolver.delete(android.provider.CallLog.Calls.CONTENT_URI, android.provider.CallLog.Calls.TYPE + "=?", arrayOf(android.provider.CallLog.Calls.MISSED_TYPE.toString()))
-                        else ctx.contentResolver.delete(android.provider.CallLog.Calls.CONTENT_URI, null, null)
-                        true
-                    }.getOrDefault(false)
-                }
-                say(str(if (ok) R.string.log_cleared else R.string.log_clear_failed))
-                reload()
-            }
-        }
+            ctx.resources.getQuantityString(R.plurals.delete_n, n, n),
+        ) { delete(recs, acts, str(R.string.log_cleared)) }
     }
 
     /** Из уведомления о пропущенном: карточка человека или журнал пропущенных. */
@@ -481,53 +478,80 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
         menu = MenuState(if (p != null) HomeEntry(p.key, p, null, r.date, null) else HomeEntry("n:" + Numbers.key(r.number), null, r.number, r.date, null), MenuContext.SEARCH, r)
     }
 
-    /** Смахнутый звонок: строка уже скрыта, из системного журнала удалим, когда пройдёт «Вернуть». */
-    private var pendingRecord: CallRecord? = null
-    private var pendingCalls: List<Pair<CallRecord, Person?>>? = null
+    // ---------- удаление: одно на всё приложение ----------
+    /**
+     * Удалённое ждёт, пока живёт «Вернуть»: в ленте, тихой группе и карточке его уже нет, а из журнала телефона
+     * оно уходит, когда тост погас. Всё, что видно, — это журнал телефона минус это ожидание.
+     */
+    private class Deletion(val ids: Set<Long>, val acts: Set<Interaction>)
+    private var pendingDelete: Deletion? = null
 
-    fun swipeDeleteRecord(r: CallRecord) {
-        commitPendingRecord()
-        pendingCalls = recentCalls
-        pendingRecord = r
-        recentCalls = recentCalls.filterNot { it.first == r }
-        say(str(R.string.call_deleted), undo = true)
+    /** Пересобрать всё видимое из журнала: лента, карточки, поиск по журналу. */
+    private fun derive() {
+        val d = pendingDelete
+        calls = if (d == null) allCalls else allCalls.filterNot { it.id in d.ids }
+        interactions = if (d == null) allActs else allActs.filterNot { it in d.acts }
+        recentCalls = calls.map { it to byNumber[Numbers.key(it.number)] }
+        unknownCalls = calls.filter { byNumber[Numbers.key(it.number)] == null }.take(100)
+        rebuildHome()
     }
 
-    private fun commitPendingRecord() {
-        val r = pendingRecord ?: return
-        val before = pendingCalls
-        pendingRecord = null; pendingCalls = null
-        viewModelScope.launch {
-            val ok = withContext(Dispatchers.IO) {
-                runCatching {
-                    ctx.contentResolver.delete(
-                        android.provider.CallLog.Calls.CONTENT_URI,
-                        android.provider.CallLog.Calls.DATE + "=? AND " + android.provider.CallLog.Calls.NUMBER + "=?",
-                        arrayOf(r.date.toString(), r.number),
-                    ) > 0
-                }.getOrDefault(false)
-            }
-            if (!ok && before != null) { recentCalls = before; say(str(R.string.log_delete_failed)) }
-        }
-    }
+    val canClearLog: Boolean get() = granted(Manifest.permission.WRITE_CALL_LOG)
+    /** Удаление, которое ждёт разрешения на запись в журнал: экран спросит его и вызовет [writeGranted]. */
+    var needsWrite by mutableStateOf(false); private set
+    private var afterWrite: (() -> Unit)? = null
+    fun writeGranted(ok: Boolean) { needsWrite = false; val a = afterWrite; afterWrite = null; if (ok) a?.invoke() }
 
-    /** Убрать одну строку журнала — быстрая уборка без «очистить всё». */
-    fun deleteRecord(r: CallRecord) {
+    /** Удалить звонки (и записи о мессенджерах) сразу из виду, с «Вернуть»; из журнала телефона — когда «Вернуть» пройдёт. */
+    private fun delete(records: Collection<CallRecord>, acts: Collection<Interaction>, text: String) {
+        if (records.isEmpty() && acts.isEmpty()) return
+        if (records.isNotEmpty() && !canClearLog) { afterWrite = { delete(records, acts, text) }; needsWrite = true; return }
+        commitDelete()
         menu = null
-        val before = recentCalls
-        recentCalls = recentCalls.filterNot { it.first == r }
+        pendingDelete = Deletion(records.map { it.id }.toSet(), acts.toSet())
+        derive()
+        say(text, undo = true)
+    }
+
+    private fun commitDelete() {
+        val d = pendingDelete ?: return
+        pendingDelete = null
+        prefs.forget(d.acts)
+        if (d.ids.isEmpty()) return
         viewModelScope.launch {
             val ok = withContext(Dispatchers.IO) {
                 runCatching {
-                    ctx.contentResolver.delete(
-                        android.provider.CallLog.Calls.CONTENT_URI,
-                        android.provider.CallLog.Calls.DATE + "=? AND " + android.provider.CallLog.Calls.NUMBER + "=?",
-                        arrayOf(r.date.toString(), r.number),
-                    ) > 0
+                    d.ids.chunked(200).sumOf { part ->
+                        ctx.contentResolver.delete(
+                            android.provider.CallLog.Calls.CONTENT_URI,
+                            android.provider.CallLog.Calls._ID + " IN (" + part.joinToString(",") + ")", null,
+                        )
+                    } > 0
                 }.getOrDefault(false)
             }
-            if (!ok) { recentCalls = before; say(str(R.string.log_delete_failed)) }
+            // не вышло — звонки возвращаются туда, где были, и говорим об этом
+            if (!ok) { say(str(R.string.log_delete_failed)); derive() }
         }
+    }
+
+    private fun deletedText(n: Int): String = if (n == 1) str(R.string.call_deleted) else ctx.resources.getQuantityString(R.plurals.calls_deleted, n, n)
+
+    /** Смахнуть запись в истории карточки. */
+    fun deleteHistory(h: HistoryEntry) = delete(listOfNotNull(h.record), listOfNotNull(h.act), str(R.string.call_deleted))
+
+    /** «Очистить историю» в карточке: все звонки с номерами человека и его записи о мессенджерах. */
+    fun askClearHistory(p: Person) {
+        val keys = p.phones.map { Numbers.key(it.number) }.toSet()
+        val records = calls.filter { Numbers.key(it.number) in keys }
+        val acts = interactions.filter { it.key == p.key }
+        val n = records.size + acts.size
+        if (n == 0) return
+        val who = if (Locale.getDefault().language == "ru") Declension.instrumental(p.name)?.let { str(R.string.clear_history_title_named, Declension.withPreposition(it)) } else null
+        confirm = ConfirmState(
+            who ?: str(R.string.clear_history_title),
+            str(R.string.clear_history_text),
+            ctx.resources.getQuantityString(R.plurals.delete_n, n, n),
+        ) { delete(records, acts, str(R.string.history_cleared)) }
     }
 
     fun toggleSilenceUnknown() {
@@ -849,7 +873,7 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
             events += it.date to HistoryEntry(Dates.day(res, it.date), what, it.missed, it, dur, tf.format(java.util.Date(it.date)))
         }
         // обычный звонок уже есть в журнале звонков: второй строкой его не дублируем
-        interactions.filter { it.key == p.key && it.method != Method.PHONE }.takeLast(300).forEach { events += it.at to HistoryEntry(Dates.day(res, it.at), it.method.label(ctx), time = tf.format(java.util.Date(it.at))) }
+        interactions.filter { it.key == p.key && it.method != Method.PHONE }.takeLast(300).forEach { events += it.at to HistoryEntry(Dates.day(res, it.at), it.method.label(ctx), time = tf.format(java.util.Date(it.at)), act = it) }
         // старые сверху, свежие у имени; карточка открывается у свежих
         return events.sortedBy { it.first }.map { it.second }
     }
@@ -928,50 +952,25 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     fun editInSystem() { editPerson?.let { Launcher.editContact(ctx, it)?.let { e -> say(e) } } }
 
     // ---------- быстрая уборка ----------
-    fun removeFromHome(key: String, now: Boolean = false) {
-        val at = home.indexOfFirst { it.key == key }
-        if (at < 0) return
-        val entry = home[at]
-        menu = null
-        viewModelScope.launch {
-            // сначала уходит лист меню, потом гаснет строка, потом соседи съезжают; смахнутая строка уже ушла
-            if (!now) {
-                delay(Motion.MOVE.toLong())
-                leaving = key
-                delay(Motion.FADE.toLong())
-            }
-            home.removeAt(at)
-            leaving = null
-            prefs.hide(listOf(key))
-            removed = listOf(at to entry)
-            tidy = true
-            say(str(if (entry.person != null && Declension.isFeminine(entry.title)) R.string.removed_from_home_f else R.string.removed_from_home, entry.title), undo = true)
-        }
+    /** Смахнуть строку ленты или «Удалить» в её меню: все звонки этой строки уходят из журнала, с «Вернуть». */
+    fun deleteRow(e: HomeEntry) {
+        val n = e.records.size + e.acts.size
+        delete(e.records, e.acts, deletedText(n))
     }
 
+    /** Смахнуть тихую группу: все звонки незнакомых без звука разом. */
+    fun clearSilent() {
+        val group = home.filter { it.quiet }
+        if (group.isEmpty()) return
+        silentOpen = false
+        val recs = group.flatMap { it.records }
+        delete(recs, emptyList(), deletedText(recs.size))
+    }
 
     fun undo() {
-        pendingCalls?.let { recentCalls = it }
-        pendingRecord = null; pendingCalls = null
-        removed.sortedBy { it.first }.forEach { (at, e) ->
-            prefs.unhide(e.key)
-            home.add(minOf(at, home.size), e)
-        }
-        removed = emptyList()
-        tidy = false
+        if (pendingDelete != null) { pendingDelete = null; derive() }
         toastJob?.cancel()
         toast = null
-    }
-
-    fun askClearHome() {
-        confirm = ConfirmState(
-            str(R.string.clear_home_title),
-            str(R.string.clear_home_text),
-            str(R.string.hide),
-        ) {
-            prefs.hide(home.map { it.key })
-            home.clear(); tidy = false; toast = null; removed = emptyList()
-        }
     }
 
     fun cancelConfirm() { confirm = null }
@@ -990,7 +989,7 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
             viewModelScope.launch {
                 val ok = withContext(Dispatchers.IO) { Blocklist.block(ctx, number) }
                 say(if (ok) str(R.string.blocked_done, shown) else str(R.string.block_failed))
-                if (ok) { prefs.hide(listOf("n:" + Numbers.key(number))); reload() }
+                if (ok) reload()
             }
         }
     }
@@ -1026,13 +1025,13 @@ class DialerViewModel(app: Application) : AndroidViewModel(app) {
     // ---------- тост ----------
     fun say(text: String, undo: Boolean = false, action: String? = null, onAction: (() -> Unit)? = null) {
         toastJob?.cancel()
-        if (toast?.undo == true && pendingRecord != null) commitPendingRecord()
+        if (toast?.undo == true) commitDelete()
         toastAction = onAction
         toast = ToastState(text, undo, action)
         toastJob = viewModelScope.launch {
             delay(if (undo || action != null) 6000 else 2600)  // «Вернуть» живёт дольше: его надо успеть найти глазами
             toast = null
-            if (undo) { tidy = false; removed = emptyList(); commitPendingRecord() }
+            if (undo) commitDelete()
         }
     }
 

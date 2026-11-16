@@ -15,7 +15,7 @@ import java.util.Date
 import java.util.Locale
 
 /** Запись журнала звонков. */
-data class CallRecord(val number: String, val type: Int, val date: Long, val duration: Long, val account: String? = null) {
+data class CallRecord(val number: String, val type: Int, val date: Long, val duration: Long, val account: String? = null, val id: Long = 0L) {
     val missed: Boolean get() = type == CallLog.Calls.MISSED_TYPE
     /** Обычный разговор (входящий или исходящий, который состоялся) — его не подписываем. */
     val ordinary: Boolean get() = (type == CallLog.Calls.INCOMING_TYPE || type == CallLog.Calls.OUTGOING_TYPE) && duration > 0
@@ -35,12 +35,12 @@ data class CallRecord(val number: String, val type: Int, val date: Long, val dur
 object CallLogSource {
     fun load(context: Context, limit: Int = 500): List<CallRecord> = runCatching {
         val uri = CallLog.Calls.CONTENT_URI.buildUpon().appendQueryParameter(CallLog.Calls.LIMIT_PARAM_KEY, limit.toString()).build()
-        val projection = arrayOf(CallLog.Calls.NUMBER, CallLog.Calls.TYPE, CallLog.Calls.DATE, CallLog.Calls.DURATION, CallLog.Calls.PHONE_ACCOUNT_ID)
+        val projection = arrayOf(CallLog.Calls.NUMBER, CallLog.Calls.TYPE, CallLog.Calls.DATE, CallLog.Calls.DURATION, CallLog.Calls.PHONE_ACCOUNT_ID, CallLog.Calls._ID)
         val out = ArrayList<CallRecord>()
         context.contentResolver.query(uri, projection, null, null, CallLog.Calls.DATE + " DESC")?.use { c ->
             while (c.moveToNext()) {
                 val number = c.getString(0)?.takeIf { it.isNotBlank() } ?: continue
-                out += CallRecord(number, c.getInt(1), c.getLong(2), c.getLong(3), c.getString(4))
+                out += CallRecord(number, c.getInt(1), c.getLong(2), c.getLong(3), c.getString(4), c.getLong(5))
             }
         }
         out
@@ -102,6 +102,14 @@ class Prefs(context: Context) {
         if (parts.size != 3) return@mapNotNull null
         val m = runCatching { Method.valueOf(parts[1]) }.getOrNull() ?: return@mapNotNull null
         Interaction(parts[0], m, parts[2].toLongOrNull() ?: return@mapNotNull null)
+    }
+
+    /** Удалить свои записи о связи через мессенджеры (журнал телефона их не знает). */
+    fun forget(acts: Collection<Interaction>) {
+        if (acts.isEmpty()) return
+        val gone = acts.toSet()
+        val lines = interactions().filterNot { it in gone }
+        sp.edit().putString("log", lines.joinToString("\n") { "${it.key}\t${it.method.name}\t${it.at}" }).apply()
     }
 
     fun log(key: String, method: Method, at: Long = System.currentTimeMillis()) {
