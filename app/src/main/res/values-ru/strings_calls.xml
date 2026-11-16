@@ -18,4 +18,5 @@
     <string name="clear_history_text">Звонки исчезнут из журнала телефона. Контакт останется.</string>
     <string name="history_cleared">История очищена</string>
     <string name="delete_swipe">Удалить</string>
+    <string name="delete_all">Удалить все</string>
 </resources>

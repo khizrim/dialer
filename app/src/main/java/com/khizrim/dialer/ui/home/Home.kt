@@ -73,6 +73,7 @@ import com.khizrim.dialer.ui.kit.AccentRound
 import com.khizrim.dialer.ui.kit.MethodMark
 import com.khizrim.dialer.ui.kit.OzIcon
 import com.khizrim.dialer.ui.kit.TextAction
+import com.khizrim.dialer.ui.kit.SwipeToDelete
 import com.khizrim.dialer.ui.kit.press
 import com.khizrim.dialer.ui.nav.Kind
 import com.khizrim.dialer.ui.nav.Layer
@@ -110,17 +111,19 @@ fun Home(vm: DialerViewModel, onDock: (Int) -> Unit) {
     val rows = remember(feed) {
         buildList<Any> {
             var day: String? = null
-            feed.asReversed().forEach { e ->
+            // журнал: свежие сверху, подпись дня над его звонками; раскрытая тихая группа идёт сразу под своей строкой
+            feed.forEach { e ->
                 if (e.inSilentGroup) { add(e); return@forEach }
                 val d = if (e.lastAt > 0L) Dates.day(res, e.lastAt) else null
-                if (day != null && d != day) add(FeedDay(day!!))
-                day = d
+                if (d != null && d != day) { add(FeedDay(d)); day = d }
                 add(e)
             }
-            day?.let { add(FeedDay(it)) }
-            if (feed.size > 3) add(FeedTop)
+            if (feed.isNotEmpty()) add(FeedTop)
         }
     }
+    // пришёл новый звонок, а журнал открыт сверху — показываем его, а не держим старую верхнюю строку
+    val newest = (feed.firstOrNull { !it.inSilentGroup })?.key
+    androidx.compose.runtime.LaunchedEffect(newest) { if (list.firstVisibleItemIndex <= 2) list.animateScrollToItem(0) }
 
     CompositionLocalProvider(LocalGlass provides haze) {
         Box(Modifier.fillMaxSize()) {
@@ -139,7 +142,6 @@ private fun Feed(vm: DialerViewModel, rows: List<Any>, list: androidx.compose.fo
     LazyColumn(
         modifier.padding(horizontal = 8.dp),
         state = list,
-        reverseLayout = true,
         contentPadding = PaddingValues(top = top, bottom = bottom),
     ) {
         if (rows.isEmpty()) {
@@ -162,8 +164,9 @@ private fun Feed(vm: DialerViewModel, rows: List<Any>, list: androidx.compose.fo
                     modifier = anim.padding(start = 12.dp, top = 20.dp, bottom = 4.dp).semantics { heading() },
                 )
                 is HomeEntry -> if (r.silent > 0) SilentRow(vm, r, anim) else FeedRow(vm, r, anim)
+                // в дальнем конце журнала — очистить его весь, с подтверждением
                 else -> Box(anim.fillMaxWidth().padding(vertical = 8.dp), contentAlignment = Alignment.Center) {
-                    TextAction(stringResource(R.string.home_clear), oz.fg3, vm::askClearHome, style = OzType.small)
+                    TextAction(stringResource(R.string.clear_log), oz.fg3, { vm.askClearLog() }, style = OzType.small)
                 }
             }
         }
@@ -176,8 +179,9 @@ private fun SilentRow(vm: DialerViewModel, e: HomeEntry, modifier: Modifier) {
     val oz = LocalOz.current
     // среди них есть заблокированные — говорим «в тишине», а не «без звука»
     val text = pluralStringResource(if (e.blocked) R.plurals.quiet_unknown else R.plurals.silent_unknown, e.silent, e.silent)
-    Row(
-        modifier.fillMaxWidth().height(64.dp).press(vm::toggleSilent, label = text).padding(horizontal = 12.dp),
+    // смахнуть тихую строку — удалить все звонки незнакомых без звука разом
+    SwipeToDelete(vm::clearSilent, modifier, label = stringResource(R.string.delete_all)) { Row(
+        Modifier.fillMaxWidth().height(64.dp).press(vm::toggleSilent, label = text).padding(horizontal = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(Modifier.weight(1f)) {
@@ -186,12 +190,12 @@ private fun SilentRow(vm: DialerViewModel, e: HomeEntry, modifier: Modifier) {
         }
         val turn by animateFloatAsState(if (vm.silentOpen) 180f else 0f, Motion.pixels(500f), label = "chevron")
         OzIcon(R.drawable.ic_oz_chevron_down, oz.fg3, 20.dp, Modifier.graphicsLayer { rotationZ = turn })
-    }
+    } }
 }
 
 /**
- * Строка ленты, 64 dp. Имя — карточка, значок справа — связаться (долгое — другой способ).
- * Смахнуть влево — скрыть до следующего контакта, с «Вернуть».
+ * Строка журнала, 64 dp. Имя — карточка, значок справа — связаться (долгое — другой способ).
+ * Смахнуть влево — удалить звонки этой строки из журнала, с «Вернуть».
  */
 @Composable
 private fun FeedRow(vm: DialerViewModel, e: HomeEntry, modifier: Modifier) {
@@ -200,40 +204,19 @@ private fun FeedRow(vm: DialerViewModel, e: HomeEntry, modifier: Modifier) {
     val p = e.person
     val method = p?.let { vm.defaultOf(it) } ?: Method.PHONE.takeIf { p == null }
     val missed = e.dir == Dir.MISSED && !vm.isSilenced(e)
-    val time = Dates.recentTime(e.lastAt)
-    val w = with(LocalDensity.current) { LocalConfiguration.current.screenWidthDp.dp.toPx() }
-    var x by remember { mutableFloatStateOf(0f) }
-    val drag = rememberDraggableState { d -> x = (x + d).coerceAtMost(0f) }
+    val time = remember(e.lastAt) { java.text.DateFormat.getTimeInstance(java.text.DateFormat.SHORT).format(java.util.Date(e.lastAt)) }
     val tag = if (p == null && e.number != null) com.khizrim.dialer.callerid.rememberCallerTag(e.number) else null
+    // у каждого звонка время; словами — только необычное: пропущенный, без ответа, мессенджер
     val sub = buildString {
-        append(e.missedNote ?: e.note ?: time ?: stringResource(if (e.dir == Dir.OUT) R.string.h_outgoing else R.string.h_incoming))
-        if ((e.missedNote != null || e.blocked) && time != null) append(", ").append(time)
+        (e.missedNote ?: e.note)?.let { append(it).append(", ") }
+        append(time)
         if (tag != null) append(", ").append(tag)
     }
-    val armed = x < -w * 0.35f
+    // склеенные одинаковые звонки: число рядом с именем; у пропущенных оно уже в подписи
+    val times = if (e.count > 1 && e.missedNote == null) " (" + e.count + ")" else ""
 
-    Box(
-        modifier
-            .fillMaxWidth()
-            .height(64.dp)
-            .draggable(
-                drag, Orientation.Horizontal,
-                onDragStopped = { v ->
-                    val go = (x < -w * 0.35f && v < 200f) || v < -0.6f * w
-                    if (go) {
-                        animate(x, -w - 40f, minOf(v, -1200f), Motion.pixels(300f)) { value, _ -> x = value }
-                        vm.removeFromHome(e.key, now = true)
-                    } else animate(x, 0f, v, Motion.pixels()) { value, _ -> x = value }
-                },
-            ),
-    ) {
-        // под строкой, справа: «Скрыть», ярче, когда отпустить уже значит скрыть
-        Text(
-            stringResource(R.string.hide), style = OzType.small.copy(fontWeight = FontWeight.Medium),
-            color = if (armed) oz.danger else oz.fg3,
-            modifier = Modifier.align(Alignment.CenterEnd).padding(end = 20.dp).graphicsLayer { alpha = (-x / (w * 0.2f)).coerceIn(0f, 1f) },
-        )
-        Row(Modifier.fillMaxSize().graphicsLayer { translationX = x }.background(oz.bg), verticalAlignment = Alignment.CenterVertically) {
+    SwipeToDelete({ vm.deleteRow(e) }, modifier) {
+        Row(Modifier.fillMaxWidth().height(64.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(
                 Modifier
                     .weight(1f)
@@ -241,20 +224,20 @@ private fun FeedRow(vm: DialerViewModel, e: HomeEntry, modifier: Modifier) {
                     .press(
                         onClick = { if (p != null) nav.openCard(p.id) else e.number?.let(vm::openNumber) },
                         onLongClick = { vm.openMenu(e, MenuContext.HOME) },
-                        label = e.title + ", " + sub,
+                        label = e.title + times + ", " + sub,
                     )
                     .padding(horizontal = 12.dp),
                 verticalArrangement = Arrangement.Center,
             ) {
                 Text(
-                    e.title, style = if (p != null && !p.nameIsNumber) OzType.row else OzType.rowNumber,
+                    e.title + times, style = if (p != null && !p.nameIsNumber) OzType.row else OzType.rowNumber,
                     color = if (missed) oz.danger else if (vm.isSilenced(e)) oz.fg2 else oz.fg, maxLines = 1, overflow = TextOverflow.Ellipsis,
                 )
                 Row(Modifier.padding(top = 3.dp), verticalAlignment = Alignment.CenterVertically) {
                     if (e.dir != null) {
                         OzIcon(if (e.dir == Dir.OUT) R.drawable.ic_oz_arr_out else R.drawable.ic_oz_arr_in, if (missed) oz.danger else oz.fg3, 14.dp, Modifier.padding(end = 4.dp))
                     }
-                    Text(sub, style = OzType.meta, color = if (missed) oz.danger else oz.fg3, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(sub, style = OzType.meta.copy(fontFeatureSettings = "tnum"), color = if (missed) oz.danger else oz.fg3, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
             }
             // правая зона — связаться: на всю высоту строки, широкая, чтобы не промахнуться
@@ -285,12 +268,12 @@ private fun FeedRow(vm: DialerViewModel, e: HomeEntry, modifier: Modifier) {
 private fun TopBand(rows: List<Any>, list: androidx.compose.foundation.lazy.LazyListState) {
     val oz = LocalOz.current
     val res = LocalContext.current.resources
-    val under by remember { derivedStateOf { list.canScrollForward } }
+    val under by remember { derivedStateOf { list.canScrollBackward } }
     val day by remember(rows) {
         derivedStateOf {
-            val last = list.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: return@derivedStateOf null
-            // ближайшая подпись дня выше (дальше по списку) — день самой верхней строки
-            (last until rows.size).firstNotNullOfOrNull { (rows.getOrNull(it) as? FeedDay)?.text }
+            val first = list.firstVisibleItemIndex
+            // ближайшая подпись дня выше самой верхней видимой строки — её день
+            (first.coerceAtMost(rows.size - 1) downTo 0).firstNotNullOfOrNull { (rows.getOrNull(it) as? FeedDay)?.text }
         }
     }
     val a by animateFloatAsState(if (under) 1f else 0f, Motion.enter(Motion.FADE), label = "band")

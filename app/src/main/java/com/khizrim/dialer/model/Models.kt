@@ -90,9 +90,20 @@ data class HomeEntry(
     val inSilentGroup: Boolean = false,
     /** Направление последнего контакта: IN, OUT, MISSED или null (нет звонка). */
     val dir: Dir? = null,
-    /** Последний звонок незнакомого заблокирован (нами, внешним определителем или системой): строка в тихой группе. */
+    /** Звонок заблокирован (нами, внешним определителем или системой). */
     val blocked: Boolean = false,
+    /** Чей это звонок: ключ человека или «n:номер». */
+    val who: String = key,
+    /** Незнакомый без звука или заблокированный: живёт в тихой группе. */
+    val quiet: Boolean = false,
+    /** Род звонков строки (заблокирован, пропущен, состоялся, мессенджер): склеиваются только одинаковые. */
+    val kind: Int = 0,
+    /** Звонки журнала и записи о мессенджерах, из которых сложена строка; удаляются вместе. */
+    val records: List<com.khizrim.dialer.data.CallRecord> = emptyList(),
+    val acts: List<com.khizrim.dialer.data.Interaction> = emptyList(),
 ) {
+    /** Сколько звонков склеено в строку. */
+    val count: Int get() = records.size + acts.size
     val title: String get() = person?.shownName ?: com.khizrim.dialer.data.PhoneFormat.pretty(number.orEmpty())
 }
 
