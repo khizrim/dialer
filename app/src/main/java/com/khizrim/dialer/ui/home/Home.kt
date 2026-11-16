@@ -170,22 +170,51 @@ private fun Feed(vm: DialerViewModel, rows: List<Any>, list: androidx.compose.fo
     }
 }
 
-/** Незнакомые без звука — одной тихой строкой; нажатие раскрывает их прямо в ленте. */
+/**
+ * Незнакомые без звука — одной тихой строкой; нажатие раскрывает их прямо в ленте.
+ * Смахнуть влево — убрать всю тишину разом (из журнала, если можно писать в него), с «Вернуть».
+ */
 @Composable
 private fun SilentRow(vm: DialerViewModel, e: HomeEntry, modifier: Modifier) {
     val oz = LocalOz.current
     // среди них есть заблокированные — говорим «в тишине», а не «без звука»
     val text = pluralStringResource(if (e.blocked) R.plurals.quiet_unknown else R.plurals.silent_unknown, e.silent, e.silent)
-    Row(
-        modifier.fillMaxWidth().height(64.dp).press(vm::toggleSilent, label = text).padding(horizontal = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
+    val w = with(LocalDensity.current) { LocalConfiguration.current.screenWidthDp.dp.toPx() }
+    var x by remember { mutableFloatStateOf(0f) }
+    val drag = rememberDraggableState { d -> x = (x + d).coerceAtMost(0f) }
+    val armed = x < -w * 0.35f
+    Box(
+        modifier
+            .fillMaxWidth()
+            .height(64.dp)
+            .draggable(
+                drag, Orientation.Horizontal,
+                onDragStopped = { v ->
+                    val go = (x < -w * 0.35f && v < 200f) || v < -0.6f * w
+                    if (go) {
+                        animate(x, -w - 40f, minOf(v, -1200f), Motion.pixels(300f)) { value, _ -> x = value }
+                        vm.clearSilent()
+                    } else animate(x, 0f, v, Motion.pixels()) { value, _ -> x = value }
+                },
+            ),
     ) {
-        Column(Modifier.weight(1f)) {
-            Text(text, style = OzType.row, color = oz.fg2, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Dates.recentTime(e.lastAt)?.let { Text(it, style = OzType.meta, color = oz.fg3, modifier = Modifier.padding(top = 2.dp)) }
+        // под строкой — то же место и тот же жест, что у людей; слово честно говорит, что будет
+        Text(
+            stringResource(if (vm.silentSwipeDeletes) R.string.delete else R.string.hide), style = OzType.small.copy(fontWeight = FontWeight.Medium),
+            color = if (armed) oz.danger else oz.fg3,
+            modifier = Modifier.align(Alignment.CenterEnd).padding(end = 20.dp).graphicsLayer { alpha = (-x / (w * 0.2f)).coerceIn(0f, 1f) },
+        )
+        Row(
+            Modifier.fillMaxSize().graphicsLayer { translationX = x }.background(oz.bg).press(vm::toggleSilent, label = text).padding(horizontal = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text(text, style = OzType.row, color = oz.fg2, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Dates.recentTime(e.lastAt)?.let { Text(it, style = OzType.meta, color = oz.fg3, modifier = Modifier.padding(top = 2.dp)) }
+            }
+            val turn by animateFloatAsState(if (vm.silentOpen) 180f else 0f, Motion.pixels(500f), label = "chevron")
+            OzIcon(R.drawable.ic_oz_chevron_down, oz.fg3, 20.dp, Modifier.graphicsLayer { rotationZ = turn })
         }
-        val turn by animateFloatAsState(if (vm.silentOpen) 180f else 0f, Motion.pixels(500f), label = "chevron")
-        OzIcon(R.drawable.ic_oz_chevron_down, oz.fg3, 20.dp, Modifier.graphicsLayer { rotationZ = turn })
     }
 }
 

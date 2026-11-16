@@ -32,7 +32,6 @@ fun SuspiciousCallsSetting(modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val prefs = remember { CallerIdPrefs(context) }
     var action by remember { mutableStateOf(prefs.action) }
-    val date by produceState<String?>(null) { value = withContext(Dispatchers.IO) { CallerId.registryDate(context) } }
     val stale by produceState(false) {
         value = withContext(Dispatchers.IO) { (CallerId.dbAgeDays(context) ?: 0L) > SpamPolicy.FRESH_DAYS }
     }
@@ -68,10 +67,6 @@ fun SuspiciousCallsSetting(modifier: Modifier = Modifier) {
             ),
             style = OzType.small, color = oz.fg3,
         )
-        Text(
-            date?.let { stringResource(R.string.spam_about, it) } ?: stringResource(R.string.spam_about_nodate),
-            style = OzType.small, color = oz.fg3, modifier = Modifier.padding(top = 8.dp),
-        )
         if (stale && action != SpamAction.LABEL) {
             Text(stringResource(R.string.spam_db_stale), style = OzType.small, color = oz.fg3, modifier = Modifier.padding(top = 8.dp))
         }
@@ -90,12 +85,16 @@ fun rememberCallerTag(number: String): String? {
     return tag
 }
 
-/** Строка «Внешний определитель: Яндекс». Ведёт туда, где его можно выбрать или включить. */
+/**
+ * Строка «Определитель номера: Яндекс» — только когда на телефоне есть работающий сторонний определитель.
+ * Нет его — нет и строки: свои подписи и защиту Ozero делает сам, на телефоне, ничего не нужно ставить.
+ * Нажатие ведёт в системный выбор, где его можно сменить или выключить.
+ */
 @Composable
 fun ExternalCallerIdRow(modifier: Modifier = Modifier) {
     val oz = LocalOz.current
     val context = LocalContext.current
-    // перечитываем при каждом возвращении на экран: человек мог включить определитель в Яндексе
+    // перечитываем при каждом возвращении на экран: человек мог включить или выключить определитель
     val lifecycle = androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle
     var resumes by remember { androidx.compose.runtime.mutableIntStateOf(0) }
     androidx.compose.runtime.DisposableEffect(lifecycle) {
@@ -105,38 +104,24 @@ fun ExternalCallerIdRow(modifier: Modifier = Modifier) {
     }
     var apps by remember { androidx.compose.runtime.mutableStateOf<List<ExternalCallerId.App>?>(null) }
     androidx.compose.runtime.LaunchedEffect(resumes) { apps = withContext(Dispatchers.IO) { ExternalCallerId.apps(context) } }
-    val list = apps
-    val ready = list?.filter { it.ready }.orEmpty()
-    val pending = list?.firstOrNull { !it.ready }
+    val ready = apps?.filter { it.ready }.orEmpty()
+    if (ready.isEmpty()) return
     val title = stringResource(R.string.ext_cid_title)
-    val value = when {
-        list == null -> ""
-        ready.isNotEmpty() -> ready.take(2).joinToString(", ") { it.label }
-        pending != null -> stringResource(R.string.ext_cid_off, pending.label)
-        else -> stringResource(R.string.ext_cid_none)
-    }
+    val value = ready.take(2).joinToString(", ") { it.label }
     Column(modifier) {
         Row(
             Modifier
                 .fillMaxWidth()
                 .height(56.dp)
                 .press({
-                    runCatching { context.startActivity(ExternalCallerId.chooseIntent(context, list.orEmpty())) }
-                        .onFailure { runCatching { context.startActivity(ExternalCallerId.storeFallback()) } }
+                    runCatching { context.startActivity(ExternalCallerId.chooseIntent(context, ready)) }
                 }, shape = RoundedCornerShape(14.dp), label = "$title: $value"),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(title, style = OzType.list, color = oz.fg, modifier = Modifier.weight(1f))
             Text(value, style = OzType.small, color = oz.fg3, maxLines = 1)
         }
-        Text(
-            when {
-                ready.isNotEmpty() -> stringResource(R.string.ext_cid_text)
-                pending != null -> stringResource(R.string.ext_cid_text_off, pending.label)
-                else -> stringResource(R.string.ext_cid_text_none)
-            },
-            style = OzType.small, color = oz.fg3,
-        )
+        Text(stringResource(R.string.ext_cid_text), style = OzType.small, color = oz.fg3)
     }
 }
 

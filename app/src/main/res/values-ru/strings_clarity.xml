@@ -40,4 +40,16 @@
         <item quantity="other">%1$d пропущенного от %2$s</item>
     </plurals>
     <string name="sim_usual">%1$s · обычно</string>
+    <plurals name="silent_deleted">
+        <item quantity="one">%1$d незнакомый удалён из журнала</item>
+        <item quantity="few">%1$d незнакомых удалены из журнала</item>
+        <item quantity="many">%1$d незнакомых удалены из журнала</item>
+        <item quantity="other">%1$d незнакомых удалены из журнала</item>
+    </plurals>
+    <plurals name="silent_hidden">
+        <item quantity="one">%1$d незнакомый скрыт</item>
+        <item quantity="few">%1$d незнакомых скрыты</item>
+        <item quantity="many">%1$d незнакомых скрыты</item>
+        <item quantity="other">%1$d незнакомых скрыты</item>
+    </plurals>
 </resources>
